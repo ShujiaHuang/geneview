@@ -3,4 +3,5 @@ venv/
 *.sh
 *.so
 .*.swp
+*.png
 .DS_Store
