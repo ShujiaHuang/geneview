@@ -1,0 +1,6 @@
+venv/
+*.py[cod]
+*.sh
+*.so
+.*.swp
+.DS_Store
