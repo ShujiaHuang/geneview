@@ -37,93 +37,81 @@ def chr_cmp(a, b):
         # X Y
         return cmp(achr, bchr)
 
-
 def chr_loc_cmp(alocs, blocs):
     return chr_cmp(alocs[0], blocs[0]) or cmp(alocs[1], blocs[1])
 
-def load_data(fhs, columns, sep):
-
-    # Loading all the data
-    return sorted(_gen_data(fhs, columns, sep), cmp=chr_loc_cmp)
-
-
-def plot_manhattan(data, no_log, colors, image_path, title, lines, ymax):
-    """
-    """
-    # Plotting the manhattan image
-    plt.close() # in case plot accident
-    f, ax = plt.subplots(ncols=1, nrows=1, figsize=(12, 8), tight_layout=True) 
-    ax = manhattan(ax, data, no_log, colors, title, lines)
-
-    # plot 0.05 line after multiple testing.
-    ax.axhline(y=5, color='b')
-    ax.axhline(y=7, color='r')
-    if ymax is not None: ax.set_ylim(ymax=ymax)
-
-    ax.set_xlabel('Chromosome', fontsize=18)
-    ax.set_ylabel('-Log10 (P-value)', fontsize=18)
-
-    print >> sys.stderr, 'saving to: %s' % image_path
-    plt.show()
-    plt.savefig(image_path)
-
-
-def manhattan(ax, data, no_log, colors, title, lines):
-    """
-    """
+def manhattan(fhs, columns, image_path, no_log, colors, sep, title, lines, ymax):
 
     if ',' in colors: colors = colors.split(',')
     colors = cycle(colors)
 
-    x, y, c = [], [], []
-    xs_by_chr = {}
     last_x = 0
+    data = sorted(_gen_data(fhs, columns, sep), cmp=chr_loc_cmp)
+
+    xs, ys, cs = [], [], []
+    xs_by_chr = {}
     for seqid, rlist in groupby(data, key=itemgetter(0)):
         color = colors.next()
         rlist = list(rlist)
         region_xs = [last_x + r[1] for r in rlist]
-        x.extend(region_xs)
-        y.extend([r[2] for r in rlist])
-        c.extend([color] * len(rlist))
+        xs.extend(region_xs)
+        ys.extend([r[2] for r in rlist])
+        cs.extend([color] * len(rlist))
 
         xs_by_chr[seqid] = (region_xs[0] + region_xs[-1]) / 2
 
         # keep track so that chrs don't overlap.
-        last_x = x[-1]
+        last_x = xs[-1]
 
-    c = np.array(c)
-    x = np.array(x)
-    y = np.array(y) if no_log else -np.log10(y)
+    cs = np.array(cs)
+    xs = np.array(xs)
+    ys = np.array(ys) if no_log else -np.log10(ys)
+    #idx = ys>4; xs = xs[idx]; ys = ys[idx]; cs = cs[idx]
 
-    if lines:
-        ax.vlines(x, 0, y, colors=c, alpha=0.5)
-    else:
-        ax.scatter(x, y, s=20, c=c, alpha=0.8, edgecolors='none')
+    xs_by_chr = [(k, xs_by_chr[k]) for k in sorted(xs_by_chr.keys(), cmp=chr_cmp)]
+
+    # Plotting the manhattan image
+    #plt.style.use('ggplot')
+    plt.close() # in case plot accident
+    f, ax = plt.subplots(ncols=1, nrows=1, figsize=(12, 8), tight_layout=True) 
 
     ax.tick_params(labelsize=14)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
-    if title is not None: ax.set_title(title, fontsize=18)
 
-    ax.set_xlim(1, x[-1])
+    if title is not None: plt.title(title, fontsize=18)
+
+    if lines:
+        ax.vlines(xs, 0, ys, colors=cs, alpha=0.5)
+    else:
+        ax.scatter(xs, ys, s=20, c=cs, alpha=0.8, edgecolors='none')
+
+    # plot 0.05 line after multiple testing.
+    #ax.axhline(y=-np.log10(0.05 / len(data)), color='0.5', linewidth=1)
+    ax.axhline(y=5, color='b')
+    ax.axhline(y=7, color='r')
+
+    ax.set_xlim(0, xs[-1])
     ax.set_ylim(ymin=0)
+    if ymax is not None: plt.ylim(ymax=ymax)
 
-    xtick_idx = set(range(14) + [15,17,19,21])
-    xs_by_chr = [(k, xs_by_chr[k]) 
-                 for i, k in enumerate(sorted(xs_by_chr.keys(), cmp=chr_cmp))
-                 if i in xtick_idx]
+    xtick_label_set = set(range(15) + [16,18,20,22])
+    plt.xticks([c[1] for c in xs_by_chr if int(c[0]) in xtick_label_set], 
+               [c[0] for c in xs_by_chr if int(c[0]) in xtick_label_set])
+    #ax.set_xticks([c[1] for c in xs_by_chr if int(c[0]) in xtick_label_set])
+    #ax.set_xticklabels([c[0] for c in xs_by_chr if int(c[0]) in xtick_label_set])
 
-    ax.set_xticks([1] + [c[1] for c in xs_by_chr])
-    ax.set_xticklabels([''] + [c[0] for c in xs_by_chr])
+    ax.set_xlabel('Chromosome', fontsize=18)
+    ax.set_ylabel('-Log10 (P-value)', fontsize=18)
+    print >> sys.stderr, 'saving to: %s' % image_path
 
-    return ax
-
+    plt.show()
+    plt.savefig(image_path)
 
 def get_filehandles(args):
     return (open(a) if a != "-" else sys.stdin for a in args)
-
 
 def main():
     COLORFUL = '#6DC066,#FD482F,#8A2BE2,#3399FF'
@@ -159,9 +147,8 @@ def main():
 
     fhs = get_filehandles(args)
     columns = map(int, opts.cols.split(","))
-    plot_manhattan(load_data(fhs, columns, opts.sep), 
-                   opts.no_log, opts.colors, opts.image, 
-                   opts.title, opts.lines, opts.ymax)
+    manhattan(fhs, columns, opts.image, opts.no_log, opts.colors, opts.sep,
+              opts.title, opts.lines, opts.ymax)
 
 if __name__ == "__main__":
     main()
