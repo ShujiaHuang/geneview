@@ -25,7 +25,7 @@ Dependencies
 
 - [scipy](http://www.scipy.org/)
 
-- [matplotlib](http://matplotlib.sourceforge.net)
+- [matplotlib](http://matplotlib.org/)
 
 
 Installation
