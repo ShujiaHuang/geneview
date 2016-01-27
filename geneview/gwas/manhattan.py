@@ -74,8 +74,8 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
 
     kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.scatter()`` or
-        ``plt.vlines()`` depending on whether a scatter or line
-        plot is being drawn.
+        ``plt.vlines()`` (in matplotlib.pyplot) depending on whether 
+        a scatter or line plot is being drawn.
 
 
     Returns
