@@ -1,20 +1,20 @@
 """
+    Plotting functions for manhattan plot.
+
     Copytright (c) Shujia Huang
     Date: 2016-01-23
 
     This model is based on brentp's script on github:
     https://github.com/brentp/bio-playground/blob/master/plots/manhattan-plot.py
 
-    Plot a manhattan plot of the input file(s).
-    python %prog [options] files
+    Thanks for Brentp's contributions
+
 """
 
-import sys
-import optparse
 from itertools import groupby, cycle
 from operator import itemgetter
 
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -43,7 +43,10 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
     data : float. 2D list or 2D numpy array. format [[id, x_val, y_val], ...]
         Input data for plot manhattan.
 
-    mlog10 : bool
+    ax : matplotlib axis, optional
+        Axis to plot on, otherwise uses current axis.
+
+    mlog10 : bool, optional
         Set the y_value to be -log10 scale, optional, default: True 
 
     kind : {'scatter' | 'line'}, optional
@@ -56,10 +59,25 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
     xtick_label_set : a set. 
         The x-labels for x-axis to draw in the figure
 
+    alpha : scalar, optional, default: 0.8
+        The alpha blending value, between 0(transparent) and 1(opaque)
+
+    kwargs : key, value pairings
+        Other keyword arguments are passed to ``plt.scatter()`` or
+        ``plt.vlines()`` depending on whether a scatter or line
+        plot is being drawn.
+
+
     Returns
     -------
         ax : matplotlib Axes
             Axes object with the manhattanplot.
+
+    Notes
+    -----
+        The right and top spines of plot have been setted to be 
+        invisible by default.
+
     """
     # Draw the plot and return the Axes
     if ax is None:
@@ -93,23 +111,23 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
     y = -np.log10(y) if mlog10 else np.array(y)
 
     if kind == 'scatter':
-        ax.scatter(x, y, s=20, c=c, alpha=alpha, edgecolors='none')
+        #ax.scatter(x, y, s=20, c=c, alpha=alpha, edgecolors='none')
+        ax.scatter(x, y, c=c, alpha=alpha, edgecolors='none', **kwargs)
 
     elif kind == 'line':
-        ax.vlines(x, 0, y, colors=c, alpha=alpha)
+        ax.vlines(x, 0, y, colors=c, alpha=alpha, **kwargs)
 
     else:
         msg = "``kind`` must be either 'scatter' or 'line'"
         raise ValueError(msg)
 
-    ax.tick_params(labelsize=14)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
 
-    ax.set_xlim(1, x[-1])
-    ax.set_ylim(ymin=0)
+    ax.set_xlim(0, x[-1])
+    ax.set_ylim(ymin=y.min())
 
     if xtick_label_set is None: 
         xtick_label_set = set(xs_by_id.keys())
