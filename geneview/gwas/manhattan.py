@@ -2,29 +2,24 @@
     Copytright (c) Shujia Huang
     Date: 2016-01-23
 
+    This model is based on brentp's script on github:
+    https://github.com/brentp/bio-playground/blob/master/plots/manhattan-plot.py
+
     Plot a manhattan plot of the input file(s).
     python %prog [options] files
 """
 
-import optparse
 import sys
+import optparse
 from itertools import groupby, cycle
 from operator import itemgetter
+
 from matplotlib import pyplot as plt
 import numpy as np
 
-def _gen_data(fhs, columns, sep):
-    """
-    iterate over the files and yield chr, start, pvalue
-    """
-    for fh in fhs:
-        for line in fh:
-            if line[0] == '#': continue
-            toks = line.strip('\n').split(sep) if sep else line.strip('\n').split()
-            yield toks[columns[0]], int(toks[columns[1]]), float(toks[columns[2]])
 
-def chr_cmp(a, b):
-    a = a.lower().replace('_', '') 
+def _chr_id_cmp(a, b):
+    a = a.lower().replace('_', '')
     b = b.lower().replace('_', '')
     achr = a[3:] if a.startswith('chr') else a
     bchr = b[3:] if b.startswith('chr') else b
@@ -38,47 +33,49 @@ def chr_cmp(a, b):
         return cmp(achr, bchr)
 
 
-def chr_loc_cmp(alocs, blocs):
-    return chr_cmp(alocs[0], blocs[0]) or cmp(alocs[1], blocs[1])
-
-def load_data(fhs, columns, sep):
-
-    # Loading all the data
-    return sorted(_gen_data(fhs, columns, sep), cmp=chr_loc_cmp)
-
-
-def plot_manhattan(data, no_log, colors, image_path, title, lines, ymax):
+def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter', 
+                  xtick_label_set=None, alpha=0.8, **kwargs):
     """
+    Plot a manhattan plot.
+
+    Parameters
+    ----------
+    data : float. 2D list or 2D numpy array. format [[id, x_val, y_val], ...]
+        Input data for plot manhattan.
+
+    mlog10 : bool
+        Set the y_value to be -log10 scale, optional, default: True 
+
+    kind : {'scatter' | 'line'}, optional
+        Kind of plot to draw
+
+    color : matplotlib color, optional
+        Color used for the plot elements. Could hex-code or rgb, 
+        e.g: '#000000,#969696' or 'rb'
+
+    xtick_label_set : a set. 
+        The x-labels for x-axis to draw in the figure
+
+    Returns
+    -------
+        ax : matplotlib Axes
+            Axes object with the manhattanplot.
     """
-    # Plotting the manhattan image
-    plt.close() # in case plot accident
-    f, ax = plt.subplots(ncols=1, nrows=1, figsize=(12, 8), tight_layout=True) 
-    ax = manhattan(ax, data, no_log, colors, title, lines)
+    # Draw the plot and return the Axes
+    if ax is None:
+        ax = plt.gca()
 
-    # plot 0.05 line after multiple testing.
-    ax.axhline(y=5, color='b')
-    ax.axhline(y=7, color='r')
-    if ymax is not None: ax.set_ylim(ymax=ymax)
+    if color is None:
+        color = '#6DC066,#FD482F,#8A2BE2,#3399FF' # It's colorful
 
-    ax.set_xlabel('Chromosome', fontsize=18)
-    ax.set_ylabel('-Log10 (P-value)', fontsize=18)
-
-    print >> sys.stderr, 'saving to: %s' % image_path
-    plt.show()
-    plt.savefig(image_path)
-
-
-def manhattan(ax, data, no_log, colors, title, lines):
-    """
-    """
-
-    if ',' in colors: colors = colors.split(',')
-    colors = cycle(colors)
-
-    x, y, c = [], [], []
-    xs_by_chr = {}
+    if ',' in color: color = color.split(',')
+    colors = cycle(color)
+    
     last_x = 0
+    xs_by_id = {}
+    x, y, c = [], [], []
     for seqid, rlist in groupby(data, key=itemgetter(0)):
+
         color = colors.next()
         rlist = list(rlist)
         region_xs = [last_x + r[1] for r in rlist]
@@ -86,82 +83,42 @@ def manhattan(ax, data, no_log, colors, title, lines):
         y.extend([r[2] for r in rlist])
         c.extend([color] * len(rlist))
 
-        xs_by_chr[seqid] = (region_xs[0] + region_xs[-1]) / 2
+        xs_by_id[seqid] = (region_xs[0] + region_xs[-1]) / 2
 
         # keep track so that chrs don't overlap.
         last_x = x[-1]
 
     c = np.array(c)
     x = np.array(x)
-    y = np.array(y) if no_log else -np.log10(y)
+    y = -np.log10(y) if mlog10 else np.array(y)
 
-    if lines:
-        ax.vlines(x, 0, y, colors=c, alpha=0.5)
+    if kind == 'scatter':
+        ax.scatter(x, y, s=20, c=c, alpha=alpha, edgecolors='none')
+
+    elif kind == 'line':
+        ax.vlines(x, 0, y, colors=c, alpha=alpha)
+
     else:
-        ax.scatter(x, y, s=20, c=c, alpha=0.8, edgecolors='none')
+        msg = "``kind`` must be either 'scatter' or 'line'"
+        raise ValueError(msg)
 
     ax.tick_params(labelsize=14)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
-    if title is not None: ax.set_title(title, fontsize=18)
 
     ax.set_xlim(1, x[-1])
     ax.set_ylim(ymin=0)
 
-    xtick_idx = set(range(14) + [15,17,19,21])
-    xs_by_chr = [(k, xs_by_chr[k]) 
-                 for i, k in enumerate(sorted(xs_by_chr.keys(), cmp=chr_cmp))
-                 if i in xtick_idx]
+    if xtick_label_set is None: 
+        xtick_label_set = set(xs_by_id.keys())
 
-    ax.set_xticks([1] + [c[1] for c in xs_by_chr])
-    ax.set_xticklabels([''] + [c[0] for c in xs_by_chr])
+    xs_by_id = [(k, xs_by_id[k])
+                 for k in sorted(xs_by_id.keys(), cmp=_chr_id_cmp)
+                 if k in xtick_label_set]
+
+    ax.set_xticks([1] + [c[1] for c in xs_by_id])
+    ax.set_xticklabels([''] + [c[0] for c in xs_by_id])
 
     return ax
-
-
-def get_filehandles(args):
-    return (open(a) if a != "-" else sys.stdin for a in args)
-
-
-def main():
-    COLORFUL = '#6DC066,#FD482F,#8A2BE2,#3399FF'
-    p = optparse.OptionParser(__doc__)
-    p.add_option("--no-log", dest="no_log", help="don't do -log10(p) on the value",
-                 action='store_true', default=False)
-    p.add_option("--cols", dest="cols", help="zero-based column indexes to get "
-                 "chr, position, p-value respectively e.g. %default", 
-                 default="0,1,2")
-    p.add_option("--colors", dest="colors", help="cycle through these colors",
-                 default="#000000,#969696")
-    p.add_option("--colorful", default=False, dest="colorful", action="store_true",
-                 help="if set than enhance to cycle through these colors: "
-                 "%s" % COLORFUL)
-    p.add_option("--image", dest="image", 
-                 help="save the image_path to this file. e.g. %default",
-                 default="manhattan.png")
-    p.add_option("--title", help="title for the image.", default=None, 
-                 dest="title")
-    p.add_option("--ymax", help="max (logged) y-value for plot", dest="ymax", 
-                 type='float')
-    p.add_option("--sep", help="data separator, default is any space",
-                 default=None, dest="sep")
-    p.add_option("--lines", default=False, dest="lines", action="store_true",
-                 help="plot the p-values as lines extending from the x-axis "
-                 "rather than points in space. plotting will take longer "
-                 "with this option.")
-
-    opts, args = p.parse_args()
-    if opts.colorful: opts.colors = COLORFUL
-    if (len(args) == 0):
-        sys.exit(not p.print_help())
-
-    fhs = get_filehandles(args)
-    columns = map(int, opts.cols.split(","))
-    plot_manhattan(load_data(fhs, columns, opts.sep), 
-                   opts.no_log, opts.colors, opts.image, 
-                   opts.title, opts.lines, opts.ymax)
-
-if __name__ == "__main__":
-    main()
