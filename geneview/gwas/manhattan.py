@@ -130,10 +130,12 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
         y.extend([r[2] for r in rlist])
         c.extend([color] * len(rlist))
 
+        # ``xs_by_id`` is for setting up positions and ticks. Ticks should
+        # be placed in the middle of a chromosome. The a new pos column is 
+        # added that keeps a running sum of the positions of each successive 
+        # chromsome.
         xs_by_id[seqid] = (region_xs[0] + region_xs[-1]) / 2
-
-        # keep track so that chrs don't overlap in the plot.
-        last_x = x[-1]
+        last_x = x[-1]  # keep track so that chrs don't overlap in the plot.
 
     if not x:
         msg = ("zero-size array to reduction operation minimum which has no "
