@@ -17,6 +17,9 @@ from operator import itemgetter
 import matplotlib.pyplot as plt
 import numpy as np
 
+##
+from geneview.util import despine
+
 COLORFUL = '#6DC066,#FD482F,#8A2BE2,#3399FF' # It's colorful
 
 def _chr_id_cmp(a, b):
@@ -147,7 +150,6 @@ def manhattanplot(data, ax=None, color=COLORFUL, kind='scatter',
     y = -np.log10(y) if mlog10 else np.array(y)
 
     if kind == 'scatter':
-        #ax.scatter(x, y, s=20, c=c, alpha=alpha, edgecolors='none')
         ax.scatter(x, y, c=c, alpha=alpha, edgecolors='none', **kwargs)
 
     elif kind == 'line':
@@ -157,10 +159,8 @@ def manhattanplot(data, ax=None, color=COLORFUL, kind='scatter',
         msg = "``kind`` must be either 'scatter' or 'line'"
         raise ValueError(msg)
 
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-    ax.xaxis.set_ticks_position('bottom')
-    ax.yaxis.set_ticks_position('left')
+    # Remove the 'top' and 'right' plot spines by default
+    despine(ax=ax)
 
     ax.set_xlim(0, x[-1])
     ax.set_ylim(ymin=y.min())
