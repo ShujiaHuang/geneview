@@ -32,9 +32,15 @@ Installation
 ------------
 
 To install the released version, just do
-    
+```
+pip install seaborn
+```
 
 You may instead want to use the development version from Github, by running
+
+```
+pip install git+git://github.com/ShujiaHuang/geneview.git#egg=geneview
+```
 
 Testing
 -------
