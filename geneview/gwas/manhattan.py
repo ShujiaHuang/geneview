@@ -33,8 +33,9 @@ def _chr_id_cmp(a, b):
         return cmp(achr, bchr)
 
 
-def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter', 
-                  xtick_label_set=None, CHR=None, alpha=0.8, **kwargs):
+def manhattanplot(data, ax=None, color=None, kind='scatter',
+                  xtick_label_set=None, CHR=None, alpha=0.8, 
+                  mlog10=True, **kwargs):
     """
     Plot a manhattan plot.
 
@@ -49,12 +50,6 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
     color : matplotlib color, optional
         Color used for the plot elements. Could hex-code or rgb, 
         e.g: '#000000,#969696' or 'rb'
-
-    mlog10 : bool, optional, default: True
-        If true, -log10 of the y_value(always be the p-value) is plotted. It
-        isn't very useful to plot raw p-values, but plotting the raw value 
-        could be useful for other genome-wide plots, for example peak heights,
-        bayes factors, test statistics, other "scores", etc.
 
     kind : {'scatter' | 'line'}, optional
         Kind of plot to draw
@@ -71,6 +66,12 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
 
     alpha : scalar, optional, default: 0.8
         The alpha blending value, between 0(transparent) and 1(opaque)
+
+    mlog10 : bool, optional, default: True
+        If true, -log10 of the y_value(always be the p-value) is plotted. It
+        isn't very useful to plot raw p-values, but plotting the raw value 
+        could be useful for other genome-wide plots, for example peak heights,
+        bayes factors, test statistics, other "scores", etc.
 
     kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.scatter()`` or
