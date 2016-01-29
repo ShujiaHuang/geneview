@@ -46,6 +46,10 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
 
+    color : matplotlib color, optional
+        Color used for the plot elements. Could hex-code or rgb, 
+        e.g: '#000000,#969696' or 'rb'
+
     mlog10 : bool, optional, default: True
         If true, -log10 of the y_value(always be the p-value) is plotted. It
         isn't very useful to plot raw p-values, but plotting the raw value 
@@ -54,10 +58,6 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
 
     kind : {'scatter' | 'line'}, optional
         Kind of plot to draw
-
-    color : matplotlib color, optional
-        Color used for the plot elements. Could hex-code or rgb, 
-        e.g: '#000000,#969696' or 'rb'
 
     xtick_label_set : a set. 
         The x-labels for x-axis to draw in the figure
