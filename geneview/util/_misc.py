@@ -1,6 +1,8 @@
 """
 This module contains miscellaneous functions for ``geneview``.
 """
+from __future__ import print_function, division
+
 def is_numeric(s):
     """
     It's a useful function for checking if a string is a numeric.

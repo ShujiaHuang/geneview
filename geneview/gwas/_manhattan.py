@@ -10,6 +10,7 @@
     Thanks for Brentp's contributions
 
 """
+from __future__ import print_function, division
 
 from itertools import groupby, cycle
 from operator import itemgetter

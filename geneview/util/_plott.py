@@ -2,6 +2,7 @@
 Small ploting-related utility functions.
 Ref from: the seaborn repo's utils.py on github
 """
+from __future__ import print_function, division
 import warnings
 
 import numpy as np
