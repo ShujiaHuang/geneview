@@ -6,7 +6,7 @@ import os
 # certain easy_install versions
 os.environ["MPLCONFIGDIR"] = "."
 
-DESCRIPTION = "Geneview: genomics data visualization"
+DESCRIPTION = "Geneview: A python package for genomics data visualization"
 LONG_DESCRIPTION = """\
 Geneview is a library for making attractive and informative genomics graphics in Python. It is built on top of matplotlib and tightly integrated with the PyData stack, including support for numpy data structures.
 
@@ -25,7 +25,7 @@ MAINTAINER_EMAIL = 'huangshujia9@gmail.com'
 URL = 'https://github.com/ShujiaHuang/geneview'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/ShujiaHuang/geneview'
-VERSION = '0.0.1.1'
+VERSION = '0.0.1.dev4'
 
 
 try:
@@ -34,30 +34,8 @@ try:
 except ImportError:
     from distutils.core import setup, find_packages
 
-def check_dependencies():
-    install_requires = []
-
-    # Just make sure dependencies exist, I haven't rigorously
-    # tested what the minimal versions that will work are
-    # (help on that would be awesome)
-    try:
-        import numpy
-    except ImportError:
-        install_requires.append('numpy')
-    #try:
-    #    import scipy
-    #except ImportError:
-    #    install_requires.append('scipy')
-    try:
-        import matplotlib
-    except ImportError:
-        install_requires.append('matplotlib')
-
-    return install_requires
 
 if __name__ == "__main__":
-
-    install_requires = check_dependencies()
 
     setup(name=DISTNAME,
           author=MAINTAINER,
@@ -70,8 +48,10 @@ if __name__ == "__main__":
           url=URL,
           version=VERSION,
           download_url=DOWNLOAD_URL,
-          install_requires=install_requires,
-          #packages=['geneview', 'geneview.tests'],
+          install_requires=[
+              'numpy',
+              'matplotlib',
+          ],
           packages=find_packages(),
           classifiers=[
              'Intended Audience :: Science/Research',
