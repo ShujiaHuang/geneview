@@ -18,17 +18,17 @@ Some of the features that geneview offers are
 DISTNAME = 'geneview'
 MAINTAINER = 'Shujia Huang'
 MAINTAINER_EMAIL = 'huangshujia9@gmail.com'
-URL = 'http'
+URL = 'https://github.com/ShujiaHuang/geneview'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/ShujiaHuang/geneview'
-VERSION = '0.0.dev'
+VERSION = '0.0.1'
 
 
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
     _has_setuptools = True
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import setup, find_packages
 
 def check_dependencies():
     install_requires = []
@@ -67,7 +67,8 @@ if __name__ == "__main__":
           version=VERSION,
           download_url=DOWNLOAD_URL,
           install_requires=install_requires,
-          packages=['geneview', 'geneview.tests'],
+          #packages=['geneview', 'geneview.tests'],
+          packages=find_packages(),
           classifiers=[
              'Intended Audience :: Science/Research',
              'Programming Language :: Python :: 2.7',
@@ -77,6 +78,6 @@ if __name__ == "__main__":
              'Topic :: Scientific/Engineering :: Visualization',
              'Topic :: Multimedia :: Graphics',
              'Operating System :: POSIX',
-             'Operating System :: Unix/Linux',
+             'Operating System :: Unix',
              'Operating System :: MacOS'],
           )
