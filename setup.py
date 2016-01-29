@@ -30,7 +30,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-eck_dependencies():
+def check_dependencies():
     install_requires = []
 
     # Just make sure dependencies exist, I haven't rigorously
@@ -40,10 +40,10 @@ eck_dependencies():
         import numpy
     except ImportError:
         install_requires.append('numpy')
-    try:
-        import scipy
-    except ImportError:
-        install_requires.append('scipy')
+    #try:
+    #    import scipy
+    #except ImportError:
+    #    install_requires.append('scipy')
     try:
         import matplotlib
     except ImportError:
@@ -77,6 +77,6 @@ if __name__ == "__main__":
              'Topic :: Scientific/Engineering :: Visualization',
              'Topic :: Multimedia :: Graphics',
              'Operating System :: POSIX',
-             'Operating System :: Unix',
+             'Operating System :: Unix/Linux',
              'Operating System :: MacOS'],
           )
