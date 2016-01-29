@@ -1,5 +1,5 @@
-Geneview: genomics data visualization
-=====================================
+Geneview: A python package for genomics data visualization
+==========================================================
 
 Geneview is a Python visualization library base on matplotlib. It provides a 
 high-level interface for drawing attractive genomics graphics. And now it is 
