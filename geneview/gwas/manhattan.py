@@ -80,26 +80,26 @@ def manhattanplot(data, ax=None, color=None, mlog10=True, kind='scatter',
 
     Returns
     -------
-        ax : matplotlib Axes
-            Axes object with the manhattanplot.
+    ax : matplotlib Axes
+        Axes object with the manhattanplot.
 
 
     Notes
     -----
-        1. This plot function is not just suit for GWAS manhattan plot,
-           it could also be used for all the input data which format is ::
+    1. This plot function is not just suit for GWAS manhattan plot,
+       it could also be used for all the input data which format is ::
 
-            [ [id1, x-value1, y-value1],
-              [id2, x-value2, y-value2],
-              ...
-            ]
+        [ [id1, x-value1, y-value1],
+          [id2, x-value2, y-value2],
+          ...
+        ]
 
-        2. The right and top spines of the plot have been setted to be 
-           invisible by default.
+    2. The right and top spines of the plot have been setted to be 
+       invisible by default.
 
-        3. I'm going to add a parameter calls ``highlight`` to highlight a
-           set of interesting positions (SNPs). And this parameter takes a 
-           list-like value.
+    3. I'm going to add a parameter calls ``highlight`` to highlight a
+       set of interesting positions (SNPs). And this parameter takes a 
+       list-like value.
 
     """
     if CHR is not None and xtick_label_set is not None:
