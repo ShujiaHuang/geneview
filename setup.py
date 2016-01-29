@@ -9,9 +9,13 @@ os.environ["MPLCONFIGDIR"] = "."
 DESCRIPTION = "Geneview: genomics data visualization"
 LONG_DESCRIPTION = """\
 Geneview is a library for making attractive and informative genomics graphics in Python. It is built on top of matplotlib and tightly integrated with the PyData stack, including support for numpy data structures.
+
 Some of the features that geneview offers are
+
 - Functions for visualizing univariate and bivariate distributions or for comparing them between subsets of data
+
 - Tools that fit and visualize linear regression models for different kinds of independent and dependent variables
+
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations
 """
 
@@ -21,7 +25,7 @@ MAINTAINER_EMAIL = 'huangshujia9@gmail.com'
 URL = 'https://github.com/ShujiaHuang/geneview'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/ShujiaHuang/geneview'
-VERSION = '0.0.1'
+VERSION = '0.0.1.1'
 
 
 try:
