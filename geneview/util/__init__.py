@@ -8,5 +8,6 @@ unit-testing convenience functions.
 
 """
 from ._misc import is_numeric
+from ._plott import axlabel, despine, offset_spines
 
-__all__ = ['is_numeric']
+__all__ = ['is_numeric', 'axlabel', 'despine', 'offset_spines']
