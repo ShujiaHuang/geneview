@@ -17,6 +17,7 @@ from operator import itemgetter
 import matplotlib.pyplot as plt
 import numpy as np
 
+COLORFUL = '#6DC066,#FD482F,#8A2BE2,#3399FF' # It's colorful
 
 def _chr_id_cmp(a, b):
     a = a.lower().replace('_', '')
@@ -33,7 +34,7 @@ def _chr_id_cmp(a, b):
         return cmp(achr, bchr)
 
 
-def manhattanplot(data, ax=None, color=None, kind='scatter',
+def manhattanplot(data, ax=None, color=COLORFUL, kind='scatter', 
                   xtick_label_set=None, CHR=None, alpha=0.8, 
                   mlog10=True, **kwargs):
     """
@@ -47,7 +48,7 @@ def manhattanplot(data, ax=None, color=None, kind='scatter',
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
 
-    color : matplotlib color, optional
+    color : matplotlib color, optional, default: %COLORFUL
         Color used for the plot elements. Could hex-code or rgb, 
         e.g: '#000000,#969696' or 'rb'
 
@@ -110,9 +111,6 @@ def manhattanplot(data, ax=None, color=None, kind='scatter',
     # Draw the plot and return the Axes
     if ax is None:
         ax = plt.gca()
-
-    if color is None:
-        color = '#6DC066,#FD482F,#8A2BE2,#3399FF' # It's colorful
 
     if ',' in color: color = color.split(',')
     colors = cycle(color)
