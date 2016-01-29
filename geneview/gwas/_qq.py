@@ -5,10 +5,12 @@ Copytright (c) Shujia Huang
 Date: 2016-01-28
 
 """
+from itertools import cycle
+
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geneview.util import is_numeric
+from geneview.util import is_numeric, despine, offset_spines
 
 def ppoints(n, a=0.5):
     """ 
@@ -23,10 +25,11 @@ def ppoints(n, a=0.5):
     Parameters
     ----------
     n : a number or array type
+        If n is an array or list, ``n`` will re-assign to ``n=len(n)``
     
     a : float, optional, default: 0.5
         The offset fraction to be used; typically in (0, 1)
-        And more often: a = 3.0/8.0 if n <= 10 else 0.5 
+        Recommend to set: a = 3.0/8.0 if n <= 10 else 0.5 
 
 
     Returns
@@ -53,11 +56,14 @@ def ppoints(n, a=0.5):
     # ``n`` is a float value
     return (np.arange(n) + 1 - a)/(n + 1 - 2*a)
 
-def qq(pvalues, ax=None, mlog10=True, **kwargs):
+def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8, 
+           mlog10=True, **kwargs):
     """
     Creat a Q-Q plot.
 
     Creates a quantile-quantile plot from p-values from a GWAS study.
+    *CAUSION: The x-axis(expected) is created from uniform distribution 
+              for GWAS*.
 
     Parameters
     ----------
@@ -67,13 +73,20 @@ def qq(pvalues, ax=None, mlog10=True, **kwargs):
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
 
+    color : matplotlib color, optional, default: 'k' (black) 
+        The dots color in the plot
+
+    ablinecolor: matplotlib color, optional, default: 'r' (red)
+        Color for the abline in plot. ``ablinecolor=None`` means 
+        do not plot the abline.
+
     mlog10 : bool, optional, default: True 
         If true, -log10 of the y_value(always be the p-value) is plotted. It
-        isn't very useful to plot raw p-values in QQ plot.
+        isn't very useful to plot raw p-values in GWAS QQ plot.
 
     kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.scatter()``
-        (in matplotlib.pyplot) depending on being drawn.
+        (in matplotlib.pyplot).
 
 
     Returns
@@ -83,28 +96,48 @@ def qq(pvalues, ax=None, mlog10=True, **kwargs):
 
 
     Notes
+    -----
     1. This plot function is not just suit for GWAS QQ plot, it could
        also be used for creating QQ plot for other data, which format 
        are list-like ::
-        [value1, value2, ...] (all the value should between 0 and 1)
+        [value1, value2, ...] (all the values should between 0 and 1)
 
     -----
     """
     # Draw the plot and return the Axes
     if ax is None:
         ax = plt.gca()
-    
+
     if not all(map(is_numeric, pvalues)):
         msg = 'Input must all be numeric.'
         raise ValueError(msg)
 
+    pvalues = np.array(pvalues, dtype=float)
+    # limit to (0, 1)
+    pvalues = pvalues[pvalues>0.0]
+    pvalues = pvalues[pvalues<1.0]
+    
     # Observed and expected
     if mlog10:
-        o = -np.log10(sorted(pvalues, reverse=True))
-        e = -np.log10(ppoints(len(pvalues))) # Why not reverse?! 
+        o = -np.log10(sorted(pvalues, reverse=True)) # increasing
+        e = -np.log10(ppoints(len(pvalues)))[::-1]
     else:
         o = sorted(pvalues)
         e = ppoints(len(pvalues))
+
+    # x is for expected; y is for observed value
+    ax.scatter(e, o, c=color, alpha=alpha, edgecolors='none', **kwargs) 
+
+    # Remove the 'top' and 'right' plot spines by default
+    despine(ax=ax)
+
+    ax.set_xlim(xmin=e.min())  
+    ax.set_ylim(ymin=o.min())  
+
+    if ablinecolor:
+        # plot the y=x line by expected: uniform distribution data
+        ax.plot([e.min(), e.max()], [e.min(), e.max()], color=ablinecolor, 
+                linestyle='-')
 
     return ax
 

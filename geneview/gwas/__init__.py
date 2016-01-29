@@ -1,1 +1,2 @@
-from .manhattan import manhattanplot
+from ._manhattan import manhattanplot
+from ._qq import qqplot
