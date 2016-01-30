@@ -5,12 +5,10 @@ Copytright (c) Shujia Huang
 Date: 2016-01-28
 
 """
-from itertools import cycle
-
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geneview.util import is_numeric, despine, offset_spines
+from geneview.util import is_numeric, despine
 
 def ppoints(n, a=0.5):
     """ 
