@@ -80,6 +80,9 @@ def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8,
         Color for the abline in plot. ``ablinecolor=None`` means 
         do not plot the abline.
 
+    alpha : scalar, optional, default: 0.8
+        The alpha blending value, between 0(transparent) and 1(opaque)
+
     mlog10 : bool, optional, default: True 
         If true, -log10 of the y_value(always be the p-value) is plotted. It
         isn't very useful to plot raw p-values in GWAS QQ plot.
