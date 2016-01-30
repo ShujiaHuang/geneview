@@ -19,23 +19,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ##
-from geneview.util import despine
+from geneview.util import chr_id_cmp, despine
 
 COLORFUL = '#6DC066,#FD482F,#8A2BE2,#3399FF' # It's colorful
-
-def _chr_id_cmp(a, b):
-    a = a.lower().replace('_', '')
-    b = b.lower().replace('_', '')
-    achr = a[3:] if a.startswith('chr') else a
-    bchr = b[3:] if b.startswith('chr') else b
-
-    try:
-        return cmp(int(achr), int(bchr))
-    except ValueError:
-        if achr.isdigit() and not bchr.isdigit(): return -1
-        if bchr.isdigit() and not achr.isdigit(): return 1
-        # X Y
-        return cmp(achr, bchr)
 
 
 def manhattanplot(data, ax=None, color=COLORFUL, kind='scatter', 
@@ -171,7 +157,7 @@ def manhattanplot(data, ax=None, color=COLORFUL, kind='scatter',
 
     if CHR is None:
         xs_by_id = [(k, xs_by_id[k])
-                     for k in sorted(xs_by_id.keys(), cmp=_chr_id_cmp)
+                     for k in sorted(xs_by_id.keys(), cmp=chr_id_cmp)
                      if k in xtick_label_set]
 
         ax.set_xticks([1] + [c[1] for c in xs_by_id])
