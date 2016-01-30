@@ -47,7 +47,7 @@ def is_numeric(s):
 
     Returns
     -------
-        A boolean
+        A boolean. Ture if `s` is numeric else False
 
     Notes
     -----
