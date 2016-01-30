@@ -1,6 +1,10 @@
 """
-Small ploting-related utility functions.
-Ref from: the seaborn repo's utils.py on github
+Small plotting-related utility functions.
+=========================================
+
+Copy from: the seaborn repo's utils.py on github, Then we make some modifies 
+for geneview.
+
 """
 from __future__ import print_function, division
 import warnings
@@ -97,7 +101,8 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
 
 
 def offset_spines(offset=10, fig=None, ax=None):
-    """Simple function to offset spines away from axes.
+    """
+    Simple function to offset spines away from axes.
     Use this immediately after creating figure and axes objects.
     Offsetting spines after plotting or manipulating the axes
     objects may result in loss of labels, ticks, and formatting.
