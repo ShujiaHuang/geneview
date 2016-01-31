@@ -5,7 +5,7 @@ import functools
 import numpy as np
 import matplotlib as mpl
 
-from . import palettes
+from . import _palettes as palettes
 
 mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
 

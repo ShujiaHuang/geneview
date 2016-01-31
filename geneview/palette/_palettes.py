@@ -34,14 +34,14 @@ class _ColorPalette(list):
     """Set the color palette in a with statement, otherwise be a list."""
     def __enter__(self):
         """Open the context."""
-        from .rcmod import set_palette
+        from ._rcmod import set_palette
         self._orig_palette = color_palette()
         set_palette(self)
         return self
 
     def __exit__(self, *args):
         """Close the context."""
-        from .rcmod import set_palette
+        from ._rcmod import set_palette
         set_palette(self._orig_palette)
 
     def as_hex(self):
