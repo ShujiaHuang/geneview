@@ -1,3 +1,4 @@
+# Crayola crayons <http://en.wikipedia.org/wiki/List_of_Crayola_crayon_colors>
 crayons = {'Almond': '#EFDECD',
            'Antique Brass': '#CD9575',
            'Apricot': '#FDD9B5',

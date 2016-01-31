@@ -1,3 +1,4 @@
+# See xkcd for the full list of colors: http://xkcd.com/color/rgb/
 xkcd_rgb = {'acid green': '#8ffe09',
             'adobe': '#bd6c48',
             'algae': '#54ac68',
