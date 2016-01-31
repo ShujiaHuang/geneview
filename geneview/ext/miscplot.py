@@ -10,7 +10,7 @@ def palplot(pal, size=1):
     Parameters
     ----------
     pal : sequence of matplotlib colors
-        colors, i.e. as returned by seaborn.color_palette()
+        colors
     size :
         scaling factor for size of plot
 
