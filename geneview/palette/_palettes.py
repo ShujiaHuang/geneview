@@ -5,11 +5,11 @@ from itertools import cycle
 import numpy as np
 import matplotlib as mpl
 
-from geneview.ext import husl
-from geneview.ext.six import string_types
-from geneview.ext.six.moves import range
+from ..ext import husl
+from ..ext.six import string_types
+from ..ext.six.moves import range
 
-from geneview.util import desaturate, set_hls_values, get_color_cycle
+from ..util import desaturate, set_hls_values, get_color_cycle
 
 from ._xkcd_rgb import xkcd_rgb
 from ._crayons import crayons
@@ -26,7 +26,9 @@ SEABORN_PALETTES = dict(
     dark=["#001C7F", "#017517", "#8C0900",
           "#7600A1", "#B8860B", "#006374"],
     colorblind=["#0072B2", "#009E73", "#D55E00",
-                "#CC79A7", "#F0E442", "#56B4E9"]
+                "#CC79A7", "#F0E442", "#56B4E9"],
+    colorful=["#6DC066", "#FD482F", "#8A2BE2", 
+              "#3399FF", "#FE9900", "#00ABA9"]
     )
 
 
@@ -54,7 +56,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
     """Return a list of colors defining a color palette.
 
     Availible geneview palette names:
-        deep, muted, bright, pastel, dark, colorblind
+        deep, muted, bright, pastel, dark, colorblind, colorful
 
     Other options:
         hls, husl, any named matplotlib palette, list of colors
@@ -906,7 +908,7 @@ def set_color_codes(palette="deep"):
 
     Parameters
     ----------
-    palette : {deep, muted, pastel, dark, bright, colorblind}
+    palette : {deep, muted, pastel, dark, bright, colorblind, colorful}
         Named geneview palette to use as the source of colors.
 
     See Also
