@@ -1,1 +1,1 @@
-# for containing external and expanding package
+# for containing external and extensions packages
