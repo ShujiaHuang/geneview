@@ -54,10 +54,11 @@ def ppoints(n, a=0.5):
     # ``n`` is a float value
     return (np.arange(n) + 1 - a)/(n + 1 - 2*a)
 
+
 def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8, 
            mlog10=True, **kwargs):
     """
-    Creat a Q-Q plot.
+    Creat Q-Q plot.
 
     Creates a quantile-quantile plot from p-values from a GWAS study.
     *CAUSION: The x-axis(expected) is created from uniform distribution 
@@ -75,15 +76,15 @@ def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8,
         The dots color in the plot
 
     ablinecolor: matplotlib color, optional, default: 'r' (red)
-        Color for the abline in plot. ``ablinecolor=None`` means 
-        do not plot the abline.
+        Color for the abline in plot. if set ``ablinecolor=None`` 
+        means do not plot the abline.
 
     alpha : scalar, optional, default: 0.8
         The alpha blending value, between 0(transparent) and 1(opaque)
 
     mlog10 : bool, optional, default: True 
-        If true, -log10 of the y_value(always be the p-value) is plotted. It
-        isn't very useful to plot raw p-values in GWAS QQ plot.
+        If true, -log10 of the y_value(always be the p-value) is plotted.
+        It isn't very useful to plot raw p-values in GWAS QQ plot.
 
     kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.scatter()``
@@ -123,8 +124,8 @@ def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8,
         o = -np.log10(sorted(pvalues, reverse=True)) # increasing
         e = -np.log10(ppoints(len(pvalues)))[::-1]
     else:
-        o = sorted(pvalues)
-        e = ppoints(len(pvalues))
+        o = np.array(sorted(pvalues))
+        e = np.array(ppoints(len(pvalues)))
 
     # x is for expected; y is for observed value
     ax.scatter(e, o, c=color, alpha=alpha, edgecolors='none', **kwargs) 
@@ -132,7 +133,7 @@ def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8,
     # Remove the 'top' and 'right' plot spines by default
     despine(ax=ax)
 
-    ax.set_xlim(xmin=e.min())  
+    ax.set_xlim(xmin=e.min(), xmax=1.05 * e.max())  
     ax.set_ylim(ymin=o.min())  
 
     if ablinecolor:
