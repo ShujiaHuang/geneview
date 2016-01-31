@@ -105,7 +105,7 @@ def set(context="notebook", style="darkgrid", palette="deep",
         mpl.rcParams.update(rc)
 
 
-def reset_defaults():
+def reset_default():
     """Restore all RC params to default settings."""
     mpl.rcParams.update(mpl.rcParamsDefault)
 
