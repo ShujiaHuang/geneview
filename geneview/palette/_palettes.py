@@ -53,7 +53,7 @@ class _ColorPalette(list):
 def color_palette(palette=None, n_colors=None, desat=None):
     """Return a list of colors defining a color palette.
 
-    Availible seaborn palette names:
+    Availible geneview palette names:
         deep, muted, bright, pastel, dark, colorblind
 
     Other options:
@@ -95,26 +95,26 @@ def color_palette(palette=None, n_colors=None, desat=None):
     --------
     set_palette : Set the default color cycle for all plots.
     set_color_codes : Reassign color codes like ``"b"``, ``"g"``, etc. to
-                      colors from one of the seaborn palettes.
+                      colors from one of the geneview palettes.
 
     Examples
     --------
 
-    Show one of the "seaborn palettes", which have the same basic order of hues
+    Show one of the "geneview palettes", which have the same basic order of hues
     as the default matplotlib color cycle but more attractive colors.
 
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.color_palette("muted"))
+        >>> import geneview as gv; gv.set()
+        >>> gv.palplot(gv.color_palette("muted"))
 
     Use discrete values from one of the built-in matplotlib colormaps.
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.color_palette("RdBu", n_colors=7))
+        >>> gv.palplot(gv.color_palette("RdBu", n_colors=7))
 
     Make a "dark" matplotlib sequential palette variant. (This can be good
     when coloring multiple lines or points that correspond to an ordered
@@ -123,7 +123,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.color_palette("Blues_d"))
+        >>> gv.palplot(gv.color_palette("Blues_d"))
 
     Use a categorical matplotlib palette, add some desaturation. (This can be
     good when making plots with large patches, which look best with dimmer
@@ -132,7 +132,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.color_palette("Set1", n_colors=8, desat=.5))
+        >>> gv.palplot(gv.color_palette("Set1", n_colors=8, desat=.5))
 
     Use as a context manager:
 
@@ -140,7 +140,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
         :context: close-figs
 
         >>> import numpy as np, matplotlib.pyplot as plt
-        >>> with sns.color_palette("husl", 8):
+        >>> with gv.color_palette("husl", 8):
         ...    _ = plt.plot(np.c_[np.zeros(8), np.arange(8)].T)
 
     """
@@ -209,7 +209,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
 
     Returns
     -------
-    palette : seaborn color palette
+    palette : geneview color palette
         List-like object of colors as RGB tuples.
 
     See Also
@@ -225,29 +225,29 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.hls_palette(10))
+        >>> import geneview as gv; gv.set()
+        >>> gv.palplot(gv.hls_palette(10))
 
     Create a palette of 10 colors that begins at a different hue value:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.hls_palette(10, h=.5))
+        >>> gv.palplot(gv.hls_palette(10, h=.5))
 
     Create a palette of 10 colors that are darker than the default:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.hls_palette(10, l=.4))
+        >>> gv.palplot(gv.hls_palette(10, l=.4))
 
     Create a palette of 10 colors that are less saturated than the default:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.hls_palette(10, s=.4))
+        >>> gv.palplot(gv.hls_palette(10, s=.4))
 
     """
     hues = np.linspace(0, 1, n_colors + 1)[:-1]
@@ -277,7 +277,7 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
 
     Returns
     -------
-    palette : seaborn color palette
+    palette : geneview color palette
         List-like object of colors as RGB tuples.
 
     See Also
@@ -293,29 +293,29 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.husl_palette(10))
+        >>> import geneview as gv; gv.set()
+        >>> gv.palplot(gv.husl_palette(10))
 
     Create a palette of 10 colors that begins at a different hue value:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.husl_palette(10, h=.5))
+        >>> gv.palplot(gv.husl_palette(10, h=.5))
 
     Create a palette of 10 colors that are darker than the default:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.husl_palette(10, l=.4))
+        >>> gv.palplot(gv.husl_palette(10, l=.4))
 
     Create a palette of 10 colors that are less saturated than the default:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.husl_palette(10, s=.4))
+        >>> gv.palplot(gv.husl_palette(10, s=.4))
 
     """
     hues = np.linspace(0, 1, n_colors + 1)[:-1]
@@ -350,7 +350,7 @@ def mpl_palette(name, n_colors=6):
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
+    palette or cmap : geneview color palette or matplotlib colormap
         List-like object of colors as RGB tuples, or colormap object that
         can map continuous values to colors, depending on the value of the
         ``as_cmap`` parameter.
@@ -363,29 +363,29 @@ def mpl_palette(name, n_colors=6):
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.mpl_palette("Set2", 8))
+        >>> import geneview as gv; gv.set()
+        >>> gv.palplot(gv.mpl_palette("Set2", 8))
 
     Create a sequential colorbrewer palette:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.mpl_palette("Blues"))
+        >>> gv.palplot(gv.mpl_palette("Blues"))
 
     Create a diverging palette:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.mpl_palette("seismic", 8))
+        >>> gv.palplot(gv.mpl_palette("seismic", 8))
 
     Create a "dark" sequential palette:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.mpl_palette("GnBu_d"))
+        >>> gv.palplot(gv.mpl_palette("GnBu_d"))
 
     """
     brewer_qual_pals = {"Accent": 8, "Dark2": 8, "Paired": 12,
@@ -426,7 +426,7 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
 
     The ``color`` parameter can be specified in a number of ways, including
     all options for defining a color in matplotlib and several additional
-    color spaces that are handled by seaborn. You can also use the database
+    color spaces that are handled by geneview. You can also use the database
     of named colors from the XKCD color survey.
 
     If you are using the IPython notebook, you can also choose this palette
@@ -448,7 +448,7 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
+    palette or cmap : geneview color palette or matplotlib colormap
         List-like object of colors as RGB tuples, or colormap object that
         can map continuous values to colors, depending on the value of the
         ``as_cmap`` parameter.
@@ -466,22 +466,22 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.dark_palette("purple"))
+        >>> import geneview as gv; gv.set()
+        >>> gv.palplot(gv.dark_palette("purple"))
 
     Generate a palette that decreases in lightness:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.dark_palette("seagreen", reverse=True))
+        >>> gv.palplot(gv.dark_palette("seagreen", reverse=True))
 
     Generate a palette from an HUSL-space seed:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.dark_palette((260, 75, 60), input="husl"))
+        >>> gv.palplot(gv.dark_palette((260, 75, 60), input="husl"))
 
     Generate a colormap object:
 
@@ -490,8 +490,8 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
 
         >>> from numpy import arange
         >>> x = arange(25).reshape(5, 5)
-        >>> cmap = sns.dark_palette("#2ecc71", as_cmap=True)
-        >>> ax = sns.heatmap(x, cmap=cmap)
+        >>> cmap = gv.dark_palette("#2ecc71", as_cmap=True)
+        >>> ax = gv.heatmap(x, cmap=cmap)
 
     """
     color = _color_to_rgb(color, input)
@@ -509,7 +509,7 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
 
     The ``color`` parameter can be specified in a number of ways, including
     all options for defining a color in matplotlib and several additional
-    color spaces that are handled by seaborn. You can also use the database
+    color spaces that are handled by geneview. You can also use the database
     of named colors from the XKCD color survey.
 
     If you are using the IPython notebook, you can also choose this palette
@@ -531,7 +531,7 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
+    palette or cmap : geneview color palette or matplotlib colormap
         List-like object of colors as RGB tuples, or colormap object that
         can map continuous values to colors, depending on the value of the
         ``as_cmap`` parameter.
@@ -549,22 +549,22 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.light_palette("purple"))
+        >>> import geneview as gv; gv.set()
+        >>> gv.palplot(gv.light_palette("purple"))
 
     Generate a palette that increases in lightness:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.light_palette("seagreen", reverse=True))
+        >>> gv.palplot(gv.light_palette("seagreen", reverse=True))
 
     Generate a palette from an HUSL-space seed:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.light_palette((260, 75, 60), input="husl"))
+        >>> gv.palplot(gv.light_palette((260, 75, 60), input="husl"))
 
     Generate a colormap object:
 
@@ -573,8 +573,8 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
 
         >>> from numpy import arange
         >>> x = arange(25).reshape(5, 5)
-        >>> cmap = sns.light_palette("#2ecc71", as_cmap=True)
-        >>> ax = sns.heatmap(x, cmap=cmap)
+        >>> cmap = gv.light_palette("#2ecc71", as_cmap=True)
+        >>> ax = gv.heatmap(x, cmap=cmap)
 
     """
     color = _color_to_rgb(color, input)
@@ -635,7 +635,7 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
+    palette or cmap : geneview color palette or matplotlib colormap
         List-like object of colors as RGB tuples, or colormap object that
         can map continuous values to colors, depending on the value of the
         ``as_cmap`` parameter.
@@ -653,22 +653,22 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.diverging_palette(240, 10, n=9))
+        >>> import geneview as gv; gv.set()
+        >>> gv.palplot(gv.diverging_palette(240, 10, n=9))
 
     Generate a brighter green-white-purple palette:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.diverging_palette(150, 275, s=80, l=55, n=9))
+        >>> gv.palplot(gv.diverging_palette(150, 275, s=80, l=55, n=9))
 
     Generate a blue-black-red palette:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.diverging_palette(250, 15, s=75, l=40,
+        >>> gv.palplot(gv.diverging_palette(250, 15, s=75, l=40,
         ...                                   n=9, center="dark"))
 
     Generate a colormap object:
@@ -678,8 +678,8 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
 
         >>> from numpy import arange
         >>> x = arange(25).reshape(5, 5)
-        >>> cmap = sns.diverging_palette(220, 20, sep=20, as_cmap=True)
-        >>> ax = sns.heatmap(x, cmap=cmap)
+        >>> cmap = gv.diverging_palette(220, 20, sep=20, as_cmap=True)
+        >>> ax = gv.heatmap(x, cmap=cmap)
 
     """
     palfunc = dark_palette if center == "dark" else light_palette
@@ -706,7 +706,7 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
+    palette or cmap : geneview color palette or matplotlib colormap
         List-like object of colors as RGB tuples, or colormap object that
         can map continuous values to colors, depending on the value of the
         ``as_cmap`` parameter.
@@ -725,18 +725,18 @@ def xkcd_palette(colors):
 
     See xkcd for the full list of colors: http://xkcd.com/color/rgb/
 
-    This is just a simple wrapper around the ``seaborn.xkcd_rgb`` dictionary.
+    This is just a simple wrapper around the ``geneview.xkcd_rgb`` dictionary.
 
     Parameters
     ----------
     colors : list of strings
-        List of keys in the ``seaborn.xkcd_rgb`` dictionary.
+        List of keys in the ``geneview.xkcd_rgb`` dictionary.
 
     Returns
     -------
-    palette : seaborn color palette
+    palette : geneview color palette
         Returns the list of colors as RGB tuples in an object that behaves like
-        other seaborn color palettes.
+        other geneview color palettes.
 
     See Also
     --------
@@ -753,18 +753,18 @@ def crayon_palette(colors):
     Colors are taken from here:
     http://en.wikipedia.org/wiki/List_of_Crayola_crayon_colors
 
-    This is just a simple wrapper around the ``seaborn.crayons`` dictionary.
+    This is just a simple wrapper around the ``geneview.crayons`` dictionary.
 
     Parameters
     ----------
     colors : list of strings
-        List of keys in the ``seaborn.crayons`` dictionary.
+        List of keys in the ``geneview.crayons`` dictionary.
 
     Returns
     -------
-    palette : seaborn color palette
+    palette : geneview color palette
         Returns the list of colors as rgb tuples in an object that behaves like
-        other seaborn color palettes.
+        other geneview color palettes.
 
     See Also
     --------
@@ -810,7 +810,7 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
+    palette or cmap : geneview color palette or matplotlib colormap
         List-like object of colors as RGB tuples, or colormap object that
         can map continuous values to colors, depending on the value of the
         ``as_cmap`` parameter.
@@ -836,29 +836,29 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.cubehelix_palette())
+        >>> import geneview as gv; gv.set()
+        >>> gv.palplot(gv.cubehelix_palette())
 
     Rotate backwards from the same starting location:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.cubehelix_palette(rot=-.4))
+        >>> gv.palplot(gv.cubehelix_palette(rot=-.4))
 
     Use a different starting point and shorter rotation:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.cubehelix_palette(start=2.8, rot=.1))
+        >>> gv.palplot(gv.cubehelix_palette(start=2.8, rot=.1))
 
     Reverse the direction of the lightness ramp:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.cubehelix_palette(reverse=True))
+        >>> gv.palplot(gv.cubehelix_palette(reverse=True))
 
     Generate a colormap object:
 
@@ -867,16 +867,16 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
 
         >>> from numpy import arange
         >>> x = arange(25).reshape(5, 5)
-        >>> cmap = sns.cubehelix_palette(as_cmap=True)
-        >>> ax = sns.heatmap(x, cmap=cmap)
+        >>> cmap = gv.cubehelix_palette(as_cmap=True)
+        >>> ax = gv.heatmap(x, cmap=cmap)
 
     Use the full lightness range:
 
     .. plot::
         :context: close-figs
 
-        >>> cmap = sns.cubehelix_palette(dark=0, light=1, as_cmap=True)
-        >>> ax = sns.heatmap(x, cmap=cmap)
+        >>> cmap = gv.cubehelix_palette(dark=0, light=1, as_cmap=True)
+        >>> ax = gv.heatmap(x, cmap=cmap)
 
     """
     cdict = mpl._cm.cubehelix(gamma, start, rot, hue)
@@ -907,11 +907,11 @@ def set_color_codes(palette="deep"):
     Parameters
     ----------
     palette : {deep, muted, pastel, dark, bright, colorblind}
-        Named seaborn palette to use as the source of colors.
+        Named geneview palette to use as the source of colors.
 
     See Also
     --------
-    set : Color codes can be set through the high-level seaborn style
+    set : Color codes can be set through the high-level geneview style
           manager.
     set_palette : Color codes can also be set through the function that
                   sets the matplotlib color cycle.
@@ -919,22 +919,22 @@ def set_color_codes(palette="deep"):
     Examples
     --------
 
-    Map matplotlib color codes to the default seaborn palette.
+    Map matplotlib color codes to the default geneview palette.
 
     .. plot::
         :context: close-figs
 
         >>> import matplotlib.pyplot as plt
-        >>> import seaborn as sns; sns.set()
-        >>> sns.set_color_codes()
+        >>> import geneview as gv; gv.set()
+        >>> gv.set_color_codes()
         >>> _ = plt.plot([0, 1], color="r")
 
-    Use a different seaborn palette.
+    Use a different geneview palette.
 
     .. plot::
         :context: close-figs
 
-        >>> sns.set_color_codes("dark")
+        >>> gv.set_color_codes("dark")
         >>> _ = plt.plot([0, 1], color="g")
         >>> _ = plt.plot([0, 2], color="m")
 
