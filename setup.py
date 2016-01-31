@@ -51,6 +51,7 @@ if __name__ == "__main__":
           install_requires=[
               'numpy',
               'matplotlib',
+              'Cycler',  # option, rarely use
           ],
           packages=find_packages(),
           classifiers=[
