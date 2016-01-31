@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 
 from ..util import is_numeric, despine
 
+# Set defualt style
+from ..palette import set as palette_set
+palette_set()
+
 def ppoints(n, a=0.5):
     """ 
     numpy analogue `R`'s `ppoints` function.
