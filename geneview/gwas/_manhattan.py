@@ -19,12 +19,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ##
-from geneview.util import chr_id_cmp, despine
+from ..util import chr_id_cmp, despine
+from ..palette import color_palette
 
-COLORFUL = '#6DC066,#FD482F,#8A2BE2,#3399FF' # It's colorful
 
-
-def manhattanplot(data, ax=None, color=COLORFUL, kind='scatter', 
+def manhattanplot(data, ax=None, color=None, kind='scatter', 
                   xtick_label_set=None, CHR=None, alpha=0.8, 
                   mlog10=True, **kwargs):
     """
@@ -38,7 +37,7 @@ def manhattanplot(data, ax=None, color=COLORFUL, kind='scatter',
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
 
-    color : matplotlib color, optional, default: %COLORFUL
+    color : matplotlib color, optional, default: color_palette('colorful', 4) 
         Color used for the plot elements. Could hex-code or rgb, 
         e.g: '#000000,#969696' or 'rb'
 
@@ -101,6 +100,10 @@ def manhattanplot(data, ax=None, color=COLORFUL, kind='scatter',
     # Draw the plot and return the Axes
     if ax is None:
         ax = plt.gca()
+
+    if color is None:
+        color = color_palette("colorful", 4) 
+        #color = color_palette("husl", 4) 
 
     if ',' in color: color = color.split(',')
     colors = cycle(color)

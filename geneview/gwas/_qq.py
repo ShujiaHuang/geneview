@@ -8,7 +8,7 @@ Date: 2016-01-28
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geneview.util import is_numeric, despine
+from ..util import is_numeric, despine
 
 def ppoints(n, a=0.5):
     """ 
