@@ -3,6 +3,8 @@ import colorsys
 import warnings
 import os
 
+from distutils.version import LooseVersion
+
 import matplotlib as mpl
 import matplotlib.colors as mplcol
 
