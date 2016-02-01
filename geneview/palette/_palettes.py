@@ -14,7 +14,7 @@ from ..util import desaturate, set_hls_values, get_color_cycle
 from ._xkcd_rgb import xkcd_rgb
 from ._crayons import crayons
 
-SEABORN_PALETTES = dict(
+GENEVIEW_PALETTES = dict(
     deep=["#4C72B0", "#55A868", "#C44E52",
           "#8172B2", "#CCB974", "#64B5CD"],
     muted=["#4878CF", "#6ACC65", "#D65F5F",
@@ -166,8 +166,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
             palette = husl_palette(n_colors)
         elif palette.lower() == "jet":
             raise ValueError("No.")
-        elif palette in SEABORN_PALETTES:
-            palette = SEABORN_PALETTES[palette]
+        elif palette in GENEVIEW_PALETTES:
+            palette = GENEVIEW_PALETTES[palette]
         elif palette in dir(mpl.cm):
             palette = mpl_palette(palette, n_colors)
         elif palette[:-2] in dir(mpl.cm):
@@ -945,7 +945,7 @@ def set_color_codes(palette="deep"):
         colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, .75, 0.),
                   (.75, .75, 0.), (0., .75, .75), (0., 0., 0.)]
     else:
-        colors = SEABORN_PALETTES[palette] + [(.1, .1, .1)]
+        colors = GENEVIEW_PALETTES[palette] + [(.1, .1, .1)]
     for code, color in zip("bgrmyck", colors):
         rgb = mpl.colors.colorConverter.to_rgb(color)
         mpl.colors.colorConverter.colors[code] = rgb
