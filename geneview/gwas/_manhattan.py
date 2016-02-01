@@ -166,8 +166,8 @@ def manhattanplot(data, ax=None, color=None, kind='scatter',
                      for k in sorted(xs_by_id.keys(), cmp=chr_id_cmp)
                      if k in xtick_label_set]
 
-        ax.set_xticks([1] + [c[1] for c in xs_by_id])
-        ax.set_xticklabels([''] + [c[0] for c in xs_by_id])
+        ax.set_xticks([c[1] for c in xs_by_id])
+        ax.set_xticklabels([c[0] for c in xs_by_id])
 
     else:
         # show the whole chromsome's position without scientific notation
