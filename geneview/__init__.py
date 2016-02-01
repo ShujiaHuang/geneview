@@ -8,4 +8,4 @@ from .palette import set, reset_default, reset_orig, axes_style, set_style, \
 
 from .ext.miscplot import puppyplot, palplot
 
-__version__ = '0.0.1.dev'
+__version__ = '0.0.1.dev6'

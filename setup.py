@@ -25,7 +25,7 @@ MAINTAINER_EMAIL = 'huangshujia9@gmail.com'
 URL = 'https://github.com/ShujiaHuang/geneview'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/ShujiaHuang/geneview'
-VERSION = '0.0.1.dev5'
+VERSION = '0.0.1.dev6'
 
 
 try:
@@ -60,6 +60,7 @@ if __name__ == "__main__":
              'Programming Language :: Python :: 3.3',
              'Programming Language :: Python :: 3.4',
              'License :: OSI Approved :: BSD License',
+             'Topic :: Scientific/Engineering :: Bio-Informatics',
              'Topic :: Scientific/Engineering :: Visualization',
              'Topic :: Multimedia :: Graphics',
              'Operating System :: POSIX',
