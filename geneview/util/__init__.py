@@ -10,6 +10,8 @@ unit-testing convenience functions.
 from ._misc import chr_id_cmp, is_numeric
 from ._plott import axlabel, despine, offset_spines
 from ._palette import desaturate, set_hls_values, get_color_cycle
+from ._dataset import get_dataset_names
 
 __all__ = ['chr_id_cmp', 'is_numeric', 'axlabel', 'despine', 'offset_spines',
-           'desaturate', 'set_hls_values', 'get_color_cycle']
+           'desaturate', 'set_hls_values', 'get_color_cycle', 'get_dataset_names',
+          ]
