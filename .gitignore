@@ -1,5 +1,5 @@
 venv/
-examples/data/GOYA_191010_cleaned_set_frequentist.pvalue.bed 
+examples/data/GOYA.csv 
 dist/
 build/
 geneview.egg-info/
