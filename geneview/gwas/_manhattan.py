@@ -26,8 +26,8 @@ from ..palette import color_palette, reset_orig
 from ..palette import set as palette_set
 palette_set()
 
-def manhattanplot(data, ax=None, color=None, kind='scatter', 
-                  xtick_label_set=None, CHR=None, alpha=0.8, 
+def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None, 
+                  kind='scatter', xtick_label_set=None, CHR=None, alpha=0.8, 
                   mlog10=True, **kwargs):
     """
     Plot a manhattan plot.
@@ -40,6 +40,12 @@ def manhattanplot(data, ax=None, color=None, kind='scatter',
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
 
+    xlabel: string, optional
+        Set the x axis label of the current axis.
+
+    ylabel: string, optional
+        Set the y axis label of the current axis.
+
     color : matplotlib color, optional, default: color_palette('colorful', 4) 
         Color used for the plot elements. Could hex-code or rgb, 
         e.g: '#000000,#969696' or 'rb'
@@ -47,10 +53,10 @@ def manhattanplot(data, ax=None, color=None, kind='scatter',
     kind : {'scatter' | 'line'}, optional
         Kind of plot to draw
 
-    xtick_label_set : a set. 
-        The x-labels for x-axis to draw in the figure
+    xtick_label_set : a set. optional 
+        Set the current x axis ticks of the current axis.
 
-    CHR : str, optional, defualt: None
+    CHR : string, optional, defualt: None
         Choice the specific chromosome to plot. And the x-axis will be the
         position of this chromosome instead of the chromosome id.
 
@@ -81,7 +87,7 @@ def manhattanplot(data, ax=None, color=None, kind='scatter',
     Notes
     -----
     1. This plot function is not just suit for GWAS manhattan plot,
-       it could also be used for all the input data which format is ::
+       it could also be used for any input data which format is ::
 
         [ [id1, x-value1, y-value1],
           [id2, x-value2, y-value2],
@@ -173,5 +179,9 @@ def manhattanplot(data, ax=None, color=None, kind='scatter',
         # show the whole chromsome's position without scientific notation
         # if you are just interesting in this chromosome.
         ax.get_xaxis().get_major_formatter().set_scientific(False)
+
+    ax.tick_params(labelsize=14)
+    if xlabel: ax.set_xlabel(xlabel, fontsize=18) 
+    if ylabel: ax.set_ylabel(ylabel, fontsize=18) 
 
     return ax

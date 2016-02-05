@@ -59,8 +59,8 @@ def ppoints(n, a=0.5):
     return (np.arange(n) + 1 - a)/(n + 1 - 2*a)
 
 
-def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8, 
-           mlog10=True, **kwargs):
+def qqplot(pvalues, ax=None, xlabel=None, ylabel=None, color='k', 
+           ablinecolor='r', alpha=0.8, mlog10=True, **kwargs):
     """
     Creat Q-Q plot.
 
@@ -75,6 +75,12 @@ def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8,
 
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
+
+    xlabel: string, optional
+        Set the x axis label of the current axis.
+
+    ylabel: string, optional
+        Set the y axis label of the current axis.
 
     color : matplotlib color, optional, default: 'k' (black) 
         The dots color in the plot
@@ -144,6 +150,10 @@ def qqplot(pvalues, ax=None, color='k', ablinecolor='r', alpha=0.8,
         # plot the y=x line by expected: uniform distribution data
         ax.plot([e.min(), e.max()], [e.min(), e.max()], color=ablinecolor, 
                 linestyle='-')
+
+    ax.tick_params(labelsize=14)
+    if xlabel: ax.set_xlabel(xlabel, fontsize=18) 
+    if ylabel: ax.set_ylabel(ylabel, fontsize=18) 
 
     return ax
 
