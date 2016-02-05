@@ -59,7 +59,7 @@ def ppoints(n, a=0.5):
     return (np.arange(n) + 1 - a)/(n + 1 - 2*a)
 
 
-def qqplot(pvalues, ax=None, xlabel=None, ylabel=None, color='k', 
+def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
            ablinecolor='r', alpha=0.8, mlog10=True, **kwargs):
     """
     Creat Q-Q plot.
@@ -76,11 +76,13 @@ def qqplot(pvalues, ax=None, xlabel=None, ylabel=None, color='k',
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
 
-    xlabel: string, optional
+    xlabel: string, optional, default: 'Expected'
         Set the x axis label of the current axis.
+        CAUSION: The x axis will always be the expected value.
 
-    ylabel: string, optional
+    ylabel: string, optional, default: 'Observed'
         Set the y axis label of the current axis.
+        CAUSION: The y axis will always be the observed value.
 
     color : matplotlib color, optional, default: 'k' (black) 
         The dots color in the plot
