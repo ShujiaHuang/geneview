@@ -2,6 +2,7 @@ venv/
 examples/data/GOYA.csv 
 dist/
 build/
+trash/
 geneview.egg-info/
 .ipynb_checkpoints/
 
