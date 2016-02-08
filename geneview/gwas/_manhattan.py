@@ -20,7 +20,7 @@ import numpy as np
 
 ##
 from ..util import chr_id_cmp, despine
-from ..palette import color_palette, reset_orig
+from ..palette import color_palette
 
 # Set defualt style
 from ..palette import set as palette_set
