@@ -8,4 +8,8 @@ from .palette import set, reset_default, reset_orig, axes_style, set_style, \
 
 from .ext.miscplot import puppyplot, palplot
 
+# set the default aesthetics plot style and make the font size as 1.2 times of
+# the default setting in ``plotting_context()``
+set(font_scale=1.2)
+
 __version__ = '0.0.1.dev7'
