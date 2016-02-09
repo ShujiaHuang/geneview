@@ -15,16 +15,12 @@ from __future__ import print_function, division
 from itertools import groupby, cycle
 from operator import itemgetter
 
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 
 ##
-from ..util import chr_id_cmp, despine
+from ..util import chr_id_cmp
 from ..palette import color_palette
-
-# Set defualt style
-from ..palette import set as palette_set
-palette_set()
 
 def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None, 
                   kind='scatter', xtick_label_set=None, CHR=None, alpha=0.8, 
@@ -158,9 +154,6 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
         msg = "``kind`` must be either 'scatter' or 'line'"
         raise ValueError(msg)
 
-    # Remove the 'top' and 'right' plot spines by default
-    despine(ax=ax)
-
     ax.set_xlim(0, x[-1])
     ax.set_ylim(ymin=y.min())
 
@@ -180,8 +173,7 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
         # if you are just interesting in this chromosome.
         ax.get_xaxis().get_major_formatter().set_scientific(False)
 
-    ax.tick_params(labelsize=14)
-    if xlabel: ax.set_xlabel(xlabel, fontsize=18) 
-    if ylabel: ax.set_ylabel(ylabel, fontsize=18) 
+    if xlabel: ax.set_xlabel(xlabel) 
+    if ylabel: ax.set_ylabel(ylabel)
 
     return ax

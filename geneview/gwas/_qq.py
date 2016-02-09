@@ -8,11 +8,7 @@ Date: 2016-01-28
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ..util import is_numeric, despine
-
-# Set defualt style
-from ..palette import set as palette_set
-palette_set()
+from ..util import is_numeric
 
 def ppoints(n, a=0.5):
     """ 
@@ -142,9 +138,6 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
     # x is for expected; y is for observed value
     ax.scatter(e, o, c=color, alpha=alpha, edgecolors='none', **kwargs) 
 
-    # Remove the 'top' and 'right' plot spines by default
-    despine(ax=ax)
-
     ax.set_xlim(xmin=e.min(), xmax=1.05 * e.max())  
     ax.set_ylim(ymin=o.min())  
 
@@ -153,13 +146,8 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
         ax.plot([e.min(), e.max()], [e.min(), e.max()], color=ablinecolor, 
                 linestyle='-')
 
-    ax.tick_params(labelsize=14)
-    if xlabel: ax.set_xlabel(xlabel, fontsize=18) 
-    if ylabel: ax.set_ylabel(ylabel, fontsize=18) 
+    if xlabel: ax.set_xlabel(xlabel) 
+    if ylabel: ax.set_ylabel(ylabel) 
 
     return ax
-
-
-
-
 
