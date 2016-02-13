@@ -58,3 +58,23 @@ def is_numeric(s):
         return True
     except ValueError:
         return False
+
+
+def is_integer(s):
+    """
+    This function could identify any kinds of integer
+
+    Parameters
+    ----------
+        s : int, float or string.
+            The input could be any kind of single value except the scalable
+            type of python like 'list()', 'dict()', 'set()'
+
+    Returns
+    -------
+        A boolean. Ture if `s` is integer value else False 
+    """
+    if is_numeric(s):
+        return True if '.' not in s else False
+    else:
+        return False
