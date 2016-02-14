@@ -43,7 +43,7 @@ _style_keys = (
     "image.cmap",
     "font.family",
     "font.sans-serif",
-    )
+)
 
 _context_keys = (
     "figure.figsize",
@@ -68,11 +68,11 @@ _context_keys = (
 
     "xtick.major.pad",
     "ytick.major.pad"
-    )
+)
 
 
-def set(context="notebook", style="darkgrid", palette="deep",
-        font="sans-serif", font_scale=1, color_codes=False, rc=None):
+def set_all(context="notebook", style="darkgrid", palette="deep",
+            font="sans-serif", font_scale=1, color_codes=False, rc=None):
     """Set aesthetic parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
