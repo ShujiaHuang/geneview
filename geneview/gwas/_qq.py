@@ -57,8 +57,7 @@ def ppoints(n, a=0.5):
 
 def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
            ablinecolor='r', alpha=0.8, mlog10=True, **kwargs):
-    """
-    Creat Q-Q plot.
+    """Creat Q-Q plot.
 
     Creates a quantile-quantile plot from p-values from a GWAS study.
     *CAUSION: The x-axis(expected) is created from uniform distribution 

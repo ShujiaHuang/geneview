@@ -1,13 +1,13 @@
 """
-    Plotting functions for manhattan plot.
+Plotting functions for manhattan plot.
 
-    Copytright (c) Shujia Huang
-    Date: 2016-01-23
+Copytright (c) Shujia Huang
+Date: 2016-01-23
 
-    This model is based on brentp's script on github:
-    https://github.com/brentp/bio-playground/blob/master/plots/manhattan-plot.py
+This model is based on brentp's script on github:
+https://github.com/brentp/bio-playground/blob/master/plots/manhattan-plot.py
 
-    Thanks for Brentp's contributions
+Thanks for Brentp's contributions
 
 """
 from __future__ import print_function, division
@@ -25,13 +25,12 @@ from ..palette import color_palette
 def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None, 
                   kind='scatter', xtick_label_set=None, CHR=None, alpha=0.8, 
                   mlog10=True, **kwargs):
-    """
-    Plot a manhattan plot.
+    """Plot a manhattan plot.
 
     Parameters
     ----------
-    data : float. 2D list or 2D numpy array. format [[id, x_val, y_val], ...]
-        Input data for plot manhattan.
+    data : float. 2D list or 2D numpy array.
+        Input data for plot manhattan. format [[id, x_val, y_val], ...]
 
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
