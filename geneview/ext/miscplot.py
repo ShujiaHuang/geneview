@@ -36,7 +36,7 @@ def puppyplot(grown_up=False):
         if grown_up:
             url += "/dogs"
         html_doc = urlopen(url)
-        soup = BeautifulSoup(html_doc)
+        soup = BeautifulSoup(html_doc, 'lxml')
         puppy = soup.find("div", {"class": "daily_puppy"})
         return HTML(str(puppy.img))
     except ImportError:
