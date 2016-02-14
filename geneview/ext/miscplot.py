@@ -40,7 +40,10 @@ def puppyplot(grown_up=False):
         puppy = soup.find("div", {"class": "daily_puppy"})
         return HTML(str(puppy.img))
     except ImportError:
-        html = ('<img  src="http://cdn-www.dailypuppy.com/dog-images/'
-                'decker-the-nova-scotia-duck-tolling-retriever_'
-                '72926_2013-11-04_w450.jpg" style="width:450px;"/>')
+        #html = ('<img  src="http://cdn-www.dailypuppy.com/dog-images/'
+        #        'decker-the-nova-scotia-duck-tolling-retriever_'
+        #        '72926_2013-11-04_w450.jpg" style="width:450px;"/>')
+        html = ('<img src="http://cdn-www.dailypuppy.com/media/dogs/'
+                '77165_20151221_023650412_iOS.jpg_w750.jpg" ' 
+                'style="width:450px;"/>')
         return HTML(html)
