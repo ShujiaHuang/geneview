@@ -13,6 +13,7 @@ from ..util import desaturate, set_hls_values, get_color_cycle
 
 from ._xkcd_rgb import xkcd_rgb
 from ._crayons import crayons
+from ._circos import circos
 
 GENEVIEW_PALETTES = dict(
     deep=["#4C72B0", "#55A868", "#C44E52",
@@ -743,6 +744,8 @@ def xkcd_palette(colors):
     See Also
     --------
     crayon_palette : Make a palette with Crayola crayon colors.
+    circos_palette : Make a palette with color names from the circos color 
+                     survey.
 
     """
     palette = [xkcd_rgb[name] for name in colors]
@@ -765,15 +768,46 @@ def crayon_palette(colors):
     Returns
     -------
     palette : geneview color palette
-        Returns the list of colors as rgb tuples in an object that behaves like
+        Returns the list of colors as RGB tuples in an object that behaves like
         other geneview color palettes.
 
     See Also
     --------
     xkcd_palette : Make a palette with named colors from the XKCD color survey.
+    circos_palette : Make a palette with color names from the circos color 
+                     survey.
 
     """
     palette = [crayons[name] for name in colors]
+    return color_palette(palette, len(palette))
+
+
+def circos_palette(colors):
+    """Make a palette with color names from the circos color survey.
+
+    Colors are taken from here:
+    http://circos.ca/tutorials/lessons/2d_tracks/connectors/configuration
+
+    This is just a simple wrapper around the ``geneview.circos`` dictionary.
+
+    Parameters
+    ----------
+    colors : list of strings
+        List of keys in the ``geneview.circos`` dictionary.
+
+    Returns
+    -------
+    palette : geneview color palette
+        Returns the list of colors as RGB tuples in an object that behaves like
+        other geneview color palettes.
+
+    See Also
+    --------
+    xkcd_palette : Make a palette with named colors from the XKCD color survey.
+    crayon_palette : Make a palette with Crayola crayon colors.
+
+    """
+    palette = [circos[name] for name in colors]
     return color_palette(palette, len(palette))
 
 
