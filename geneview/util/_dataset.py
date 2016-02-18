@@ -2,7 +2,9 @@
 Utility functions for getting datasets from geneview online dataset repository.
 """
 import os
+
 import csv
+from pandas import DataFrame
 
 from ..ext.six.moves.urllib.request import urlopen, urlretrieve
 from ._misc import is_numeric
@@ -19,7 +21,7 @@ def get_dataset_names():
             if l.text.endswith('.csv')]
 
 
-def load_dataset(name, cache=True, data_home=None):
+def load_dataset(name, cache=True, data_home=None, **kw):
     """Load a dataset from the online repository (requires internet).
 
     Parameters
@@ -35,14 +37,15 @@ def load_dataset(name, cache=True, data_home=None):
     data_home : string, optional
         The directory in which to cache data. By default, uses ~/geneview_data/
 
+    kws : dict, optional
+        Passed to pandas.read_csv
 
     Examples
     --------
-    
     Load the preview data of GOYA
 
         >>> import geneview as gv
-        >>> goya_preview = gv.util.load_dataset('GOYA_preview_999lines')
+        >>> goya_preview = gv.util.load_dataset('GOYA_preview')
 
     """
     path = "https://github.com/ShujiaHuang/geneview-data/raw/master/{0}.csv"
@@ -59,10 +62,14 @@ def load_dataset(name, cache=True, data_home=None):
     with open(full_path) as f:
         f_csv = csv.reader(f)
         headers = next(f_csv)
-        # do not transform the first element of dataset(.csv format)
+        # keep the first element as string in dataset(.csv format)
         data = [[row[0]] + map(_tr, row[1:]) for row in f_csv] 
-        
-    return data
+
+    df = DataFrame(data, columns=headers)
+    if df.iloc[-1].isnull().all():
+        df = df.iloc[:-1]
+
+    return df
 
 
 def _tr(s):
