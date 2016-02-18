@@ -50,6 +50,7 @@ if __name__ == "__main__":
           download_url=DOWNLOAD_URL,
           install_requires=[
               'numpy',
+              'pandas',
               'matplotlib',
               'Cycler',  # option, rarely use
           ],
