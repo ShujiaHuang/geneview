@@ -11,11 +11,11 @@ Thanks for Brentp's contributions
 
 """
 from __future__ import print_function, division
-
 from itertools import groupby, cycle
 from operator import itemgetter
 
 import numpy as np
+from pandas import DataFrame
 import matplotlib.pyplot as plt
 
 ##
@@ -29,7 +29,7 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
 
     Parameters
     ----------
-    data : float. 2D list or 2D numpy array.
+    data : DataFrame of ``pandas``, 2D list or 2D numpy array.
         Input data for plot manhattan. format [[id, x_val, y_val], ...]
 
     ax : matplotlib axis, optional
@@ -96,6 +96,22 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
        set of interesting positions (SNPs). And this parameter takes a 
        list-like value.
 
+    Examples
+    --------
+
+    Plot a basic manhattan plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import geneview as gv
+        >>> df = gv.util.load_dataset('GOYA_preview')
+        >>> xtick = map(str, range(1, 15) + ['16','18', '20','22'])
+        >>> gv.gwas.manhattanplot(df[['chrID','position','pvalue']],  
+        ...                       xlabel="Chromosome", 
+        ...                       ylabel="-Log10(P-value)", 
+        ...                       xtick_label_set = set(xtick))
+
     """
     if CHR is not None and xtick_label_set is not None:
         msg = "``CHR`` and ``xtick_label_set`` can't be setted simultaneously."
@@ -111,19 +127,23 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
 
     if ',' in color: color = color.split(',')
     colors = cycle(color)
-    
+
+    if isinstance(data, DataFrame):
+        data = DataFrame(data.values, columns=['chrom', 'pos', 'pvalue'])
+    else:
+        data = DataFrame(data, columns=['chrom', 'pos', 'pvalue'])
+
     last_x = 0
     xs_by_id = {} # use for collecting chromosome's position on x-axis
     x, y, c = [], [], []
-    for seqid, rlist in groupby(data, key=itemgetter(0)):
+    for seqid, rlist in data.groupby('chrom', sort=False):
 
         if CHR is not None and seqid != CHR: continue
-            
+        
         color = colors.next()
-        rlist = list(rlist)
-        region_xs = [last_x + r[1] for r in rlist]
+        region_xs = [last_x + r for r in rlist['pos']]
         x.extend(region_xs)
-        y.extend([r[2] for r in rlist])
+        y.extend(rlist['pvalue'])
         c.extend([color] * len(rlist))
 
         # ``xs_by_id`` is for setting up positions and ticks. Ticks should
