@@ -43,8 +43,9 @@ plt.show()
 ![qqplot](https://github.com/ShujiaHuang/geneview/blob/master/examples/qq.png)
 
 > We use a dataset `GOYA_preview` which is in 
-[geneview-data](https://github.com/ShujiaHuang/geneview-data) repository, 
-as the input for the plot above.
+[geneview-data](https://github.com/ShujiaHuang/geneview-data) repository, as 
+the input for the plots above. Here is the format preview of `GOYA_preview`:
+![GOYA format](https://github.com/ShujiaHuang/geneview/blob/master/examples/data/goya_format.png)
 
 
 Citing
