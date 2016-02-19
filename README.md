@@ -66,7 +66,7 @@ Dependencies
 
 - [matplotlib](http://matplotlib.org/)
 
-We need the data structures: `DataFrame` and `Seris` in **pandas**. It's easy 
+We need the data structures: `DataFrame` and `Series` in **pandas**. It's easy 
 and worth to learn, click [here](http://pda.readthedocs.org/en/latest/chp5.html) 
 to see more detail tutorial for these two data type.
 
