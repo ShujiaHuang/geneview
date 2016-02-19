@@ -17,7 +17,7 @@ A basical example for Manhattan plot.
 import matplotlib.pyplot as plt
 import geneview as gv
 
-df = gv.util.load_dataset('GOYA_preview')
+df = gv.util.load_dataset('GOYA_preview')  # df is DataFrame of pandas
 xtick = map(str, range(1, 15) + ['16','18', '20','22'])
 gv.gwas.manhattanplot(df[['chrID','position','pvalue']],  
                          xlabel="Chromosome", 
@@ -34,7 +34,7 @@ A basical example for QQ plot.
 import matplotlib.pyplot as plt
 import geneview as gv
 
-df = gv.util.load_dataset('GOYA_preview')
+df = gv.util.load_dataset('GOYA_preview')  # df is DataFrame of pandas
 gv.gwas.qqplot(df['pvalue'], color="#00bb33",
                xlabel="Expected p-value(-log10)",
                ylabel="Observed p-value(-log10)")
