@@ -16,7 +16,7 @@ Examples
 the input for the plots below. Here is the format preview of `GOYA_preview`:
 ![GOYA format](https://github.com/ShujiaHuang/geneview/blob/master/examples/data/goya_format.png)
 
-A basical example for **Manhattan** plot.
+A basic example for **Manhattan** plot.
 
 ```
 import matplotlib.pyplot as plt
@@ -33,7 +33,7 @@ plt.show()
 
 ![manhattanplot](https://github.com/ShujiaHuang/geneview/blob/master/examples/manhattan.png)
 
-A basical example for **QQ** plot.
+A basic example for **QQ** plot.
 
 ```
 import matplotlib.pyplot as plt
