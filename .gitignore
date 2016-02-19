@@ -12,7 +12,4 @@ geneview.egg-info/
 *.sh
 *.so
 .*.swp
-*.png
-*.jpg
-*.pdf
 .DS_Store
