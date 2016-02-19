@@ -8,4 +8,4 @@ from .ext.miscplot import puppyplot, palplot
 # in the default setting in ``plotting_context()`` in ``.palette._rcmod``
 set_all(font_scale=1.2) # this function is in the ``.palette`` package
 
-__version__ = '0.0.1.dev7'
+__version__ = '0.0.1.dev8'
