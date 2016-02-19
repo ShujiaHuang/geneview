@@ -38,7 +38,8 @@ def ppoints(n, a=0.5):
 
     Notes
     -----
-    * Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) The New S Language. Wadsworth & Brooks/Cole.
+    * Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) The New S Language. 
+      Wadsworth & Brooks/Cole.
     * Blom, G. (1958) Statistical Estimates and Transformed Beta Variables. Wiley
 
     """
@@ -65,7 +66,7 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
 
     Parameters
     ----------
-    pvalues : float. list-like and just 1-D
+    pvalues : float. ``Series`` of ``pandas`` or 1-D list-like
         A numeric list or array of p-values.
 
     ax : matplotlib axis, optional
@@ -111,7 +112,21 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
        are list-like ::
         [value1, value2, ...] (all the values should between 0 and 1)
 
-    -----
+
+    Examples
+    --------
+
+    Plot a basic QQ plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import geneview as gv
+        >>> df = gv.util.load_dataset('GOYA_preview')
+        >>> gv.gwas.qqplot(df['pvalue'], color="#00bb33", 
+        ...                xlabel="Expected p-value(-log10)",
+        ...                ylabel="Observed p-value(-log10)")
+
     """
     # Draw the plot and return the Axes
     if ax is None:

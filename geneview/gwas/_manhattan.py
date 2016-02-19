@@ -29,7 +29,7 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
 
     Parameters
     ----------
-    data : DataFrame of ``pandas``, 2D list or 2D numpy array.
+    data : ``DataFrame`` of ``pandas``, 2D list or 2D numpy array.
         Input data for plot manhattan. format [[id, x_val, y_val], ...]
 
     ax : matplotlib axis, optional
