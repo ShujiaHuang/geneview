@@ -173,9 +173,6 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
         msg = "``kind`` must be either 'scatter' or 'line'"
         raise ValueError(msg)
 
-    ax.set_xlim(0, x[-1])
-    ax.set_ylim(ymin=y.min())
-
     if xtick_label_set is None: 
         xtick_label_set = set(xs_by_id.keys())
 
@@ -191,6 +188,9 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
         # show the whole chromsome's position without scientific notation
         # if you are just interesting in this chromosome.
         ax.get_xaxis().get_major_formatter().set_scientific(False)
+
+    ax.set_xlim(0, x[-1])
+    ax.set_ylim(ymin=y.min())
 
     if xlabel: ax.set_xlabel(xlabel) 
     if ylabel: ax.set_ylabel(ylabel)
