@@ -9,7 +9,9 @@ from __future__ import division, print_function
 from pandas import DataFrame
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle 
 
+from ..util import chr_id_cmp
 from ..palette import circos  # ``circos`` is a color dict
 
 def karyoplot(data, ax=None, CHR=None, alpha=0.8, color4none='#34728B', 
@@ -51,28 +53,30 @@ def karyoplot(data, ax=None, CHR=None, alpha=0.8, color4none='#34728B',
     if ax is None:
         ax = plt.gca()
 
-    if isinstance(data, string):
+    if isinstance(data, str):
         # suppose to be a path to the input file or a url to the file
         data = pd.read_table(
             data, header=0, 
-            names=['chrom', 'start', 'stop', 'name', 'gie_stain'])
+            names=['chrom', 'start', 'end', 'name', 'gie_stain'])
     elif isinstance(data, DataFrame):
         # reset the columns
         data = DataFrame(
             data.values, 
-            columns=['chrom', 'start', 'stop', 'name', 'gie_stain'])
+            columns=['chrom', 'start', 'end', 'name', 'gie_stain'])
     else:
         # convert to DataFrame of pandas
         data = DataFrame(
             data.values, 
-            columns=['chrom', 'start', 'stop', 'name', 'gie_stain'])
+            columns=['chrom', 'start', 'end', 'name', 'gie_stain'])
 
-    """
-    # remove 'chr'
-    if CHR: 
-        CHR = CHR[3:] if CHR.startswith('chr') else CHR
-    data['chrom'] = [c[3:] if c.startswith('chr') else c 
-                     for c in data['chrom']]
-    """
+    yaxis = {c: i+1 for i, c in 
+             enumerate(sorted(set(data['chrom']), cmp=chr_id_cmp))}
+    for chrom, kc_df in data.groupby('chrom', sort=False):
+        for _, r in kc_df.iterrows():
+            band_color = circos[r.gie_stain] if r.gie_stain in circos else color4none
+            band_rec = Rectangle((r.start, yaxis[chrom]), r.end-r.start, 
+                                 0.2, color=band_color)
+            ax.add_patch(band_rec)
 
+    plt.show()
     return ax
