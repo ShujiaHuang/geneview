@@ -1,5 +1,6 @@
 from . import gwas
 from . import util
+from .karyotype import *
 from .palette import *
 
 from .ext.miscplot import puppyplot, palplot
