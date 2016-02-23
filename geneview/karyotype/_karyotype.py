@@ -6,16 +6,17 @@ Date: 2016-02-19
 """
 from __future__ import division, print_function
 
+import numpy as np
 from pandas import DataFrame
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle 
 
 from ..util import chr_id_cmp
-from ..palette import circos  # ``circos`` is a color dict
+from ..palette import circos, set_style  # ``circos`` is a color dict
 
-def karyoplot(data, ax=None, CHR=None, alpha=0.8, color4none='#34728B', 
-              **kwargs):
+def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5, 
+              CHR=None, alpha=0.8, color4none='#34728B', **kwargs):
     """ Create karyotype plot.
 
     Parameters
@@ -27,6 +28,9 @@ def karyoplot(data, ax=None, CHR=None, alpha=0.8, color4none='#34728B',
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
 
+    width : float, optional, default: 0.5
+        Chromosom's width in the plot
+
     CHR : string, optional, defualt: None
         Choice the specific chromosome to plot.
 
@@ -36,6 +40,9 @@ def karyoplot(data, ax=None, CHR=None, alpha=0.8, color4none='#34728B',
     color4none : matplotlib color, optional, default: '#34728B'(deep gray blue)
         The color for undefine band color of karyotype in the plot.
 
+    kwargs : key, value pairings
+        Other keyword arguments are passed to ``Rectangle`` in matplotlib.patches
+
     Examples
     --------
 
@@ -44,9 +51,11 @@ def karyoplot(data, ax=None, CHR=None, alpha=0.8, color4none='#34728B',
     .. plot::
         :context: close-figs
 
+        >>> import matplotlib.pyplot as plt
         >>> import geneview as gv
+        >>> fig, ax = plt.subplots(figsize=(20, 5))
         >>> gv.karyoplot('https://github.com/ShujiaHuang/geneview-data/raw/'
-        ...              'master/karyotype/karyotype_human_hg19.txt')
+        ...              'master/karyotype/karyotype_human_hg19.txt', ax=ax)
 
     """
     # Draw the plot and return the Axes 
@@ -69,14 +78,28 @@ def karyoplot(data, ax=None, CHR=None, alpha=0.8, color4none='#34728B',
             data.values, 
             columns=['chrom', 'start', 'end', 'name', 'gie_stain'])
 
-    yaxis = {c: i+1 for i, c in 
-             enumerate(sorted(set(data['chrom']), cmp=chr_id_cmp))}
-    for chrom, kc_df in data.groupby('chrom', sort=False):
+    yaxis = []
+    for i, (chrom, kc_df) in enumerate(sorted(data.groupby('chrom'), 
+                                              key=lambda (c, d): c, 
+                                              cmp=chr_id_cmp)):
+        
+        if CHR is not None and chrom != CHR: continue
+        yaxis.append(chrom)
+
         for _, r in kc_df.iterrows():
             band_color = circos[r.gie_stain] if r.gie_stain in circos else color4none
-            band_rec = Rectangle((r.start, yaxis[chrom]), r.end-r.start, 
-                                 0.2, color=band_color)
+            band_rec = Rectangle((r.start, i), r.end-r.start, width, 
+                                 color=band_color, **kwargs)
             ax.add_patch(band_rec)
 
-    plt.show()
+    xmax = data['end'].max() * 1.1
+    xticks = np.arange(0, xmax, xmax / 10.)
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(['{0}M'.format(int(i / 10 ** 6)) for i in xticks])
+    ax.set_xlim(0, xmax)
+
+    ax.set_yticks([i + width/2 for i in range(len(yaxis))])
+    ax.set_yticklabels(yaxis)
+    ax.set_ylim(0, len(yaxis))
+
     return ax
