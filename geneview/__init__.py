@@ -2,8 +2,7 @@ from . import gwas
 from . import util
 from .karyotype import *
 from .palette import *
-
-from .ext.miscplot import puppyplot, palplot
+from .ext import *
 
 # Set aesthetic parameters in one step and make the font size as 1.2 times
 # in the default setting in ``plotting_context()`` in ``.palette._rcmod``
