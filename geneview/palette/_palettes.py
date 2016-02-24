@@ -16,7 +16,7 @@ from ._crayons import crayons
 from ._circos import circos
 
 GENEVIEW_PALETTES = dict(
-    dbright=["#056EEE", "#6EEE05", "#EE056E",
+    dbright=["#056EEE", "#1BD948", "#EE056E",
              "#9641E5","#EE8505","#00C2E6"],
     deep=["#4C72B0", "#55A868", "#C44E52",
           "#8172B2", "#CCB974", "#64B5CD"],
