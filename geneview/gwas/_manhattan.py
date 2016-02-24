@@ -121,9 +121,9 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
     if ax is None:
         ax = plt.gca()
 
+    # Get the color from 'colorful' cycle
     if color is None:
         color = color_palette("colorful", 4) 
-        #color = color_palette("husl", 4) 
 
     if ',' in color: color = color.split(',')
     colors = cycle(color)
