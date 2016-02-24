@@ -56,7 +56,7 @@ def ppoints(n, a=0.5):
     return (np.arange(n) + 1 - a)/(n + 1 - 2*a)
 
 
-def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
+def qqplot(data, ax=None, xlabel='Expected', ylabel='Observed', color=None,
            ablinecolor='r', alpha=0.8, mlog10=True, **kwargs):
     """Creat Q-Q plot.
 
@@ -66,7 +66,7 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
 
     Parameters
     ----------
-    pvalues : float. ``Series`` of ``pandas`` or 1-D list-like
+    data : float. ``Series`` of ``pandas`` or 1-D list-like
         A numeric list or array of p-values.
 
     ax : matplotlib axis, optional
@@ -80,7 +80,7 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
         Set the y axis label of the current axis.
         CAUSION: The y axis will always be the observed value.
 
-    color : matplotlib color, optional, default: 'k' (black) 
+    color : matplotlib color, optional
         The dots color in the plot
 
     ablinecolor: matplotlib color, optional, default: 'r' (red)
@@ -107,7 +107,9 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
 
     Notes
     -----
-    1. This plot function is not just suit for GWAS QQ plot, it could
+    1. The X axis will always be the expected values and Y axis always be
+       observed values in the plot.
+    2. This plot function is not just suit for GWAS QQ plot, it could
        also be used for creating QQ plot for other data, which format 
        are list-like ::
         [value1, value2, ...] (all the values should between 0 and 1)
@@ -123,7 +125,7 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
 
         >>> import geneview as gv
         >>> df = gv.util.load_dataset('GOYA_preview')
-        >>> gv.gwas.qqplot(df['pvalue'], color="#00bb33", 
+        >>> gv.gwas.qqplot(df['pvalue'], 
         ...                xlabel="Expected p-value(-log10)",
         ...                ylabel="Observed p-value(-log10)")
 
@@ -132,36 +134,39 @@ def qqplot(pvalues, ax=None, xlabel='Expected', ylabel='Observed', color='k',
     if ax is None:
         ax = plt.gca()
 
-    if not all(map(is_numeric, pvalues)):
+    if not all(map(is_numeric, data)):
         msg = 'Input must all be numeric.'
         raise ValueError(msg)
 
-    pvalues = np.array(pvalues, dtype=float)
+    data = np.array(data, dtype=float)
     # limit to (0, 1)
-    pvalues = pvalues[pvalues>0.0]
-    pvalues = pvalues[pvalues<1.0]
+    data = data[data>0.0]
+    data = data[data<1.0]
     
     # Observed and expected
     if mlog10:
-        o = -np.log10(sorted(pvalues, reverse=True)) # increasing
-        e = -np.log10(ppoints(len(pvalues)))[::-1]
+        o = -np.log10(sorted(data, reverse=True)) # increasing
+        e = -np.log10(ppoints(len(data)))[::-1]
     else:
-        o = np.array(sorted(pvalues))
-        e = np.array(ppoints(len(pvalues)))
+        o = np.array(sorted(data))
+        e = np.array(ppoints(len(data)))
+
+    # Get the color from the current color cycle  
+    if color is None:
+        line, = ax.plot(0, data.mean())
+        color = line.get_color()
+        line.remove()
 
     # x is for expected; y is for observed value
     ax.scatter(e, o, c=color, alpha=alpha, edgecolors='none', **kwargs) 
-
-    ax.set_xlim(xmin=e.min(), xmax=1.05 * e.max())  
-    ax.set_ylim(ymin=o.min())  
-
     if ablinecolor:
         # plot the y=x line by expected: uniform distribution data
         ax.plot([e.min(), e.max()], [e.min(), e.max()], color=ablinecolor, 
                 linestyle='-')
 
+    ax.set_xlim(xmin=e.min(), xmax=1.05 * e.max())  
+    ax.set_ylim(ymin=o.min())  
     if xlabel: ax.set_xlabel(xlabel) 
     if ylabel: ax.set_ylabel(ylabel) 
 
     return ax
-
