@@ -71,7 +71,7 @@ _context_keys = (
 )
 
 
-def set_all(context="notebook", style="darkgrid", palette="dbright",
+def setup(context="notebook", style="darkgrid", palette="dbright",
             font="sans-serif", font_scale=1, color_codes=False, rc=None):
     """Set aesthetic parameters in one step.
 
