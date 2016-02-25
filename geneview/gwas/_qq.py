@@ -65,10 +65,10 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
 
     Parameters
     ----------
-    data : array-like. ``Series`` of ``pandas`` or 1d array-like
+    data : array-like, ``Series`` of ``pandas`` or 1d array-like
         Data to be plotted
 
-    other : array-like, or None, optional
+    other : array-like, ``Series`` of ``pandas`` or 1d array, or None, optional
         If provided, the sample quantiles of the `data` array-like object are 
         plotted against the sample quantiles of the `other` array-like object. 
         If not provided (default), the theoretical quantiles are used.
@@ -148,22 +148,22 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
         msg = 'Input must all be numeric in `data`.'
         raise ValueError(msg)
 
-    if len(other) and not all(map(is_numeric, other)):
+    if other is not None and not all(map(is_numeric, other)):
         msg = 'Input must all be numeric in `other`.'
         raise ValueError(msg)
 
-    if len(other) and len(other) != len(data):
-        msg = 'Input `data` and `other` must all be the same.'
+    if other is not None and len(other) != len(data):
+        msg = 'Input `data` and `other` must all be the same size.'
         raise ValueError(msg)
 
     if xlabel is None:
-        xlabel = '-Log10(value) of 2nd Sample' if len(other) else 'Expected(-log10)'
+        xlabel = 'Expected(-log10)' if other is None else '-Log10(value) of 2nd Sample'
     if ylabel is None:
-        ylabel = '-Log10(value) of 1st Sample' if len(other) else 'Observed(-log10)'
+        ylabel = 'Observed(-log10)' if other is None else '-Log10(value) of 1st Sample'
 
     data = np.array(data, dtype=float)
     # create observed and expected
-    e = ppoints(len(data)) if len(other) is None else sorted(other)
+    e = ppoints(len(data)) if other is None else sorted(other)
     if mlog10:
         o = -np.log10(sorted(data))
         e = -np.log10(e)
@@ -227,10 +227,6 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed',
     -----
     1. The X axis will always be the expected values and Y axis always be
        observed values in the plot.
-    2. This plot function is not just suit for GWAS QQ plot, it could
-       also be used for creating QQ plot for other data, which format 
-       are list-like ::
-        [value1, value2, ...] (all the values should between 0 and 1)
 
 
     Examples
@@ -253,9 +249,9 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed',
 
         >>> import geneview as gv
         >>> df = gv.util.load_dataset('GOYA_preview')
-        >>> gv.gwas.norm(df['pvalue'], 
-        ...              xlabel="Expected value",
-        ...              ylabel="Observed value")
+        >>> gv.gwas.qqnorm(df['pvalue'], 
+        ...                xlabel="Expected value",
+        ...                ylabel="Observed value")
     """
     if not all(map(is_numeric, data)):
         msg = 'Input must all be numeric in `data`.'
@@ -312,7 +308,7 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor='r', alpha=0.8, **kwargs):
     if ax is None:
         ax = plt.gca()
 
-    # Get the color from the current color cycle  
+    # Get the color from the current color cycle
     if color is None:
         line, = ax.plot(0, x.mean())
         color = line.get_color()
