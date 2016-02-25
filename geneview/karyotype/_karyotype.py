@@ -75,8 +75,7 @@ def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5,
     else:
         # convert to DataFrame of pandas
         data = DataFrame(
-            data.values, 
-            columns=['chrom', 'start', 'end', 'name', 'gie_stain'])
+            data, columns=['chrom', 'start', 'end', 'name', 'gie_stain'])
 
     yaxis = []
     for i, (chrom, kc_df) in enumerate(sorted(data.groupby('chrom'), 
