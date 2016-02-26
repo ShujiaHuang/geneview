@@ -46,7 +46,7 @@ def ppoints(n, a=0.5):
 
     """
     if a < 0 or a > 1:
-        msg = "`a` can just be any float value in 0 < a < 1."
+        msg = "`a` could just be any float value in (0, 1)."
         raise ValueError(msg) 
 
     try:
@@ -117,6 +117,11 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
        also be used for creating QQ plot for other data, which format 
        are list-like ::
         [value1, value2, ...] (all the values should between 0 and 1)
+
+
+    See Also
+    --------
+    qqnorm : Q-Q plot against the normal distribution.
 
 
     Examples
@@ -227,6 +232,11 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed',
     -----
     1. The X axis will always be the expected values and Y axis always be
        observed values in the plot.
+
+
+    See Also
+    --------
+    qqplot : Q-Q plot against other values or uniform distribution(default)
 
 
     Examples
