@@ -2,6 +2,7 @@
 This module contains miscellaneous functions for ``geneview``.
 """
 from __future__ import print_function, division
+import numpy as np
 from scipy import stats
 
 def chr_id_cmp(a, b):
@@ -87,3 +88,10 @@ def iqr(a):
     q1 = stats.scoreatpercentile(a, 25)
     q3 = stats.scoreatpercentile(a, 75)
     return q3 - q1
+
+
+def _kde_support(data, bw, gridsize, cut, clip):
+    """Establish support for a kernel density estimate."""
+    support_min = max(data.min() - bw * cut, clip[0])
+    support_max = min(data.max() + bw * cut, clip[1])
+    return np.linspace(support_min, support_max, gridsize)
