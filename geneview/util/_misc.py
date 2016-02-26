@@ -2,6 +2,7 @@
 This module contains miscellaneous functions for ``geneview``.
 """
 from __future__ import print_function, division
+from scipy import stats
 
 def chr_id_cmp(a, b):
     """
@@ -78,3 +79,11 @@ def is_integer(s):
         return True if '.' not in s else False
     else:
         return False
+
+
+def iqr(a):
+    """Calculate the IQR for an array of numbers."""
+    a = np.asarray(a)
+    q1 = stats.scoreatpercentile(a, 25)
+    q3 = stats.scoreatpercentile(a, 75)
+    return q3 - q1
