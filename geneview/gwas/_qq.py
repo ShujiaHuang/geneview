@@ -106,7 +106,7 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
     Returns
     -------
     ax : matplotlib Axes
-        Axes object with the manhattanplot.
+        Axes object with the plot.
 
 
     Notes
@@ -225,7 +225,7 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed',
     Returns
     -------
     ax : matplotlib Axes
-        Axes object with the manhattanplot.
+        Axes object with the plot.
 
 
     Notes
@@ -312,7 +312,7 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor='r', alpha=0.8, **kwargs):
     Returns
     -------
     ax : matplotlib Axes
-        Axes object with the manhattanplot.
+        Axes object with the plot.
     """
     # Draw the plot and return the Axes
     if ax is None:
