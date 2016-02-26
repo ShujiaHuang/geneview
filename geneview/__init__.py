@@ -1,6 +1,6 @@
 from . import gwas
 from . import util
-from .seaborn import *
+from .baseplot import *
 from .karyotype import *
 from .palette import *
 from .ext import *
