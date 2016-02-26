@@ -1,5 +1,6 @@
 from . import gwas
 from . import util
+from .common import *
 from .karyotype import *
 from .palette import *
 from .ext import *
