@@ -95,3 +95,42 @@ def _kde_support(data, bw, gridsize, cut, clip):
     support_min = max(data.min() - bw * cut, clip[0])
     support_max = min(data.max() + bw * cut, clip[1])
     return np.linspace(support_min, support_max, gridsize)
+
+
+def categorical_order(values, order=None):
+    """Return a list of unique data values.
+
+    Determine an ordered list of levels in ``values``.
+
+    Parameters
+    ----------
+    values : list, array, Categorical, or Series of pandas
+        Vector of "categorical" values
+    order : list-like, optional
+        Desired order of category levels to override the order determined
+        from the ``values`` object.
+
+    Returns
+    -------
+    order : list
+        Ordered list of category levels not including null values.
+
+    """
+    if order is None:
+        if hasattr(values, "categories"):
+            order = values.categories
+        else:
+            try:
+                order = values.cat.categories
+            except (TypeError, AttributeError):
+                try:
+                    order = values.unique()
+                except AttributeError:
+                    order = pd.unique(values)
+                try:
+                    np.asarray(values).astype(np.float)
+                    order = np.sort(order)
+                except (ValueError, TypeError):
+                    order = order
+        order = filter(pd.notnull, order)
+    return list(order)

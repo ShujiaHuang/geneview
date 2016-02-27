@@ -11,9 +11,12 @@ import colorsys
 import warnings
 
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as mplcol
 
+from distutils.version import LooseVersion
+mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
 
 def set_hls_values(color, h=None, l=None, s=None):
     """Independently manipulate the h, l, or s channels of a color.
@@ -180,3 +183,16 @@ def _set_spine_position(spine, position):
     spine.set_position(position)
     if axis is not None:
         axis.cla = cla
+
+
+def get_color_cycle():
+    if mpl_ge_150:
+        cyl = mpl.rcParams['axes.prop_cycle']
+        # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
+        # but no garuantee that there's a `color` key.
+        # so users could have a custom rcParmas w/ no color...
+        try:
+            return [x['color'] for x in cyl]
+        except KeyError:
+            pass  # just return axes.color style below
+    return mpl.rcParams['axes.color_cycle']
