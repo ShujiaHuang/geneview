@@ -23,10 +23,11 @@ import matplotlib.pyplot as plt
 import geneview as gv
 
 df = gv.util.load_dataset('GOYA_preview')  # df is DataFrame of pandas
-xtick = map(str, range(1, 15) + ['16','18', '20','22'])
+xtick = ['chr'+c for c in map(str, range(1, 15) + ['16', '18', '20', '22'])]
 gv.gwas.manhattanplot(df[['chrID','position','pvalue']],  
                          xlabel="Chromosome", 
                          ylabel="-Log10(P-value)", 
+                         xticklabel_kws={'rotation': 'vertical'},
                          xtick_label_set = set(xtick))
 plt.show()
 ```
