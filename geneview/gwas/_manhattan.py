@@ -24,7 +24,7 @@ from ..palette import color_palette
 
 def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None, 
                   kind='scatter', xtick_label_set=None, CHR=None, alpha=0.8, 
-                  mlog10=True, **kwargs):
+                  mlog10=True, xticklabel_kws=None, **kwargs):
     """Plot a manhattan plot.
 
     Parameters
@@ -66,6 +66,10 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
         isn't very useful to plot raw p-values, but plotting the raw value 
         could be useful for other genome-wide plots, for example peak heights,
         bayes factors, test statistics, other "scores", etc.
+
+    xticklabel_kws : key, value pairings, or None, optional
+        Other keyword arguments are passed to set_xticklabels in 
+        maplotlib.axis.Axes.set_xticklabels.
 
     kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.scatter()`` or
@@ -120,6 +124,9 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
     # Draw the plot and return the Axes
     if ax is None:
         ax = plt.gca()
+
+    if xticklabel_kws is None:
+        xticklabel_kws = dict()
 
     # Get the color from 'colorful' cycle
     if color is None:
@@ -182,7 +189,7 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
                      if k in xtick_label_set]
 
         ax.set_xticks([c[1] for c in xs_by_id])
-        ax.set_xticklabels([c[0] for c in xs_by_id])
+        ax.set_xticklabels([c[0] for c in xs_by_id], **xticklabel_kws)
 
     else:
         # show the whole chromsome's position without scientific notation
