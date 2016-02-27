@@ -4,7 +4,7 @@ Utility functions for getting datasets from geneview online dataset repository.
 import os
 
 import csv
-from pandas import DataFrame
+import pandas as pd
 
 from ..ext.six.moves.urllib.request import urlopen, urlretrieve
 from ._misc import is_numeric
@@ -21,7 +21,7 @@ def get_dataset_names():
             if l.text.endswith('.csv')]
 
 
-def load_dataset(name, cache=True, data_home=None, **kw):
+def load_dataset(name, cache=True, data_home=None, **kws):
     """Load a dataset from the online repository (requires internet).
 
     Parameters
@@ -58,14 +58,16 @@ def load_dataset(name, cache=True, data_home=None, **kw):
             urlretrieve(full_path, cache_path)
         full_path = cache_path
 
+    """
     data = []
     with open(full_path) as f:
         f_csv = csv.reader(f)
         headers = next(f_csv)
         # keep the first element as string in dataset(.csv format)
         data = [[row[0]] + map(_tr, row[1:]) for row in f_csv] 
-
-    df = DataFrame(data, columns=headers)
+    df = pd.DataFrame(data, columns=headers)
+    """
+    df = pd.read_csv(full_path, **kws)
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
 
