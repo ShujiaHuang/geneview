@@ -552,7 +552,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
 
         >>> import numpy as np, pandas as pd; np.random.seed(0)
         >>> import geneview as gv; gv.setup(style="white", color_codes=True)
-        >>> tips = gv.load_dataset("tips")
+        >>> tips = gv.util.load_dataset("tips")
         >>> g = gv.jointplot(x="total_bill", y="tip", data=tips)
 
     Add regression and kernel density fits:
@@ -575,7 +575,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     .. plot::
         :context: close-figs
 
-        >>> iris = gv.load_dataset("iris")
+        >>> iris = gv.util.load_dataset("iris")
         >>> g = gv.jointplot("sepal_width", "petal_length", data=iris,
         ...                   kind="kde", space=0, color="g")
 
