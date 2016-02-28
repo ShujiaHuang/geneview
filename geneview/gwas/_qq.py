@@ -65,7 +65,7 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
 
     Parameters
     ----------
-    data : array-like, ``Series`` of ``pandas`` or 1d array-like
+    data : list, 1d-array, or Series
         Data to be plotted
 
     other : array-like, ``Series`` of ``pandas`` or 1d array, or None, optional
@@ -98,7 +98,7 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
         If true, -log10 of the y_value(always be the p-value) is plotted.
         It isn't very useful to plot raw p-values in GWAS QQ plot.
 
-    kwargs : key, value pairings
+    kwargs : key, value pairings, optional
         Other keyword arguments are passed to ``plt.scatter()``
         (in matplotlib.pyplot).
 

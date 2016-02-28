@@ -29,7 +29,7 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
 
     Parameters
     ----------
-    data : ``DataFrame`` of ``pandas``, 2D list or 2D numpy array.
+    data : 2d-array-like, or DataFrame.
         Input data for plot manhattan. format [[id, x_val, y_val], ...]
 
     ax : matplotlib axis, optional
@@ -51,14 +51,14 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
     xtick_label_set : a set. optional 
         Set the current x axis ticks of the current axis.
 
-    CHR : string, optional, defualt: None
+    CHR : string, or None, optional
         Choice the specific chromosome to plot. And the x-axis will be the
         position of this chromosome instead of the chromosome id.
 
         CAUSION: this parameter could not be used with ``xtick_label_set``
                  together.
 
-    alpha : scalar, optional, default: 0.8
+    alpha : scalar, or 0.8(default), optional
         The alpha blending value, between 0(transparent) and 1(opaque)
 
     mlog10 : bool, optional, default: True
@@ -71,7 +71,7 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
         Other keyword arguments are passed to set_xticklabels in 
         maplotlib.axis.Axes.set_xticklabels.
 
-    kwargs : key, value pairings
+    kwargs : key, value pairings, optional
         Other keyword arguments are passed to ``plt.scatter()`` or
         ``plt.vlines()`` (in matplotlib.pyplot) depending on whether 
         a scatter or line plot is being drawn.
