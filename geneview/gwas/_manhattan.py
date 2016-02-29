@@ -24,7 +24,7 @@ from ..palette import color_palette
 
 def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None, 
                   kind='scatter', xtick_label_set=None, CHR=None, alpha=0.8, 
-                  mlog10=True, xticklabel_kws=None, **kwargs):
+                  mlog10=True, hline_kws=None, xticklabel_kws=None, **kwargs):
     """Plot a manhattan plot.
 
     Parameters
@@ -66,6 +66,9 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
         isn't very useful to plot raw p-values, but plotting the raw value 
         could be useful for other genome-wide plots, for example peak heights,
         bayes factors, test statistics, other "scores", etc.
+
+    hline_kws : key, value pairings, or None, optional
+        keyword arguments for plotting ax.axhline
 
     xticklabel_kws : key, value pairings, or None, optional
         Other keyword arguments are passed to set_xticklabels in 
@@ -110,10 +113,34 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
 
         >>> import geneview as gv
         >>> df = gv.util.load_dataset('GOYA_preview')
-        >>> xtick = map(str, range(1, 15) + ['16','18', '20','22'])
+        >>> gv.gwas.manhattanplot(df[['chrID','position','pvalue']],
+        ...                       xlabel="Chromosome", 
+        ...                       ylabel="-Log10(P-value)") 
+
+    Plot a basic manhattan plot with vertical xtick labels:
+
+    .. plot::
+        :context: close-figs
+
+        >>> xtick = ['chr'+c for c in 
+        ...          map(str, range(1, 15) + ['16', '18', '20', '22'])]
         >>> gv.gwas.manhattanplot(df[['chrID','position','pvalue']],  
         ...                       xlabel="Chromosome", 
         ...                       ylabel="-Log10(P-value)", 
+        ...                       xticklabel_kws={'rotation': 'vertical'},
+        ...                       xtick_label_set = set(xtick))
+
+    Add a horizotal at y position=3 line with blue color and lingwidth=1 
+    across the axis:
+
+    .. plot::
+        :context: close-figs
+    
+        >>> gv.gwas.manhattanplot(df[['chrID','position','pvalue']],  
+        ...                       hline_kws={'y': 3, 'color': 'b', 'lw': 1},
+        ...                       xlabel="Chromosome", 
+        ...                       ylabel="-Log10(P-value)", 
+        ...                       xticklabel_kws={'rotation': 'vertical'},
         ...                       xtick_label_set = set(xtick))
 
     """
@@ -127,6 +154,8 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
 
     if xticklabel_kws is None:
         xticklabel_kws = dict()
+    if hline_kws is None:
+        hline_kws = dict()
 
     # Get the color from 'colorful' cycle
     if color is None:
@@ -179,6 +208,9 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
     else:
         msg = "``kind`` must be either 'scatter' or 'line'"
         raise ValueError(msg)
+
+    if hline_kws:
+        ax.axhline(**hline_kws)
 
     if xtick_label_set is None: 
         xtick_label_set = set(xs_by_id.keys())
