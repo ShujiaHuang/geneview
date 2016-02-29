@@ -13,7 +13,11 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from ..ext.six import string_types
+try:
+    from six import string_types
+except ImportError:
+    from ..ext.six import string_types
+
 from ..util import iqr, set_hls_values, _kde_support 
 from ..palette import color_palette, blend_palette
 from ._sns_axisgrid import JointGrid

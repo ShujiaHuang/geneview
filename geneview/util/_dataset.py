@@ -6,7 +6,11 @@ import os
 import csv
 import pandas as pd
 
-from ..ext.six.moves.urllib.request import urlopen, urlretrieve
+try:
+    from six.moves.urllib.request import urlopen, urlretrieve
+except ImportError:
+    from ..ext.six.moves.urllib.request import urlopen, urlretrieve
+
 from ._misc import is_numeric
 
 def get_dataset_names():

@@ -5,9 +5,14 @@ from itertools import cycle
 import numpy as np
 import matplotlib as mpl
 
+try:
+    from six import string_types
+    from six.moves import range
+except ImportError:
+    from ..ext.six import string_types
+    from ..ext.six.moves import range
+
 from ..ext import husl
-from ..ext.six import string_types
-from ..ext.six.moves import range
 
 from ..util import desaturate, set_hls_values, get_color_cycle
 
