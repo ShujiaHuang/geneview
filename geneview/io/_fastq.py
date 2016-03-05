@@ -52,9 +52,9 @@ class Fastq(object):
             self.name = ''.join(['@', self.name])
         if self.conv:
             return '\n'.join(['{0}:YM:Z:{1}'.format(self.name, self.conv),
-                              self.seq, self.strand, self.qual]) + '\n'
+                              self.seq, self.strand, self.qual])
         else:
-            return '\n'.join([self.name, self.seq, self.strand, self.qual]) + '\n'
+            return '\n'.join([self.name, self.seq, self.strand, self.qual])
 
     def __len__(self):
         return len(self.seq)
