@@ -18,20 +18,9 @@ try:
 except ImportError:
     from ..ext.six import string_types
 
-from ..util import iqr, set_hls_values, _kde_support 
+from ..util import set_hls_values, _kde_support, freedman_diaconis_bins 
 from ..palette import color_palette, blend_palette
 from ._sns_axisgrid import JointGrid
-
-def _freedman_diaconis_bins(a):
-    """Calculate number of hist bins using Freedman-Diaconis rule."""
-    # From http://stats.stackexchange.com/questions/798/
-    a = np.asarray(a)
-    h = 2 * iqr(a) / (len(a) ** (1 / 3))
-    # fall back to sqrt(a) bins if iqr is 0
-    if h == 0:
-        return int(np.sqrt(a.size))
-    else:
-        return int(np.ceil((a.max() - a.min()) / h))
 
 
 def distplot(data, ax=None, bins=None, hist=True, kde=True,
@@ -121,7 +110,7 @@ def distplot(data, ax=None, bins=None, hist=True, kde=True,
 
     if hist:
         if bins is None:
-            bins = min(_freedman_diaconis_bins(data), 50)
+            bins = min(freedman_diaconis_bins(data), 50)
         hist_kws.setdefault("alpha", 0.6)
         hist_kws.setdefault("normed", norm_hist)
         orientation = "horizontal" if vertical else "vertical"
@@ -662,8 +651,8 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
 
     elif kind.startswith("hex"):
 
-        x_bins = _freedman_diaconis_bins(grid.x)
-        y_bins = _freedman_diaconis_bins(grid.y)
+        x_bins = freedman_diaconis_bins(grid.x)
+        y_bins = freedman_diaconis_bins(grid.y)
         gridsize = int(np.mean([x_bins, y_bins]))
 
         joint_kws.setdefault("gridsize", gridsize)
