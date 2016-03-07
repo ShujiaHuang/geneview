@@ -136,3 +136,15 @@ def categorical_order(values, order=None):
                     order = order
         order = filter(pd.notnull, order)
     return list(order)
+
+
+def freedman_diaconis_bins(a):
+    """Calculate number of hist bins using Freedman-Diaconis rule."""
+    # From http://stats.stackexchange.com/questions/798/
+    a = np.asarray(a)
+    h = 2 * iqr(a) / (len(a) ** (1 / 3))
+    # fall back to sqrt(a) bins if iqr is 0
+    if h == 0:
+        return int(np.sqrt(a.size))
+    else:
+        return int(np.ceil((a.max() - a.min()) / h))
