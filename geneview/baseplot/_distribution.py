@@ -3,11 +3,12 @@ from __future__ import division
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
-from ..util import freedman_diaconis_bins
+from ..util import freedman_diaconis_bins, despine
 from ..palette import circos, color_palette, blend_palette 
 
-def hist2d(x, y, ax=None, bins=None, norm_hist=False,
+def hist2d(x, y, ax=None, bins=None, norm_hist=False, norm=LogNorm(),
            xlabel=None, ylabel=None, cmap=None,
            **kwargs):
     """
@@ -57,7 +58,9 @@ def hist2d(x, y, ax=None, bins=None, norm_hist=False,
         colors = [circos['meth'+str(100-i)] for i in range(101)]
         cmap = blend_palette(color_palette(colors), as_cmap=True)        
 
-    ax.hist2d(x, y, bins=bins, cmap=cmap, **kwargs)
+    ax.hist2d(x, y, bins=bins, norm=LogNorm(), cmap=cmap, **kwargs)
+    ax.grid(False)
+
     if xlabel: ax.set_xlabel(xlabel)
     if ylabel: ax.set_ylabel(ylabel)
 
