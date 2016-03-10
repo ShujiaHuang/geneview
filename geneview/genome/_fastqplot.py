@@ -48,8 +48,10 @@ def fqqualplot(fqdata, phred=64, ax=None, title=None,
     if len(fqdata) == 0:
         return ax
 
+    print (kwargs)
     if 'showfliers' not in kwargs:
         kwargs.setdefault("showfliers", False)
+    print (kwargs)
 
     data = []
     for r in fqdata:
