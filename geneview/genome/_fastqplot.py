@@ -15,7 +15,7 @@ def fqqualplot(fqdata, phred=64, ax=None, title=None,
 
     Parameters
     ----------
-    fqdata : Array like. Fastq type data in a list, array or Series
+    fqdata : Array like. A list of Fastq type data, array or Series
         The input fastq data for plot.
 
     phred : int, or 64, optional
@@ -48,10 +48,8 @@ def fqqualplot(fqdata, phred=64, ax=None, title=None,
     if len(fqdata) == 0:
         return ax
 
-    print (kwargs)
     if 'showfliers' not in kwargs:
         kwargs.setdefault("showfliers", False)
-    print (kwargs)
 
     data = []
     for r in fqdata:
@@ -59,9 +57,14 @@ def fqqualplot(fqdata, phred=64, ax=None, title=None,
         data.append([ord(b) - phred for b in r.qual])
     data = np.array(data)
 
-    positions = [str(i) for i in range(1, len(data[0])+1)]
-    ax.boxplot(data, labels=positions, **kwargs)
+    ax.boxplot(data, **kwargs)
 
+    # Set xtick
+    xticks = [i for i in range(0, len(data[0])+1, 10)]
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticks)
+
+    ax.set_ylim(ymax=data.max()+1)
     if title:
         ax.set_title(title)
     if xlabel:
