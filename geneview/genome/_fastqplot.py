@@ -41,6 +41,10 @@ def fqqualplot(fqdata, phred=64, ax=None, title=None,
     -------
     ax : matplotlib Axes
         Axes object with the plot
+
+    Examples
+    --------
+
     """
     if ax is None:
         ax = plt.gca()
