@@ -80,7 +80,7 @@ Installation
 
 To install the released version, just do
 ```
-pip install seaborn
+pip install geneview
 ```
 
 You may instead want to use the development version from Github, by running
