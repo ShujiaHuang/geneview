@@ -1,5 +1,4 @@
-"""
-Functions for plotting qq-plot.
+"""Functions for plotting qq-plot.
 
 Copytright (c) Shujia Huang
 Date: 2016-01-28
@@ -9,7 +8,9 @@ import numpy as np
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 
-from ..util import is_numeric
+from ..utils import is_numeric
+from .._utils import General
+
 
 def ppoints(n, a=0.5):
     """ 
@@ -45,58 +46,73 @@ def ppoints(n, a=0.5):
     * Blom, G. (1958) Statistical Estimates and Transformed Beta Variables. Wiley
 
     """
+
     if a < 0 or a > 1:
         msg = "`a` could just be any float value in (0, 1)."
-        raise ValueError(msg) 
+        raise ValueError(msg)
 
     try:
-        n = np.float(len(n))
+        n = len(n)
     except TypeError:
-        n = np.float(n)
+        pass
 
     # ``n`` is a float value
-    return (np.arange(n) + 1 - a)/(n + 1 - 2*a)
+    return (np.arange(n, dtype=float) + 1 - a) / (n + 1 - 2 * a)
 
 
-def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None, 
-           ablinecolor='r', alpha=0.8, mlog10=True, **kwargs):
+def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0.8, title=None, xlabel=None,
+           ylabel=None, ablinecolor="r", is_show=True, dpi=300, figname=None, **kwargs):
     """Creat Q-Q plot.
     **CAUSION: The x-axis(expected) is created from uniform distribution.**
 
     Parameters
     ----------
-    data : list, 1d-array, or Series
+    data : list, 1d-array-like, or Series
         Data to be plotted
 
-    other : array-like, ``Series`` of ``pandas`` or 1d array, or None, optional
+    other : list, 1d-array-like, Series or None, optional
         If provided, the sample quantiles of the `data` array-like object are 
         plotted against the sample quantiles of the `other` array-like object. 
         If not provided (default), the theoretical quantiles are used.
 
+    logp : bool, default is 'True', optional
+        If true, -log10 of the y_value(always be the p-value) is plotted.
+        It isn't very useful to plot raw p-values in GWAS QQ plot.
+
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
 
-    xlabel: string, or None, optional
-        Set the x axis label of the current axis.
-        CAUSION: The x axis will always be the expected value.
-
-    ylabel: string, or None, optional
-        Set the y axis label of the current axis.
-        CAUSION: The y axis will always be the observed value.
+    marker : matplotlib markers for scatter plot, default is "o", optional
 
     color : matplotlib color, optional
         The dots color in the plot
 
-    ablinecolor: matplotlib color, default is 'r' (red), optional
-        Color for the abline in plot. if set ``ablinecolor=None`` 
-        means do not plot the abline.
-
     alpha : float scalar, default is 0.8, optional
         The alpha blending value, between 0(transparent) and 1(opaque)
 
-    mlog10 : bool, default is 'True', optional
-        If true, -log10 of the y_value(always be the p-value) is plotted.
-        It isn't very useful to plot raw p-values in GWAS QQ plot.
+    title : string, or None, optional
+        Set the title of the current plot.
+
+    xlabel : string, or None, optional
+        Set the x axis label of the current axis.
+        CAUSION: The x axis will always be the expected value.
+
+    ylabel : string, or None, optional
+        Set the y axis label of the current axis.
+        CAUSION: The y axis will always be the observed value.
+
+    ablinecolor : matplotlib color, default is 'r' (red), optional
+        Color for the abline in plot. if set ``ablinecolor=None`` 
+        means do not plot the abline.
+
+    is_show : boolean, default is True, optional
+        Display the plot or not.
+
+    dpi : float or 'figure', default is 300, optional.
+        The resolution in dots-pet-inch for plot. If 'figure', use the figure's dpi value.
+
+    figname : string, or None, optional
+        Output plot file name.
 
     kwargs : key, value pairings, optional
         Other keyword arguments are passed to ``plt.scatter()``
@@ -108,7 +124,6 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
     ax : matplotlib Axes
         Axes object with the plot.
 
-
     Notes
     -----
     1. The X axis will always be the expected values and Y axis always be
@@ -118,11 +133,9 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
        are list-like ::
         [value1, value2, ...] (all the values should between 0 and 1)
 
-
     See Also
     --------
     qqnorm : Q-Q plot against the normal distribution.
-
 
     Examples
     --------
@@ -132,11 +145,29 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
     .. plot::
         :context: close-figs
 
-        >>> import geneview as gv
-        >>> df = gv.util.load_dataset('GOYA_preview')
-        >>> gv.gwas.qqplot(df['pvalue'], 
-        ...                xlabel="Expected p-value(-log10)",
-        ...                ylabel="Observed p-value(-log10)")
+        >>> import pandas as pd
+        >>> from qmplot import qqplot
+        >>> df = pd.read_table("tests/data/gwas_plink_result.tsv", sep="\t")
+        >>> df = df.dropna(how="any", axis=0)
+        >>> qqplot(data=df["P"],
+        ...        xlabel=r"Expected $-log_{10}{(P)}$",
+        ...        ylabel=r"Observed $-log_{10}{(P)}$")
+
+    Plot a better QQ plot and save the figure to "output_QQ_plot.png"
+
+    .. plot::
+        :context: close-figs
+
+        >>> fig, ax = plt.subplots(figsize=(6, 6), facecolor="w", edgecolor="k")  # define a plot
+        >>> qqplot(data=data["P"],
+        ...        marker="o",
+        ...        title="Test",
+        ...        xlabel=r"Expected $-log_{10}{(P)}$",
+        ...        ylabel=r"Observed $-log_{10}{(P)}$",
+        ...        dpi=300,
+        ...        is_show=False,  # do not show the figure
+        ...        figname="output_QQ_plot.png",
+        ...        ax=ax)
 
     We could even create a QQ plot base on two different dataset:
 
@@ -146,8 +177,8 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
         >>> import numpy as np
         >>> data1 = np.random.normal(size = 100)
         >>> data2 = np.random.normal(5.0, 1.0, size = 100)
-        >>> gv.gwas.qqplot(data1, other=data2, mlog10=False, 
-        ...                xlabel="Expected", ylabel="Observe")
+        >>> qqplot(data=data1, other=data2, logp=False,
+        ...        xlabel="Expected", ylabel="Observe")
     """
     if not all(map(is_numeric, data)):
         msg = 'Input must all be numeric in `data`.'
@@ -162,31 +193,42 @@ def qqplot(data, other=None, ax=None, xlabel=None, ylabel=None, color=None,
         raise ValueError(msg)
 
     if xlabel is None:
-        xlabel = 'Expected(-log10)' if other is None else '-Log10(value) of 2nd Sample'
+        xlabel = r"$Expected(-log_{10}{(P)})$" if other is None else r"$-log_{10}{(Value)} of 2nd Sample$"
     if ylabel is None:
-        ylabel = 'Observed(-log10)' if other is None else '-Log10(value) of 1st Sample'
+        ylabel = r"$Observed(-log_{10}{(P)})$" if other is None else r"(-log_{10}{(Value)}) of 1st Sample$"
 
     data = np.array(data, dtype=float)
+
     # create observed and expected
     e = ppoints(len(data)) if other is None else sorted(other)
-    if mlog10:
+
+    if logp:
         o = -np.log10(sorted(data))
         e = -np.log10(e)
     else:
         o = np.array(sorted(data))
         e = np.array(e)
 
-    ax = _do_plot(e, o, ax=ax, color=color, ablinecolor=ablinecolor, 
-                  alpha=alpha, **kwargs)
+    if "marker" not in kwargs:
+        kwargs["marker"] = marker
+    ax = _do_plot(e, o, ax=ax, color=color, ablinecolor=ablinecolor, alpha=alpha, **kwargs)
 
-    ax.set_xlabel(xlabel) 
-    ax.set_ylabel(ylabel) 
+    lambda_value = round(np.median(norm.ppf(data) ** 2 / 0.454), 3)
+    if title:
+        title += r"$(\lambda = %s)$" % lambda_value
+    else:
+        title = r"$\lambda = %s$" % lambda_value
 
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    General.get_figure(is_show, fig_name=figname, dpi=dpi)
     return ax
 
 
-def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed', 
-           color=None, ablinecolor='r', alpha=0.8, **kwargs):
+def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed', color=None, ablinecolor='r', alpha=0.8,
+           is_show=True, dpi=300, figname=None, **kwargs):
     """Creat Q-Q plot against the normal distribution values.
     *CAUSION: The x-axis(expected) is created from normal distribution.*
 
@@ -248,20 +290,20 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed',
         :context: close-figs
 
         >>> import numpy as np
-        >>> import geneview as gv
         >>> data = np.random.normal(size = 100)
-        >>> gv.gwas.qqnorm(data) 
+        >>> qqnorm(data=data)
 
     Plot a QQ norm plot with GOYA_preview data:
 
     .. plot::
         :context: close-figs
 
-        >>> import geneview as gv
-        >>> df = gv.util.load_dataset('GOYA_preview')
-        >>> gv.gwas.qqnorm(df['pvalue'], 
-        ...                xlabel="Expected value",
-        ...                ylabel="Observed value")
+        >>> import pandas as pd
+        >>> df = pd.read_table("tests/data/gwas_plink_result.tsv", sep="\t")
+        >>> df = df.dropna(how="any", axis=0)
+        >>> qqnorm(data=df["P"],
+        ...        xlabel="Expected value",
+        ...        ylabel="Observed value")
     """
     if not all(map(is_numeric, data)):
         msg = 'Input must all be numeric in `data`.'
@@ -274,15 +316,18 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed',
 
     # create expected
     e = norm.ppf(ppoints(len(obs)))
-    ax = _do_plot(e, obs, ax=ax, color=color, ablinecolor=ablinecolor, 
+
+    ax = _do_plot(e, obs, ax=ax, color=color, ablinecolor=ablinecolor,
                   alpha=alpha, **kwargs)
 
-    ax.set_xlabel(xlabel) 
-    ax.set_ylabel(ylabel) 
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    General.get_figure(is_show, fig_name=figname, dpi=dpi)
     return ax
 
 
-def _do_plot(x, y, ax=None, color=None, ablinecolor='r', alpha=0.8, **kwargs):
+def _do_plot(x, y, ax=None, color=None, ablinecolor="r", alpha=0.8, **kwargs):
     """
     Boiler plate plotting function for the `qqplot` and `qqnorm`
 
@@ -316,7 +361,8 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor='r', alpha=0.8, **kwargs):
     """
     # Draw the plot and return the Axes
     if ax is None:
-        ax = plt.gca()
+        # ax = plt.gca()
+        _, ax = plt.subplots(figsize=(5, 5), facecolor="w", edgecolor="k")
 
     # Get the color from the current color cycle
     if color is None:
@@ -326,13 +372,11 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor='r', alpha=0.8, **kwargs):
 
     # x is for expected; y is for observed value
     ax.scatter(x, y, c=color, alpha=alpha, edgecolors='none', **kwargs)
-    if ablinecolor:
-        # plot the y=x line by expected: uniform distribution data
-        ax.plot([x.min(), x.max()], [x.min(), x.max()], color=ablinecolor,
-                linestyle='-')
-
     ax.set_xlim(xmin=x.min(), xmax=1.05 * x.max())
     ax.set_ylim(ymin=y.min())
 
-    return ax
+    if ablinecolor:
+        # plot the y=x line by expected: uniform distribution data
+        ax.plot([x.min(), ax.get_xlim()[1]], [x.min(), ax.get_xlim()[1]], color=ablinecolor, linestyle="-")
 
+    return ax

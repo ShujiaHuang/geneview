@@ -1,7 +1,6 @@
-"""
-Plotting functions for manhattan plot.
+"""Plotting functions for manhattan plot.
 
-Copytright (c) Shujia Huang
+Copyright (c) Shujia Huang
 Date: 2016-01-23
 
 This model is based on brentp's script on github:
@@ -10,30 +9,67 @@ https://github.com/brentp/bio-playground/blob/master/plots/manhattan-plot.py
 Thanks for Brentp's contributions
 
 """
-from __future__ import print_function, division
-from itertools import groupby, cycle
-from operator import itemgetter
-
-import numpy as np
+from itertools import cycle
 from pandas import DataFrame
+import numpy as np
+
 import matplotlib.pyplot as plt
+from .._utils import General
 
-##
-from ..util import chr_id_cmp
-from ..palette import color_palette
 
-def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None, 
-                  kind='scatter', xtick_label_set=None, CHR=None, alpha=0.8, 
-                  mlog10=True, hline_kws=None, xticklabel_kws=None, **kwargs):
-    """Plot a manhattan plot.
+# learn something from "https://github.com/reneshbedre/bioinfokit/blob/38fb4966827337f00421119a69259b92bb67a7d0/bioinfokit/visuz.py"
+def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, ax=None,
+                  marker=".", color="#3B5488,#53BBD5", alpha=0.8,
+                  title=None, xlabel="Chromosome", ylabel=r"$-log_{10}{(P)}$",
+                  xtick_label_set=None, CHR=None, xticklabel_kws=None,
+                  suggestiveline=1e-5, genomewideline=5e-8, sign_line_cols="#D62728,#2CA02C", hline_kws=None,
+                  sign_marker_p=None, sign_marker_color="r",
+                  is_annotate_topsnp=False, annotext_kws=None, ld_block_size=50000,
+                  is_show=True, dpi=300, figname=None, **kwargs):
+
+    """Creates a manhattan plot from PLINK assoc output (or any data frame with chromosome, position, and p-value).
 
     Parameters
     ----------
-    data : 2d-array-like, or DataFrame.
-        Input data for plot manhattan. format [[id, x_val, y_val], ...]
+    data : DataFrame.
+        A DataFrame with columns "#CHROM," "POS," "P," and optionally, "SNP."
+
+    chrom : string, default is "#CHROM", optional
+        A string denoting the column name for chromosome. Defaults to be PLINK2.x's "#CHROM".
+        Said column must be a character.
+
+    pos : string, default is "POS", optional.
+        A string denoting the column name for chromosomal position. Default to PLINK2.x's "POS".
+        Said column must be numeric.
+
+    pv : string, default is "P", optional.
+        A string denoting the column name for chromosomal p-value. Default to PLINK2.x's "P".
+        Said column must be float type.
+
+    snp : string, default is "ID", optional.
+        A string denoting the column name for the SNP name (rs number) or the column which you want to
+        represent the variants. Default to PLINK2.x's "P". Said column should be a character.
+
+    logp : bool, optional
+        If TRUE, the -log10 of the p-value is plotted. It isn't very useful
+        to plot raw p-values, but plotting the raw value could be useful for
+        other genome-wide plots, for example, peak heights, bayes factors, test
+        statistics, other "scores," etc. default: True
 
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
+
+    marker : matplotlib markers for scatter plot, default is "o", optional
+
+    color : matplotlib color, optional, default: color_palette('colorful', 4)
+        Color used for the plot elements. Could hex-code or rgb,
+        e.g: '#3B5488,#53BBD5' or 'rb'
+
+    alpha : float scalar, default is 0.8, optional
+        The alpha blending value, between 0(transparent) and 1(opaque)
+
+    title : string, or None, optional
+        Set the title of the current plot.
 
     xlabel: string, optional
         Set the x axis label of the current axis.
@@ -41,38 +77,57 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
     ylabel: string, optional
         Set the y axis label of the current axis.
 
-    color : matplotlib color, optional, default: color_palette('colorful', 4) 
-        Color used for the plot elements. Could hex-code or rgb, 
-        e.g: '#000000,#969696' or 'rb'
-
-    kind : {'scatter' | 'line'}, optional
-        Kind of plot to draw
-
-    xtick_label_set : a set. optional 
+    xtick_label_set : a set. optional
         Set the current x axis ticks of the current axis.
 
     CHR : string, or None, optional
-        Choice the specific chromosome to plot. And the x-axis will be the
+        Select a specific chromosome to plot. And the x-axis will be the
         position of this chromosome instead of the chromosome id.
 
-        CAUSION: this parameter could not be used with ``xtick_label_set``
+        CAUTION: this parameter could not be used with ``xtick_label_set``
                  together.
 
-    alpha : scalar, or 0.8(default), optional
-        The alpha blending value, between 0(transparent) and 1(opaque)
+    xticklabel_kws : key, value pairings, or None, optional
+        Other keyword arguments are passed to set xtick labels in
+        maplotlib.axis.Axes.set_xticklabels.
 
-    mlog10 : bool, optional, default: True
-        If true, -log10 of the y_value(always be the p-value) is plotted. It
-        isn't very useful to plot raw p-values, but plotting the raw value 
-        could be useful for other genome-wide plots, for example peak heights,
-        bayes factors, test statistics, other "scores", etc.
+    suggestiveline : float or None, default is 1e-5, optional
+        Where to draw a suggestive ax.axhline. Set None to be disable.
+
+    genomewideline : float or None, default is 5e-8
+        Where to draw a genome-wide significant ax.axhline. Set None to be disable.
+
+    sign_line_cols : matplotlib color, default: "#D62728,#2CA02C", optional.
+        Color used for ``suggestiveline`` and ``genomewideline``.
+        Could be hex-code or rgb, e.g: "#D62728,#2CA02C" or 'rb'
 
     hline_kws : key, value pairings, or None, optional
-        keyword arguments for plotting ax.axhline
+        keyword arguments for plotting ax.axhline(``suggestiveline`` and ``genomewideline``)
+        except the "color" key-pair.
 
-    xticklabel_kws : key, value pairings, or None, optional
-        Other keyword arguments are passed to set_xticklabels in 
-        maplotlib.axis.Axes.set_xticklabels.
+    sign_marker_p : float or None, default None, optional.
+        A P-value threshold (suggestive to be 1e-6) for marking the significant SNP sites.
+
+    sign_marker_color : matplotlib color, default: "r", optional.
+        Define a color code for significant SNP sites.
+
+    is_annotate_topsnp : boolean, default is False, optional.
+        Annotate the top SNP or not for the significant locus.
+
+    annotext_kws: key, value pairings, or None, optional
+        keyword arguments for plotting plt.annotate in`` matplotlib.pyplot.annotate(text, xy, *args, **kwargs)``
+
+    ld_block_size : integer, default is 50000, optional
+        Set the size of LD block which for finding top SNP. And the top SNP's annotation represent the block.
+
+    is_show : boolean, default is True, optional
+        Display the plot or not.
+
+    dpi : float or 'figure', default is 300, optional.
+        The resolution in dots-pet-inch for plot. If 'figure', use the figure's dpi value.
+
+    figname : string, or None, optional
+        Output plot file name.
 
     kwargs : key, value pairings, optional
         Other keyword arguments are passed to ``plt.scatter()`` or
@@ -85,153 +140,223 @@ def manhattanplot(data, ax=None, xlabel=None, ylabel=None, color=None,
     ax : matplotlib Axes
         Axes object with the manhattanplot.
 
-
     Notes
     -----
     1. This plot function is not just suit for GWAS manhattan plot,
-       it could also be used for any input data which format is ::
+       it could also be used for any input data which have [chromo-
+       some, position and p-value] dataframe.
 
-        [ [id1, x-value1, y-value1],
-          [id2, x-value2, y-value2],
-          ...
-        ]
-
-    2. The right and top spines of the plot have been setted to be 
-       invisible by default.
-
-    3. I'm going to add a parameter calls ``highlight`` to highlight a
-       set of interesting positions (SNPs). And this parameter takes a 
-       list-like value.
+    2. The right and top spines of the plot have been set to be
+       invisible by hand.
 
     Examples
     --------
 
-    Plot a basic manhattan plot:
+    Plot a basic manhattan plot from PLINK2.x association output and reture the figure:
 
     .. plot::
         :context: close-figs
 
-        >>> import geneview as gv
-        >>> df = gv.util.load_dataset('GOYA_preview')
-        >>> gv.gwas.manhattanplot(df[['chrID','position','pvalue']],
-        ...                       xlabel="Chromosome", 
-        ...                       ylabel="-Log10(P-value)") 
+        >>> import pandas as pd
+        >>> from qmplot import manhattanplot
+        >>> df = pd.read_table("tests/data/gwas_plink_result.tsv", sep="\t")
+        >>> df = df.dropna(how="any", axis=0)  # clean data
+        >>> ax = manhattanplot(data=df)
 
     Plot a basic manhattan plot with vertical xtick labels:
 
     .. plot::
         :context: close-figs
 
-        >>> xtick = ['chr'+c for c in 
-        ...          map(str, range(1, 15) + ['16', '18', '20', '22'])]
-        >>> gv.gwas.manhattanplot(df[['chrID','position','pvalue']],  
-        ...                       xlabel="Chromosome", 
-        ...                       ylabel="-Log10(P-value)", 
-        ...                       xticklabel_kws={'rotation': 'vertical'},
-        ...                       xtick_label_set = set(xtick))
+        >>> xtick = set(list(map(str, range(1, 15))) + ['16', '18', '20', '22', 'X'])
+        >>> manhattanplot(data=df, xlabel="Chromosome", ylabel=r"$-log_{10}{(P)}$",
+        ...               xtick_label_set=xtick)
 
-    Add a horizotal at y position=3 line with blue color and lingwidth=1 
+    Add a horizotal at y position=3 line with linestyle="--" and lingwidth=1.3
     across the axis:
 
     .. plot::
         :context: close-figs
     
-        >>> gv.gwas.manhattanplot(df[['chrID','position','pvalue']],  
-        ...                       hline_kws={'y': 3, 'color': 'b', 'lw': 1},
-        ...                       xlabel="Chromosome", 
-        ...                       ylabel="-Log10(P-value)", 
-        ...                       xticklabel_kws={'rotation': 'vertical'},
-        ...                       xtick_label_set = set(xtick))
+        >>> manhattanplot(data=df,
+        ...               hline_kws={"y": 3, "linestyle": "--", "lw": 1.3},
+        ...               xlabel="Chromosome",
+        ...               ylabel=r"$-log_{10}{(P)}$",
+        ...               xtick_label_set = xtick)
 
+    Plot a better one with genome-wide significant mark and annotate the Top SNP and save
+    the figure to "output_manhattan_plot.png":
+
+    .. plot::
+        :context: close-figs
+
+        >>> fig, ax = plt.subplots(figsize=(12, 4), facecolor="w", edgecolor="k")  # define a plot
+        >>> manhattanplot(data=df,
+        ...               marker=".",
+        ...               sign_marker_p=1e-6,  # Genome wide significant p-value
+        ...               sign_marker_color="r",
+        ...               snp="ID",
+        ...               title="Test",
+        ...               xtick_label_set=xtick,  # CHR='8', # specific showing the chromosome 8th
+        ...               xlabel="Chromosome",
+        ...               ylabel=r"$-log_{10}{(P)}$",
+        ...               sign_line_cols=["#D62728", "#2CA02C"],
+        ...               hline_kws={"linestyle": "--", "lw": 1.3},
+        ...               is_annotate_topsnp=True,
+        ...               ld_block_size=50000,  # 50000 bp
+        ...               annotext_kws={"size": 12,  # The fontsize of annotate text
+        ...                             "xycoords": "data",
+        ...                             "xytext": (15, +15),
+        ...                             "textcoords": "offset points",
+        ...                             "bbox": dict(boxstyle="round", alpha=0.2), 
+        ...                             "arrowprops": dict(arrowstyle="->",
+        ...                                                connectionstyle="angle,angleA=0,angleB=80,rad=10",
+        ...                                                alpha=0.6, relpos=(0, 0))},
+        ...               dpi=300,  # set the resolution of plot figure
+        ...               is_show=False,  # do not show the figure
+        ...               figname="output_manhattan_plot.png",
+        ...               ax=ax)
     """
+
+    if not isinstance(data, DataFrame):
+        raise ValueError("[ERROR] Input data must be a pandas.DataFrame.")
+    if chrom not in data:
+        raise ValueError("[ERROR] Column \"%s\" not found!" % chrom)
+    if pos not in data:
+        raise ValueError("[ERROR] Column \"%s\" not found!" % pos)
+    if pv not in data:
+        raise ValueError("[ERROR] Column \"%s\" not found!" % pv)
+    if is_annotate_topsnp and (snp not in data):
+        raise ValueError("[ERROR] You're trying to annotate a set of SNPs but "
+                         "NO SNP \"%s\" column found!" % snp)
     if CHR is not None and xtick_label_set is not None:
-        msg = "``CHR`` and ``xtick_label_set`` can't be setted simultaneously."
-        raise ValueError(msg)
+        raise ValueError("[ERROR] ``CHR`` and ``xtick_label_set`` can't be set simultaneously.")
+
+    data[[chrom]] = data[[chrom]].astype(str)  # make sure all the chromosome id are character.
 
     # Draw the plot and return the Axes
     if ax is None:
-        ax = plt.gca()
+        # ax = plt.gca()
+        _, ax = plt.subplots(figsize=(9, 3), facecolor="w", edgecolor="k")  # default
 
     if xticklabel_kws is None:
-        xticklabel_kws = dict()
+        xticklabel_kws = {}
     if hline_kws is None:
-        hline_kws = dict()
+        hline_kws = {}
+    if annotext_kws is None:
+        annotext_kws = {}
 
-    # Get the color from 'colorful' cycle
-    if color is None:
-        color = color_palette("colorful", 4) 
-
-    if ',' in color: color = color.split(',')
+    if "," in color:
+        color = color.split(",")
     colors = cycle(color)
 
-    if isinstance(data, DataFrame):
-        data = DataFrame(data.values, columns=['chrom', 'pos', 'pvalue'])
-    else:
-        data = DataFrame(data, columns=['chrom', 'pos', 'pvalue'])
-
-    last_x = 0
-    xs_by_id = {} # use for collecting chromosome's position on x-axis
+    last_xpos = 0
+    xs_by_id = []  # use for collecting chromosome's position on x-axis
     x, y, c = [], [], []
-    for seqid, rlist in data.groupby('chrom', sort=False):
+    sign_snp_sites = []
+    for seqid, group_data in data.groupby(chrom, sort=False):  # keep the raw order of chromosome
 
-        if CHR is not None and seqid != CHR: continue
-        
-        color = colors.next()
-        region_xs = [last_x + r for r in rlist['pos']]
-        x.extend(region_xs)
-        y.extend(rlist['pvalue'])
-        c.extend([color] * len(rlist))
+        if (CHR is not None) and (seqid != CHR):
+            continue
+
+        color = next(colors)
+        for i, (site, p_value) in enumerate(zip(group_data[pos], group_data[pv])):
+            y_value = -np.log10(p_value) if logp else p_value
+
+            x.append(last_xpos + site)
+            y.append(y_value)
+
+            # set different color for significant SNPs.
+            c.append(sign_marker_color if ((sign_marker_p is not None) and (p_value <= sign_marker_p)) else color)
+            # c.append(color if p_value > sign_marker_p else sign_marker_color)
+            if (sign_marker_p is not None) and (p_value <= sign_marker_p):
+                snp_id = group_data[snp].iloc[i]
+                sign_snp_sites.append([last_xpos + site, y_value, snp_id])  # x_pos, y_value, text
 
         # ``xs_by_id`` is for setting up positions and ticks. Ticks should
         # be placed in the middle of a chromosome. The a new pos column is 
         # added that keeps a running sum of the positions of each successive 
         # chromsome.
-        xs_by_id[seqid] = (region_xs[0] + region_xs[-1]) / 2
-        last_x = x[-1]  # keep track so that chrs don't overlap in the plot.
+        xs_by_id.append([seqid, last_xpos + (group_data[pos].iloc[0] + group_data[pos].iloc[-1]) / 2])
+        last_xpos = x[-1]  # keep track so that chromosome will not overlap in the plot.
 
     if not x:
-        msg = ("zero-size array to reduction operation minimum which has no "
-               "identity. This could be caused by zero-size array of ``x`` "
-               "in the ``manhattanplot(...)`` function.")
-        raise ValueError(msg)
+        raise ValueError("zero-size array to reduction operation minimum which has no "
+                         "identity. This could be caused by zero-size array of ``x`` "
+                         "in the ``manhattanplot(...)`` function.")
 
-    c = np.array(c)
-    x = np.array(x)
-    y = -np.log10(y) if mlog10 else np.array(y)
+    if "marker" not in kwargs:
+        kwargs["marker"] = marker
 
-    if kind == 'scatter':
-        ax.scatter(x, y, c=c, alpha=alpha, edgecolors='none', **kwargs)
+    # plot the main manhattan dot plot
+    ax.scatter(x, y, c=c, alpha=alpha, edgecolors="none", **kwargs)
 
-    elif kind == 'line':
-        ax.vlines(x, 0, y, colors=c, alpha=alpha, **kwargs)
+    # Add GWAS significant lines
+    if "color" in hline_kws:
+        hline_kws.pop("color")
 
-    else:
-        msg = "``kind`` must be either 'scatter' or 'line'"
-        raise ValueError(msg)
+    sign_line_cols = sign_line_cols.split(",") if "," in sign_line_cols else sign_line_cols
+    if suggestiveline is not None:
+        ax.axhline(y=-np.log10(suggestiveline) if logp else suggestiveline, color=sign_line_cols[0], **hline_kws)
+    if genomewideline is not None:
+        ax.axhline(y=-np.log10(genomewideline) if logp else genomewideline, color=sign_line_cols[1], **hline_kws)
 
-    if hline_kws:
-        ax.axhline(**hline_kws)
-
-    if xtick_label_set is None: 
-        xtick_label_set = set(xs_by_id.keys())
+    # Plotting the Top SNP for each significant block
+    if is_annotate_topsnp:
+        sign_top_snp = _find_top_snp(sign_snp_sites, ld_block_size=ld_block_size, is_get_biggest=logp)
+        for _x, _y, _text in sign_top_snp:
+            ax.annotate(_text, xy=(_x, _y), **annotext_kws)
 
     if CHR is None:
-        xs_by_id = [(k, xs_by_id[k])
-                     for k in sorted(xs_by_id.keys(), cmp=chr_id_cmp)
-                     if k in xtick_label_set]
 
-        ax.set_xticks([c[1] for c in xs_by_id])
-        ax.set_xticklabels([c[0] for c in xs_by_id], **xticklabel_kws)
+        if xtick_label_set is not None:
+            ax.set_xticks([v for c, v in xs_by_id if c in xtick_label_set])
+            ax.set_xticklabels([c for c, v in xs_by_id if c in xtick_label_set], **xticklabel_kws)
+        else:
+            ax.set_xticks([v for c, v in xs_by_id])
+            ax.set_xticklabels([c for c, v in xs_by_id], **xticklabel_kws)
 
     else:
-        # show the whole chromsome's position without scientific notation
+        # show the whole chromosomal position without scientific notation
         # if you are just interesting in this chromosome.
         ax.get_xaxis().get_major_formatter().set_scientific(False)
 
     ax.set_xlim(0, x[-1])
-    ax.set_ylim(ymin=y.min())
+    ax.set_ylim(ymin=min(y), ymax=1.2 * max(y))
 
-    if xlabel: ax.set_xlabel(xlabel) 
-    if ylabel: ax.set_ylabel(ylabel)
+    if title:
+        ax.set_title(title)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
 
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    General.get_figure(is_show, fig_name=figname, dpi=dpi)
     return ax
+
+
+def _find_top_snp(sign_snp_data, ld_block_size, is_get_biggest=True):
+    """
+    :param sign_snp_data:  A 2D array: [[xpos1, yvalue1, text1], [xpos2, yvalue2, text2], ...]
+    """
+    top_snp = []
+    tmp_cube = []
+    for i, (_x, _y, text) in enumerate(sign_snp_data):
+        if i == 0:
+            tmp_cube.append([_x, _y, text])
+            continue
+
+        if _x > tmp_cube[-1][0] + ld_block_size:
+            # Sorted by y_value in increase/decrease order and only get the first value [0], which is the TopSNP.
+            top_snp.append(sorted(tmp_cube, key=(lambda x: x[1]), reverse=is_get_biggest)[0])
+            tmp_cube = []
+
+        tmp_cube.append([_x, _y, text])
+
+    if tmp_cube:  # deal the last one
+        top_snp.append(sorted(tmp_cube, key=(lambda x: x[1]), reverse=True)[0])
+
+    return top_snp
