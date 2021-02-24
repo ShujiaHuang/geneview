@@ -6,7 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from ..palette import color_palette
-from .. import util
+from .. import utils
 
 
 class JointGrid(object):
@@ -197,9 +197,9 @@ class JointGrid(object):
             ax_joint.set_ylim(ylim)
 
         # Make the grid look nice
-        util.despine(f)
-        util.despine(ax=ax_marg_x, left=True)
-        util.despine(ax=ax_marg_y, bottom=True)
+        utils.despine(f)
+        utils.despine(ax=ax_marg_x, left=True)
+        utils.despine(ax=ax_marg_y, bottom=True)
         f.tight_layout()
         f.subplots_adjust(hspace=space, wspace=space)
 
@@ -488,12 +488,12 @@ class Grid(object):
             palette = color_palette(n_colors=1)
 
         else:
-            hue_names = util.categorical_order(data[hue], hue_order)
+            hue_names = utils.categorical_order(data[hue], hue_order)
             n_colors = len(hue_names)
 
             # By default use either the current color palette or HUSL
             if palette is None:
-                current_palette = util.get_color_cycle()
+                current_palette = utils.get_color_cycle()
                 if n_colors > len(current_palette):
                     colors = color_palette("husl", n_colors)
                 else:
@@ -690,7 +690,7 @@ class PairGrid(Grid):
             self.hue_vals = pd.Series(["_nolegend_"] * len(data),
                                       index=data.index)
         else:
-            hue_names = util.categorical_order(data[hue], hue_order)
+            hue_names = utils.categorical_order(data[hue], hue_order)
             if dropna:
                 # Filter NA from the list of unique hue names
                 hue_names = list(filter(pd.notnull, hue_names))
@@ -705,7 +705,7 @@ class PairGrid(Grid):
 
         # Make the plot look nice
         if despine:
-            util.despine(fig=fig)
+            utils.despine(fig=fig)
         fig.tight_layout()
 
     def map(self, func, **kwargs):

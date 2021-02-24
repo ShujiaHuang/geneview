@@ -18,7 +18,7 @@ try:
 except ImportError:
     from ..ext.six import string_types
 
-from ..util import set_hls_values, _kde_support, freedman_diaconis_bins 
+from ..utils import set_hls_values, _kde_support, freedman_diaconis_bins 
 from ..palette import color_palette, blend_palette
 from ._sns_axisgrid import JointGrid
 

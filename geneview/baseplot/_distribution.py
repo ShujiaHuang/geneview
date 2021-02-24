@@ -5,7 +5,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from ..util import freedman_diaconis_bins, despine
+from ..utils import freedman_diaconis_bins, despine
 from ..palette import circos, color_palette, blend_palette 
 
 def hist2d(x, y, ax=None, bins=None, norm_hist=False, norm=LogNorm(),
