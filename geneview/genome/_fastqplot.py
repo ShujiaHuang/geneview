@@ -5,7 +5,7 @@ from __future__ import print_function, division
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ..util import get_color_cycle
+from ..utils import get_color_cycle
 from ..io import Fastq, FastqReader
 
 def fqqualplot(fqdata, phred=64, ax=None, title=None, 
