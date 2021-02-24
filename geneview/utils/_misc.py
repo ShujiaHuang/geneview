@@ -3,37 +3,38 @@ This module contains miscellaneous functions for ``geneview``.
 """
 from __future__ import print_function, division
 
+import operator
 import pandas as pd
 import numpy as np
 from scipy import stats
 
+
 def chr_id_cmp(a, b):
     """
     Sorted the chromosome by the order.
-    
+
     Parameters
     ----------
-        a, b : string or int. 
+        a, b : string or int.
             a and b are the chromosomes' id. They could be 'chr1', 'chr2'
             or '1' and '2'.
-    
+
     Returns
     -------
-    Must be one of the number in [-1, 0, 1] just as the same with the 
-    python build-in function: ``cmp()``
+    Must be one of the number in [True, False]
     """
-    a = a.lower().replace('_', '')
-    b = b.lower().replace('_', '')
-    achr = a[3:] if a.startswith('chr') else a
-    bchr = b[3:] if b.startswith('chr') else b
+    a = a.lower().replace("_", "")
+    b = b.lower().replace("_", "")
+    achr = a[3:] if a.startswith("chr") else a
+    bchr = b[3:] if b.startswith("chr") else b
 
     try:
-        return cmp(int(achr), int(bchr))
+        # 1~22 chromosome
+        return operator.le(int(achr), int(bchr))
     except ValueError:
-        if achr.isdigit() and not bchr.isdigit(): return -1
-        if bchr.isdigit() and not achr.isdigit(): return 1
-        # X Y
-        return cmp(achr, bchr) 
+        # [1] 22 X
+        # [2] X Y
+        return operator.le(achr, bchr)
 
 
 def is_numeric(s):
