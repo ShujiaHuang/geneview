@@ -12,7 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle 
 
-from ..util import chr_id_cmp
+from ..utils import chr_id_cmp
 from ..palette import circos, set_style  # ``circos`` is a color dict
 
 def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5, 
