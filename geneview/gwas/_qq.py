@@ -9,7 +9,7 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 from ..utils import is_numeric
-from .._utils import General
+from ._utils import General
 
 
 def ppoints(n, a=0.5):

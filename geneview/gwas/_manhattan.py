@@ -14,7 +14,7 @@ from pandas import DataFrame
 import numpy as np
 
 import matplotlib.pyplot as plt
-from .._utils import General
+from ._utils import General
 
 
 # learn something from "https://github.com/reneshbedre/bioinfokit/blob/38fb4966827337f00421119a69259b92bb67a7d0/bioinfokit/visuz.py"
@@ -163,16 +163,17 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         >>> df = df.dropna(how="any", axis=0)  # clean data
         >>> ax = manhattanplot(data=df)
 
-    Plot a basic manhattan plot with vertical xtick labels:
+    Plot a basic manhattan plot with horizontal xtick labels and save the plot
+    to a file name "manhattan.png":
 
     .. plot::
         :context: close-figs
 
         >>> xtick = set(list(map(str, range(1, 15))) + ['16', '18', '20', '22', 'X'])
         >>> manhattanplot(data=df, xlabel="Chromosome", ylabel=r"$-log_{10}{(P)}$",
-        ...               xtick_label_set=xtick)
+        ...               xtick_label_set=xtick, figname="manhattan.png")
 
-    Add a horizotal at y position=3 line with linestyle="--" and lingwidth=1.3
+    Add a horizontal at y position=3 line with linestyle="--" and lingwidth=1.3
     across the axis:
 
     .. plot::
@@ -183,6 +184,17 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         ...               xlabel="Chromosome",
         ...               ylabel=r"$-log_{10}{(P)}$",
         ...               xtick_label_set = xtick)
+
+    Rotate the x-axis ticklabel by setting ``xticklabel_kws``:
+
+    .. plot::
+        :context: close-figs
+
+        >>> manhattanplot(data=df,
+        ...               hline_kws={"y": 3, "linestyle": "--", "lw": 1.3},
+        ...               xlabel="Chromosome",
+        ...               ylabel=r"$-log_{10}{(P)}$",
+        ...               xticklabel_kws={"rotation": "vertical"})
 
     Plot a better one with genome-wide significant mark and annotate the Top SNP and save
     the figure to "output_manhattan_plot.png":
@@ -254,7 +266,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     xs_by_id = []  # use for collecting chromosome's position on x-axis
     x, y, c = [], [], []
     sign_snp_sites = []
-    for seqid, group_data in data.groupby(chrom, sort=False):  # keep the raw order of chromosome
+    for seqid, group_data in data.groupby(by=chrom, sort=False):  # keep the raw order of chromosome
 
         if (CHR is not None) and (seqid != CHR):
             continue
