@@ -2,4 +2,4 @@ numpy
 scipy
 pandas
 matplotlib
-Cycler
+seaborn
