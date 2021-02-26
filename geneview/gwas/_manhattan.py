@@ -1,7 +1,7 @@
 """Plotting functions for manhattan plot.
 
 Copyright (c) Shujia Huang
-Date: 2016-01-23
+Date: 2021-02-21
 
 This model is based on brentp's script on github:
 https://github.com/brentp/bio-playground/blob/master/plots/manhattan-plot.py
@@ -25,7 +25,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
                   suggestiveline=1e-5, genomewideline=5e-8, sign_line_cols="#D62728,#2CA02C", hline_kws=None,
                   sign_marker_p=None, sign_marker_color="r",
                   is_annotate_topsnp=False, annotext_kws=None, ld_block_size=50000,
-                  is_show=True, dpi=300, figname=None, **kwargs):
+                  is_show=None, dpi=300, figname=None, **kwargs):
 
     """Creates a manhattan plot from PLINK assoc output (or any data frame with chromosome, position, and p-value).
 
@@ -120,8 +120,10 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     ld_block_size : integer, default is 50000, optional
         Set the size of LD block which for finding top SNP. And the top SNP's annotation represent the block.
 
-    is_show : boolean, default is True, optional
-        Display the plot or not.
+    is_show : boolean or None, default is None, Optional. 
+        Display the plot in screen or not.
+        You can set this parameter by your wish, or it'll set to be True automatically 
+        if ``is_show`` and ``figname`` are None simultaneously.
 
     dpi : float or 'figure', default is 300, optional.
         The resolution in dots-pet-inch for plot. If 'figure', use the figure's dpi value.
@@ -169,7 +171,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     .. plot::
         :context: close-figs
 
-        >>> xtick = set(list(map(str, range(1, 15))) + ['16', '18', '20', '22', 'X'])
+        >>> xtick = set(['chr' + i for i in list(map(str, range(1, 10))) + ['11', '13', '15', '18', '21', 'X']])
         >>> manhattanplot(data=df, xlabel="Chromosome", ylabel=r"$-log_{10}{(P)}$",
         ...               xtick_label_set=xtick, figname="manhattan.png")
 
@@ -180,7 +182,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         :context: close-figs
     
         >>> manhattanplot(data=df,
-        ...               hline_kws={"y": 3, "linestyle": "--", "lw": 1.3},
+        ...               hline_kws={"linestyle": "--", "lw": 1.3},
         ...               xlabel="Chromosome",
         ...               ylabel=r"$-log_{10}{(P)}$",
         ...               xtick_label_set = xtick)
@@ -191,7 +193,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         :context: close-figs
 
         >>> manhattanplot(data=df,
-        ...               hline_kws={"y": 3, "linestyle": "--", "lw": 1.3},
+        ...               hline_kws={"linestyle": "--", "lw": 1.3},
         ...               xlabel="Chromosome",
         ...               ylabel=r"$-log_{10}{(P)}$",
         ...               xticklabel_kws={"rotation": "vertical"})
@@ -209,7 +211,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         ...               sign_marker_color="r",
         ...               snp="ID",
         ...               title="Test",
-        ...               xtick_label_set=xtick,  # CHR='8', # specific showing the chromosome 8th
+        ...               xtick_label_set=xtick,
         ...               xlabel="Chromosome",
         ...               ylabel=r"$-log_{10}{(P)}$",
         ...               sign_line_cols=["#D62728", "#2CA02C"],
@@ -345,6 +347,9 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+
+    if (is_show is None) and (figname is None):
+        is_show = True
 
     General.get_figure(is_show, fig_name=figname, dpi=dpi)
     return ax
