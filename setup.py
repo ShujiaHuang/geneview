@@ -49,18 +49,18 @@ if __name__ == "__main__":
           version=VERSION,
           download_url=DOWNLOAD_URL,
           install_requires=[
-              'numpy',
-              'scipy',
-              'pandas',
-              'matplotlib',
-              'Cycler',  # option, rarely use
+              "numpy",
+              "scipy",
+              "pandas",
+              "matplotlib",
+              "seaborn",
+              "Cycler",  # option, rarely use
           ],
           packages=find_packages(),
           classifiers=[
              'Intended Audience :: Science/Research',
              'Programming Language :: Python :: 2.7',
-             'Programming Language :: Python :: 3.3',
-             'Programming Language :: Python :: 3.4',
+             'Programming Language :: Python :: 3.7',
              'License :: OSI Approved :: BSD License',
              'Topic :: Scientific/Engineering :: Bio-Informatics',
              'Topic :: Scientific/Engineering :: Visualization',
