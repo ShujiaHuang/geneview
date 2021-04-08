@@ -13,9 +13,23 @@ from ._plott import axlabel, despine, offset_spines, set_hls_values, \
                     get_color_cycle
 from ._palette import desaturate, set_hls_values, get_color_cycle
 from ._dataset import get_dataset_names, load_dataset
+from ._adjust_text import adjust_text
 
-__all__ = ['chr_id_cmp', 'is_numeric', 'is_integer', 'iqr', '_kde_support', 
-           'axlabel', 'despine', 'offset_spines', 'desaturate', 'set_hls_values', 
-           'get_color_cycle', 'get_dataset_names', 'load_dataset', 
-           'set_hls_values', 'categorical_order', 'get_color_cycle',
-           'freedman_diaconis_bins']
+__all__ = [ "chr_id_cmp",
+            "is_numeric",
+            "is_integer",
+            "iqr",
+            "_kde_support", 
+            "axlabel", 
+            "despine", 
+            "offset_spines", 
+            "desaturate", 
+            "set_hls_values", 
+            "get_color_cycle", 
+            "get_dataset_names",
+            "load_dataset", 
+            "set_hls_values", 
+            "categorical_order", 
+            "get_color_cycle",
+            "freedman_diaconis_bins", 
+            "adjust_text"]

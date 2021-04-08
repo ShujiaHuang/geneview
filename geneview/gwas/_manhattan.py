@@ -14,7 +14,8 @@ from pandas import DataFrame
 import numpy as np
 
 import matplotlib.pyplot as plt
-from ._utils import General
+from .._utils import General
+from ..utils import adjust_text
 
 
 # learn something from "https://github.com/reneshbedre/bioinfokit/blob/38fb4966827337f00421119a69259b92bb67a7d0/bioinfokit/visuz.py"
@@ -24,9 +25,8 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
                   xtick_label_set=None, CHR=None, xticklabel_kws=None,
                   suggestiveline=1e-5, genomewideline=5e-8, sign_line_cols="#D62728,#2CA02C", hline_kws=None,
                   sign_marker_p=None, sign_marker_color="r",
-                  is_annotate_topsnp=False, annotext_kws=None, ld_block_size=50000,
+                  is_annotate_topsnp=False, text_kws=None, ld_block_size=50000,
                   is_show=None, dpi=300, figname=None, **kwargs):
-
     """Creates a manhattan plot from PLINK assoc output (or any data frame with chromosome, position, and p-value).
 
     Parameters
@@ -114,8 +114,8 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     is_annotate_topsnp : boolean, default is False, optional.
         Annotate the top SNP or not for the significant locus.
 
-    annotext_kws: key, value pairings, or None, optional
-        keyword arguments for plotting plt.annotate in`` matplotlib.pyplot.annotate(text, xy, *args, **kwargs)``
+    text_kws: key, value pairings, or None, optional
+        keyword arguments for plotting plt.annotate in`` matplotlib.axes.Axes.text(x, y, s, fontdict=None, **kwargs)``
 
     ld_block_size : integer, default is 50000, optional
         Set the size of LD block which for finding top SNP. And the top SNP's annotation represent the block.
@@ -218,20 +218,13 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         ...               hline_kws={"linestyle": "--", "lw": 1.3},
         ...               is_annotate_topsnp=True,
         ...               ld_block_size=50000,  # 50000 bp
-        ...               annotext_kws={"size": 12,  # The fontsize of annotate text
-        ...                             "xycoords": "data",
-        ...                             "xytext": (15, +15),
-        ...                             "textcoords": "offset points",
-        ...                             "bbox": dict(boxstyle="round", alpha=0.2), 
-        ...                             "arrowprops": dict(arrowstyle="->",
-        ...                                                connectionstyle="angle,angleA=0,angleB=80,rad=10",
-        ...                                                alpha=0.6, relpos=(0, 0))},
+        ...               annotext_kws={"fontsize": 12,  # The fontsize of annotate text
+        ...                             "arrowprops": dict(arrowstyle="-", color="k", alpha=0.6)},
         ...               dpi=300,  # set the resolution of plot figure
         ...               is_show=False,  # do not show the figure
         ...               figname="output_manhattan_plot.png",
         ...               ax=ax)
     """
-
     if not isinstance(data, DataFrame):
         raise ValueError("[ERROR] Input data must be a pandas.DataFrame.")
     if chrom not in data:
@@ -257,8 +250,8 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         xticklabel_kws = {}
     if hline_kws is None:
         hline_kws = {}
-    if annotext_kws is None:
-        annotext_kws = {}
+    if text_kws is None:
+        text_kws = {}
 
     if "," in color:
         color = color.split(",")
@@ -280,9 +273,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
             x.append(last_xpos + site)
             y.append(y_value)
 
-            # set different color for significant SNPs.
             c.append(sign_marker_color if ((sign_marker_p is not None) and (p_value <= sign_marker_p)) else color)
-            # c.append(color if p_value > sign_marker_p else sign_marker_color)
             if (sign_marker_p is not None) and (p_value <= sign_marker_p):
                 snp_id = group_data[snp].iloc[i]
                 sign_snp_sites.append([last_xpos + site, y_value, snp_id])  # x_pos, y_value, text
@@ -305,6 +296,15 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     # plot the main manhattan dot plot
     ax.scatter(x, y, c=c, alpha=alpha, edgecolors="none", **kwargs)
 
+    if is_annotate_topsnp is not None:
+        index = _find_SNPs_which_overlap_sign_neighbour_region(
+            sign_snp_neighbour_region=_sign_snp_regions(sign_snp_sites, ld_block_size),
+            x=x)
+        
+        # reset color for all SNPs which nearby the top SNPs.
+        for i in index:
+            ax.scatter(x[i], y[i], c=sign_marker_color, alpha=alpha, edgecolors="none", **kwargs)
+
     # Add GWAS significant lines
     if "color" in hline_kws:
         hline_kws.pop("color")
@@ -318,8 +318,9 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     # Plotting the Top SNP for each significant block
     if is_annotate_topsnp:
         sign_top_snp = _find_top_snp(sign_snp_sites, ld_block_size=ld_block_size, is_get_biggest=logp)
-        for _x, _y, _text in sign_top_snp:
-            ax.annotate(_text, xy=(_x, _y), **annotext_kws)
+        if sign_top_snp:  # not empty
+            texts = [ax.text(_x, _y, _text) for _x, _y, _text in sign_top_snp]
+            adjust_text(texts, ax=ax, **text_kws)
 
     if CHR is None:
 
@@ -377,3 +378,51 @@ def _find_top_snp(sign_snp_data, ld_block_size, is_get_biggest=True):
         top_snp.append(sorted(tmp_cube, key=(lambda x: x[1]), reverse=True)[0])
 
     return top_snp
+
+
+def _sign_snp_regions(sign_snp_data, ld_block_size):
+    """Create region according to the coordinate of sign_snp_data."""
+    regions = []
+    for i, (_x, _y, _t) in enumerate(sign_snp_data):
+        if i == 0:
+            regions.append([_x - ld_block_size, _x])
+            continue
+
+        if _x > regions[-1][1] + ld_block_size:
+            regions[-1][1] += ld_block_size
+            regions.append([_x - ld_block_size, _x])
+        else:
+            regions[-1][1] = _x
+
+    # The last
+    if regions:
+        regions[-1][1] += ld_block_size
+
+    return regions
+
+
+def _find_SNPs_which_overlap_sign_neighbour_region(sign_snp_neighbour_region, x):
+    """
+    """
+    x_size = len(x)
+    reg_size = len(sign_snp_neighbour_region)
+    index = []
+    tmp_index = 0
+    for i in range(x_size):
+        _x = x[i]
+
+        is_overlap = False
+        iter_index = range(tmp_index, reg_size)
+        for j in iter_index:
+            if _x > sign_snp_neighbour_region[j][1]: continue
+            if _x < sign_snp_neighbour_region[j][0]: break
+
+            tmp_index = j
+            is_overlap = True
+            break
+
+        if is_overlap:
+            index.append(i)
+
+    # return the index
+    return index
