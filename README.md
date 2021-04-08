@@ -55,16 +55,13 @@ Citing
 Dependencies
 ------------
 
-- Python 2.7 or Python 3.4+
+- Python 3.7+
 
 ### Mandatory
 
 - [numpy](http://www.numpy.org/)
-
 - [scipy](http://www.scipy.org/)
-
 - [pandas](http://pandas.pydata.org/)
-
 - [matplotlib](http://matplotlib.org/)
 
 ### Recommended
