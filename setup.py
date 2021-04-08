@@ -1,10 +1,9 @@
-#!/usr/bin/env python
 # Copyright (C) 2016 Shujia Huang <huangshujia9@gmail.com>
 import os
 # temporarily redirect config directory to prevent matplotlib importing
 # testing that for writeable directory which results in sandbox error in
 # certain easy_install versions
-os.environ["MPLCONFIGDIR"] = "."
+#os.environ["MPLCONFIGDIR"] = "."
 
 DESCRIPTION = "Geneview: A python package for genomics data visualization"
 LONG_DESCRIPTION = """\
@@ -59,8 +58,8 @@ if __name__ == "__main__":
           packages=find_packages(),
           classifiers=[
              'Intended Audience :: Science/Research',
-             'Programming Language :: Python :: 2.7',
              'Programming Language :: Python :: 3.7',
+             'Programming Language :: Python :: 3.8',
              'License :: OSI Approved :: BSD License',
              'Topic :: Scientific/Engineering :: Bio-Informatics',
              'Topic :: Scientific/Engineering :: Visualization',

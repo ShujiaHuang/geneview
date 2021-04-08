@@ -5,6 +5,7 @@ examples/data/GOYA.csv
 dist/
 build/
 trash/
+tmp/
 geneview.egg-info/
 .ipynb_checkpoints/
 
