@@ -2,6 +2,7 @@ venv/
 .idea/
 dist/
 build/
+learn_from/
 trash/
 tmp/
 geneview.egg-info/

@@ -7,6 +7,7 @@ Thanks to the code from tctianchi and LankyCyril: https://github.com/tctianchi/p
 """
 from matplotlib.pyplot import gca
 from matplotlib.colors import to_rgba
+from matplotlib.cm import ScalarMappable
 from matplotlib.patches import Ellipse, Polygon
 
 __all__ = ["venn"]
@@ -141,6 +142,18 @@ COLORS = [
 ]
 
 
+def generate_colors(cmap="viridis", n_colors=6, alpha=.4):
+    """Generate colors from matplotlib colormap; pass list to use exact colors"""
+    if not isinstance(n_colors, int) or (n_colors < 2) or (n_colors > 6):
+        raise ValueError("n_colors must be an integer between 2 and 6")
+    if isinstance(cmap, list):
+        colors = [to_rgba(color, alpha=alpha) for color in cmap]
+    else:
+        scalar_mappable = ScalarMappable(cmap=cmap)
+        colors = scalar_mappable.to_rgba(range(n_colors), alpha=alpha).tolist()
+    return colors[:n_colors]
+
+
 def less_transparent_color(color, alpha_factor=2):
     """Bump up color's alpha"""
     new_alpha = (1 + to_rgba(color)[3]) / alpha_factor
@@ -156,7 +169,7 @@ def draw_ellipse(ax, x, y, w, h, a, color):
             height=h,
             angle=a,
             facecolor=color,
-            edgecolor=less_transparent_color(color)
+            edgecolor=less_transparent_color(color),
         )
     )
 
@@ -168,13 +181,13 @@ def draw_triangle(ax, x1, y1, x2, y2, x3, y3, _dim, _angle, color):
             xy=[(x1, y1), (x2, y2), (x3, y3)],
             closed=True,
             facecolor=color,
-            edgecolor=less_transparent_color(color)
+            edgecolor=less_transparent_color(color),
         )
     )
     return
 
 
-def draw_text(ax, x, y, text, color="black", fontsize=14, ha="center", va="center", **kwargs):
+def draw_text(ax, x, y, text, color="black", fontsize=14, ha="center", va="center"):
     """Wrapper for drawing text"""
     ax.text(
         x, y, text,
@@ -182,7 +195,6 @@ def draw_text(ax, x, y, text, color="black", fontsize=14, ha="center", va="cente
         color=color,
         horizontalalignment=ha,
         verticalalignment=va,
-        **kwargs
     )
     return
 
@@ -193,14 +205,11 @@ def _generate_logics(n_sets):
         yield bin(i)[2:].zfill(n_sets)
 
 
-def _init_axes(ax, figsize=None):
+def _init_axes(ax):
     """Create axes if do not exist, set axes parameters"""
-    figsize = (4.8, 4.8) if figsize is None else figsize
     if ax is None:
         ax = gca()
-        # _, ax = subplots(nrows=1, ncols=1, figsize=figsize)
 
-    # ax.set(aspect="equal", frame_on=False)
     ax.set_axis_off()
     return ax
 
@@ -211,7 +220,7 @@ def get_n_sets(petal_labels, dataset_labels):
     petal_labels_set = _generate_logics(n_sets)
     for logic in petal_labels.keys():
         if len(logic) != n_sets:
-            raise ValueError("Inconsistent petal and dataset labels")
+            raise ValueError("Inconsistent petal and dataset labels: %d, %d" % (len(logic), n_sets))
         if not (set(logic) <= {"0", "1"}):
             raise KeyError("Key not understood: " + logic)
         if logic not in petal_labels_set:
@@ -219,7 +228,7 @@ def get_n_sets(petal_labels, dataset_labels):
     return n_sets
 
 
-def venn(dataset, dataset_labels, legend_loc=None, ax=None, **kwargs):
+def venn(dataset, dataset_labels, palette=None, alpha=0.4, fontsize=14, legend_loc=None, ax=None):
     """Draw Venn diagram, annotate petals and dataset labels.
     """
     n_sets = get_n_sets(dataset, dataset_labels)
@@ -231,13 +240,16 @@ def venn(dataset, dataset_labels, legend_loc=None, ax=None, **kwargs):
         raise ValueError("Number of sets must be between 2 and 6")
 
     ax = _init_axes(ax)
-    colors = kwargs.get("colors", [COLORS[i] for i in range(n_sets)])
-    fontsize = kwargs.get("fontsize", 14)
+    if palette is None:
+        palette = [COLORS[i] for i in range(n_sets)]
+    else:
+        palette = generate_colors(n_colors=n_sets, cmap=palette, alpha=alpha)
+
     shape_params = zip(
         SHAPE_COORDS[n_sets],
         SHAPE_DIMS[n_sets],
         SHAPE_ANGLES[n_sets],
-        colors
+        palette
     )
 
     # Draw the shape for venn diagram
@@ -253,9 +265,9 @@ def venn(dataset, dataset_labels, legend_loc=None, ax=None, **kwargs):
     # plot the name for each dataset
     for i in range(n_sets):
         x, y, ha, va = LABEL_LEGEND_COORDS[n_sets][i]
-        draw_text(ax, x, y, dataset_labels[i], fontsize=fontsize+2, ha=ha, va=va)
+        draw_text(ax, x, y, dataset_labels[i], fontsize=fontsize + 2, ha=ha, va=va)
 
     if legend_loc is not None:
-        ax.legend(dataset_labels, loc=legend_loc, bbox_to_anchor=(1.0, 0.5), fancybox=True)
+        ax.legend(dataset_labels, loc=legend_loc, bbox_to_anchor=(1.0, 0.5), fontsize=fontsize, fancybox=True)
 
     return ax
