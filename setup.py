@@ -24,7 +24,7 @@ MAINTAINER_EMAIL = 'huangshujia9@gmail.com'
 URL = 'https://github.com/ShujiaHuang/geneview'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/ShujiaHuang/geneview'
-VERSION = '0.0.1.dev8'
+VERSION = '0.0.2'
 
 
 try:

@@ -79,7 +79,7 @@ def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5,
 
     yaxis = []
     for i, (chrom, kc_df) in enumerate(sorted(data.groupby('chrom'), 
-                                              key=lambda (c, d): c, 
+                                              key=lambda x: x[0],
                                               cmp=chr_id_cmp)):
         
         if CHR is not None and chrom != CHR: continue

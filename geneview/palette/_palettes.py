@@ -14,7 +14,7 @@ except ImportError:
 
 from ..ext import husl
 
-from ..util import desaturate, set_hls_values, get_color_cycle
+from ..utils import desaturate, set_hls_values, get_color_cycle
 
 from ._xkcd_rgb import xkcd_rgb
 from ._crayons import crayons

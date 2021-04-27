@@ -6,7 +6,6 @@ Copy from: the seaborn repo's utils.py on github, Then we make some modifies
 for geneview.
 
 """
-from __future__ import print_function, division
 import colorsys
 import warnings
 
@@ -17,6 +16,25 @@ import matplotlib.colors as mplcol
 
 from distutils.version import LooseVersion
 mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
+
+
+class General(object):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def get_figure(is_show, fig_name=None, dpi="figure"):
+        if fig_name:
+            plt.savefig(fig_name, bbox_inches="tight", dpi=dpi)
+
+        if is_show:
+            plt.show()
+
+        plt.clf()
+        plt.close()
+
+        return
+
 
 def set_hls_values(color, h=None, l=None, s=None):
     """Independently manipulate the h, l, or s channels of a color.
