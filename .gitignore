@@ -1,4 +1,3 @@
-_draft/
 
 venv/
 examples/data/GOYA.csv 
@@ -7,6 +6,7 @@ build/
 trash/
 tmp/
 geneview.egg-info/
+_draft/
 .ipynb_checkpoints/
 
 *.py[cod]
