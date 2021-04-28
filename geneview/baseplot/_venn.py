@@ -364,7 +364,15 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=Non
     Parameters
     ----------
     data : dict, require
-        dictionaries of dataset that will produce the venn diagram.
+        A dictionaries of labels for dataset that will produce the venn diagram.
+        The dataset of ``data`` should looks like:
+        {'001': '0',
+         '010': '5',
+         '011': '0',
+         '100': '3',
+         '101': '2',
+         '110': '2',
+         '111': '3'}
 
     names : list, optional, default ``list(data.keys())``
         The label names for each petal in venn plot.
@@ -403,7 +411,7 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=Non
         >>> import matplotlib.pyplot as plt
         >>> from geneview import vennx, generate_petal_labels
         >>> dataset_dict = {name: set(choice(1000, 250, replace=False)) for name in list("ABCD")}
-        >>> petal_labels = generate_petal_labels(dataset_dict.values(), fmt="{size}\n({percentage:.1f}%)")
+        >>> petal_labels = generate_petal_labels(dataset_dict.values(), fmt="{size}\\n({percentage:.1f}%)")
         >>> ax = vennx(data=petal_labels)
         >>> plt.show()
 
@@ -437,7 +445,7 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
     Parameters
     ----------
     data : dict, require
-        dictionaries of dataset that will produce the venn diagram.
+        A dictionaries of dataset that will produce the venn diagram.
 
     names : list, optional, default ``list(data.keys())``
         The label names for each petal in venn plot.
@@ -512,12 +520,12 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         ...        name: set(choice(1000, 700, replace=False))
         ...        for name in islice(letters, n_sets)
         ...    }
-        >>> venn(dataset_dict,
-        ...      fmt="{percentage:.1f}%", # "{size}", "{logic}"
-        ...      palette=cmap,
-        ...      fontsize=12,
-        ...      # legend_loc="upper left",
-        ...      ax=ax)
+        ...    venn(dataset_dict,
+        ...         fmt="{percentage:.1f}%", # "{size}", "{logic}"
+        ...         palette=cmap,
+        ...         fontsize=12,
+        ...         # legend_loc="upper left",
+        ...         ax=ax)
     """
     if not is_valid_dataset_dict(data):
         raise TypeError("Only dictionaries of sets are understood")
