@@ -18,13 +18,13 @@ Some of the features that geneview offers are
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations
 """
 
-DISTNAME = 'geneview'
-MAINTAINER = 'Shujia Huang'
-MAINTAINER_EMAIL = 'huangshujia9@gmail.com'
-URL = 'https://github.com/ShujiaHuang/geneview'
-LICENSE = 'BSD (3-clause)'
-DOWNLOAD_URL = 'https://github.com/ShujiaHuang/geneview'
-VERSION = '0.0.2'
+DISTNAME = "geneview"
+MAINTAINER = "Shujia Huang"
+MAINTAINER_EMAIL = "huangshujia9@gmail.com"
+URL = "https://github.com/ShujiaHuang/geneview"
+LICENSE = "BSD (3-clause)"
+DOWNLOAD_URL = "https://github.com/ShujiaHuang/geneview"
+VERSION = "0.0.2"
 
 
 try:
@@ -57,14 +57,14 @@ if __name__ == "__main__":
           ],
           packages=find_packages(),
           classifiers=[
-             'Intended Audience :: Science/Research',
-             'Programming Language :: Python :: 3.7',
-             'Programming Language :: Python :: 3.8',
-             'License :: OSI Approved :: BSD License',
-             'Topic :: Scientific/Engineering :: Bio-Informatics',
-             'Topic :: Scientific/Engineering :: Visualization',
-             'Topic :: Multimedia :: Graphics',
-             'Operating System :: POSIX',
-             'Operating System :: Unix',
-             'Operating System :: MacOS'],
+             "Intended Audience :: Science/Research",
+             "Programming Language :: Python :: 3.7",
+             "Programming Language :: Python :: 3.8",
+             "License :: OSI Approved :: BSD License",
+             "Topic :: Scientific/Engineering :: Bio-Informatics",
+             "Topic :: Scientific/Engineering :: Visualization",
+             "Topic :: Multimedia :: Graphics",
+             "Operating System :: POSIX",
+             "Operating System :: Unix",
+             "Operating System :: MacOS"],
           )
