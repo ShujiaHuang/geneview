@@ -118,7 +118,7 @@ LABEL_LEGEND_COORDS = {
     },
     5: {
         0: (0.02, 0.72, "right", "center"),
-        1: (0.70, 0.94, "center", "bottom"),
+        1: (0.72, 0.94, "center", "bottom"),
         2: (0.97, 0.74, "left", "center"),
         3: (0.88, 0.05, "left", "center"),
         4: (0.12, 0.05, "right", "center"),
@@ -280,14 +280,14 @@ def _init_axes(ax):
 def _get_n_sets(petal_labels, dataset_labels):
     """Infer number of sets, check consistency"""
     n_sets = len(dataset_labels)
-    petal_labels_set = _generate_logics(n_sets)
+    petal_labels_set = set(_generate_logics(n_sets))
     for logic in petal_labels.keys():
         if len(logic) != n_sets:
             raise ValueError("Inconsistent petal and dataset labels: %d, %d" % (len(logic), n_sets))
         if not (set(logic) <= {"0", "1"}):
             raise KeyError("Key not understood: " + logic)
         if logic not in petal_labels_set:
-            raise KeyError("Key is not legal: " + logic)
+            raise KeyError("'%s' is not a legal key." % logic)
     return n_sets
 
 
