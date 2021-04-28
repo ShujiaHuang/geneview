@@ -133,23 +133,13 @@ LABEL_LEGEND_COORDS = {
     }
 }
 
-DEFAULT_COLORS = [
-    # r, g, b, a
-    [0.361, 0.753, 0.384, 0.5],
-    [0.353, 0.608, 0.831, 0.5],
-    [0.965, 0.925, 0.337, 0.6],
-    [0.945, 0.353, 0.376, 0.4],
-    [1.000, 0.459, 0.000, 0.3],
-    [0.322, 0.322, 0.745, 0.2]
-]
-
 
 def generate_colors(cmap="viridis", n_colors=6, alpha=.4):
     """Generate colors from matplotlib colormap; pass list to use exact colors"""
     if not isinstance(n_colors, int) or (n_colors < 2) or (n_colors > 6):
         raise ValueError("n_colors must be an integer between 2 and 6")
     if isinstance(cmap, list):
-        colors = [to_rgba(color, alpha=alpha) for color in cmap]
+        colors = [list(to_rgba(color, alpha=alpha)) for color in cmap]
     else:
         scalar_mappable = ScalarMappable(cmap=cmap)
         colors = scalar_mappable.to_rgba(range(n_colors), alpha=alpha).tolist()
@@ -172,6 +162,7 @@ def draw_ellipse(ax, x, y, w, h, a, color):
             angle=a,
             facecolor=color,
             edgecolor=less_transparent_color(color),
+            lw=1,
         )
     )
 
@@ -184,6 +175,7 @@ def draw_triangle(ax, x1, y1, x2, y2, x3, y3, _dim, _angle, color):
             closed=True,
             facecolor=color,
             edgecolor=less_transparent_color(color),
+            lw=1,
         )
     )
     return
@@ -299,9 +291,20 @@ def _get_n_sets(petal_labels, dataset_labels):
     return n_sets
 
 
-def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=None, ax=None):
+def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_use_petal_color=False,
+               legend_loc=None, ax=None):
     """Draw Venn diagram, annotate petals and dataset labels.
     """
+    DEFAULT_COLORS = [
+        # r, g, b, a
+        [0.361, 0.753, 0.384, 0.5],
+        [0.353, 0.608, 0.831, 0.5],
+        [0.965, 0.925, 0.337, 0.6],
+        [0.945, 0.353, 0.376, 0.4],
+        [1.000, 0.459, 0.000, 0.3],
+        [0.322, 0.322, 0.745, 0.2]
+    ]
+
     if (names is None) or (not isinstance(names, list)):
         raise ValueError("Names of sets should be a list and must not be None.")
 
@@ -339,10 +342,15 @@ def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_lo
     if legend_loc is not None:
         ax.legend(names, loc=legend_loc, prop={"size": fontsize})
     else:
-        # plot the name for each dataset
+        # plot the legend name for each dataset
         for i in range(n_sets):
             x, y, ha, va = LABEL_LEGEND_COORDS[n_sets][i]
-            draw_text(ax, x, y, names[i], fontsize=fontsize + 2, ha=ha, va=va)
+            if legend_use_petal_color:
+                c = palette[i]
+                c[-1] = 1.0  # Set alpha blending value to opaque for legend text.
+            else:
+                c = "k"
+            draw_text(ax, x, y, names[i], fontsize=fontsize + 2, color=c, ha=ha, va=va)
 
     return ax
 
@@ -358,14 +366,15 @@ def is_valid_dataset_dict(data):
         return True
 
 
-def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=None, ax=None):
+def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_use_petal_color=False,
+          legend_loc=None, ax=None):
     """Generate venn diagram by input petal labels data.
 
     Parameters
     ----------
     data : dict, require
         A dictionaries of labels for dataset that will produce the venn diagram.
-        The dataset of ``data`` should looks like:
+        The ``data`` variable should looks like:
         {'001': '0',
          '010': '5',
          '011': '0',
@@ -386,6 +395,9 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=Non
 
     fontsize : integer, optional, default: 14
         Set the fontsize for plot.
+
+    legend_use_petal_color : bool, optional, default: False
+        Determine to use the same color as petals for legend or not.
 
     legend_loc : string. optional
         Place a legend on the axes. String value is passed to matplotlib :rc:`legend.loc`.
@@ -421,11 +433,12 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=Non
         :context: close-figs
         >>> ax = vennx(data=petal_labels, names=list(dataset_dict.keys()))
 
-    Or set the labels by customer names
+    Or set the labels by customer.
 
     .. plot::
         :context: close-figs
-        >>> ax = vennx(data=petal_labels, names=["set 1", "set 2", "set 3", "set 4"])
+        >>> ax = vennx(data=petal_labels, names=["set 1", "set 2", "set 3", "set 4"],
+        ...            legend_use_petal_color=True)
 
     """
     return _draw_venn(
@@ -434,12 +447,14 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=Non
         palette=palette,
         alpha=alpha,
         fontsize=fontsize,
+        legend_use_petal_color=legend_use_petal_color,
         legend_loc=legend_loc,
         ax=ax
     )
 
 
-def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=14, legend_loc=None, ax=None):
+def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=14,
+         legend_use_petal_color=False, legend_loc=None, ax=None):
     """Check input, generate petal labels, draw venn diagram.
 
     Parameters
@@ -463,6 +478,9 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
 
     fontsize : integer, optional, default: 14
         Set the fontsize for plot.
+
+    legend_use_petal_color : bool, optional, default: False
+        Determine to use the same color as petals for legend or not.
 
     legend_loc : string. optional
         Place a legend on the axes. String value is passed to matplotlib :rc:`legend.loc`.
@@ -494,11 +512,12 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         >>> ax = venn(musicians)
         >>> plt.show()
 
-   Rename the labels for each petal by manual.
+   Rename the labels for each petal by manual and set the color of legend text to be the
+   same as petal by setting bool variable as ``legend_use_petal_color=True``.
 
     .. plot::
         :context: close-figs
-        >>> ax = venn(musicians, names=["A", "B", "C"])
+        >>> ax = venn(musicians, names=["A", "B", "C"], legend_use_petal_color=True)
 
     Examples of Venn diagrams for various numbers of sets.
 
@@ -524,6 +543,7 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         ...         fmt="{percentage:.1f}%", # "{size}", "{logic}"
         ...         palette=cmap,
         ...         fontsize=12,
+        ...         legend_use_petal_color=True,
         ...         # legend_loc="upper left",
         ...         ax=ax)
     """
@@ -536,6 +556,7 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         palette=palette,
         alpha=alpha,
         fontsize=fontsize,
+        legend_use_petal_color=legend_use_petal_color,
         legend_loc=legend_loc,
         ax=ax
     )
