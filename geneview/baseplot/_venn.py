@@ -200,19 +200,18 @@ def _generate_logics(n_sets):
 
 
 def generate_petal_labels(datasets, fmt="{size}"):
-    """Generate petal descriptions for venn diagram based on set sizes"""
+    """Generate petal descriptions for venn diagram based on set sizes."""
     datasets = list(datasets)
     n_sets = len(datasets)
+    if n_sets < 2 or n_sets > 6:
+        raise ValueError("Number of sets must be between 2 and 6.")
+
     dataset_union = set.union(*datasets)
     universe_size = len(dataset_union)
     petal_labels = {}
     for logic in _generate_logics(n_sets):
-        included_sets = [
-            datasets[i] for i in range(n_sets) if logic[i] == "1"
-        ]
-        excluded_sets = [
-            datasets[i] for i in range(n_sets) if logic[i] == "0"
-        ]
+        included_sets = [datasets[i] for i in range(n_sets) if logic[i] == "1"]
+        excluded_sets = [datasets[i] for i in range(n_sets) if logic[i] == "0"]
         petal_set = (
                 (dataset_union & set.intersection(*included_sets)) -
                 set.union(set(), *excluded_sets)
@@ -306,7 +305,7 @@ def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_us
     ]
 
     if (names is None) or (not isinstance(names, list)):
-        raise ValueError("Names of sets should be a list and must not be None.")
+        raise ValueError("Names of sets should be a list and must not be empty.")
 
     n_sets = _get_n_sets(data, names)
     if 2 <= n_sets < 6:
@@ -441,16 +440,14 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_use_pet
         ...            legend_use_petal_color=True)
 
     """
-    return _draw_venn(
-        data=data,
-        names=list(data.keys()) if names is None else names,
-        palette=palette,
-        alpha=alpha,
-        fontsize=fontsize,
-        legend_use_petal_color=legend_use_petal_color,
-        legend_loc=legend_loc,
-        ax=ax
-    )
+    return _draw_venn(data=data,
+                      names=names,
+                      palette=palette,
+                      alpha=alpha,
+                      fontsize=fontsize,
+                      legend_use_petal_color=legend_use_petal_color,
+                      legend_loc=legend_loc,
+                      ax=ax)
 
 
 def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=14,
@@ -550,13 +547,11 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
     if not is_valid_dataset_dict(data):
         raise TypeError("Only dictionaries of sets are understood")
 
-    return _draw_venn(
-        data=generate_petal_labels(data.values(), fmt=fmt),
-        names=list(data.keys()) if names is None else names,
-        palette=palette,
-        alpha=alpha,
-        fontsize=fontsize,
-        legend_use_petal_color=legend_use_petal_color,
-        legend_loc=legend_loc,
-        ax=ax
-    )
+    return _draw_venn(data=generate_petal_labels(data.values(), fmt=fmt),
+                      names=list(data.keys()) if names is None else names,
+                      palette=palette,
+                      alpha=alpha,
+                      fontsize=fontsize,
+                      legend_use_petal_color=legend_use_petal_color,
+                      legend_loc=legend_loc,
+                      ax=ax)
