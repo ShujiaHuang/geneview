@@ -1,3 +1,9 @@
+*.py[cod]
+*.sh
+*.so
+.*.swp
+.DS_Store
+
 venv/
 .idea/
 dist/
@@ -8,10 +14,5 @@ tmp/
 geneview.egg-info/
 _draft/
 .ipynb_checkpoints/
-examples/data/GOYA.csv 
+examples/data/
 
-*.py[cod]
-*.sh
-*.so
-.*.swp
-.DS_Store
