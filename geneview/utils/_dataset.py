@@ -44,7 +44,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     Load the preview data of GOYA
 
         >>> import geneview as gv
-        >>> goya_preview = gv.utils.load_dataset('GOYA_preview')
+        >>> goya_preview = gv.utils.load_dataset("gwas")
 
     """
     path = "https://github.com/ShujiaHuang/geneview-data/raw/master/{0}.csv"
