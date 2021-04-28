@@ -1,8 +1,7 @@
-
-Geneview: A python package for genomics data visualization
+geneview: A python package for genomics data visualization
 ==========================================================
 
-Geneview is a Python visualization library base on matplotlib. It provides a 
+**geneview** is a Python visualization library base on matplotlib. It provides a
 high-level interface for drawing attractive genomics graphics. And now it is 
 actively developed.
 
@@ -32,11 +31,11 @@ A basic example for **Manhattan** plot.
 
    df = gv.util.load_dataset('GOYA_preview')  # df is DataFrame of pandas
    xtick = ['chr'+c for c in map(str, range(1, 15) + ['16', '18', '20', '22'])]
-   gv.gwas.manhattanplot(df[['chrID','position','pvalue']],  
-                            xlabel="Chromosome", 
-                            ylabel="-Log10(P-value)", 
-                            xticklabel_kws={'rotation': 'vertical'},
-                            xtick_label_set = set(xtick))
+   gv.manhattanplot(df[['#CHROM','POS','P']],
+                        xlabel="Chromosome",
+                        ylabel="-Log10(P-value)",
+                        xticklabel_kws={'rotation': 'vertical'},
+                        xtick_label_set = set(xtick))
    plt.show()
 
 
@@ -53,9 +52,9 @@ A basic example for **QQ** plot.
    import geneview as gv
 
    df = gv.util.load_dataset('GOYA_preview')  # df is DataFrame of pandas
-   gv.gwas.qqplot(df['pvalue'], color="#00bb33",
-                  xlabel="Expected p-value(-log10)",
-                  ylabel="Observed p-value(-log10)")
+   gv.qqplot(df['P'], color="#00bb33",
+             xlabel="Expected p-value(-log10)",
+             ylabel="Observed p-value(-log10)")
    plt.show()
 
 
@@ -117,3 +116,5 @@ License
 -------
 
 Released under a BSD (3-clause) license
+
+
