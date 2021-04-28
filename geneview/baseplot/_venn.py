@@ -5,12 +5,14 @@ Date: 2021-04-26 12:03:00
 
 Thanks to the code from tctianchi and LankyCyril: https://github.com/tctianchi/pyvenn
 """
-from matplotlib.pyplot import gca
+from warnings import warn
+
+from matplotlib.pyplot import subplots
 from matplotlib.colors import to_rgba
 from matplotlib.cm import ScalarMappable
 from matplotlib.patches import Ellipse, Polygon
 
-__all__ = ["venn"]
+__all__ = ["venn", "vennx", "generate_petal_labels"]
 
 SHAPE_COORDS = {
     2: [(.375, .500), (.625, .500)],
@@ -116,7 +118,7 @@ LABEL_LEGEND_COORDS = {
     },
     5: {
         0: (0.02, 0.72, "right", "center"),
-        1: (0.72, 0.94, "center", "bottom"),
+        1: (0.70, 0.94, "center", "bottom"),
         2: (0.97, 0.74, "left", "center"),
         3: (0.88, 0.05, "left", "center"),
         4: (0.12, 0.05, "right", "center"),
@@ -131,7 +133,7 @@ LABEL_LEGEND_COORDS = {
     }
 }
 
-COLORS = [
+DEFAULT_COLORS = [
     # r, g, b, a
     [0.361, 0.753, 0.384, 0.5],
     [0.353, 0.608, 0.831, 0.5],
@@ -205,16 +207,85 @@ def _generate_logics(n_sets):
         yield bin(i)[2:].zfill(n_sets)
 
 
+def generate_petal_labels(datasets, fmt="{size}"):
+    """Generate petal descriptions for venn diagram based on set sizes"""
+    datasets = list(datasets)
+    n_sets = len(datasets)
+    dataset_union = set.union(*datasets)
+    universe_size = len(dataset_union)
+    petal_labels = {}
+    for logic in _generate_logics(n_sets):
+        included_sets = [
+            datasets[i] for i in range(n_sets) if logic[i] == "1"
+        ]
+        excluded_sets = [
+            datasets[i] for i in range(n_sets) if logic[i] == "0"
+        ]
+        petal_set = (
+                (dataset_union & set.intersection(*included_sets)) -
+                set.union(set(), *excluded_sets)
+        )
+        petal_labels[logic] = fmt.format(
+            logic=logic,
+            size=len(petal_set),
+            percentage=(100 * len(petal_set) / max(universe_size, 1))
+        )
+    return petal_labels
+
+
+def get_labels(data, fill=None):
+    """
+    get a dict of labels for groups in data
+
+    @type data: list[Iterable]
+    @rtype: dict[str, str]
+
+    input
+      data: data to get label for
+      fill: ["number"|"logic"|"percent"]
+
+    return
+      labels: a dict of labels for different sets
+
+    example:
+    In [12]: get_labels([range(10), range(5,15), range(3,8)], fill=["number"])
+    Out[12]:
+    {'001': '0',
+     '010': '5',
+     '011': '0',
+     '100': '3',
+     '101': '2',
+     '110': '2',
+     '111': '3'}
+    """
+    warn((
+            "`get_labels()` is retained for backwards compatibility; " +
+            "use `generate_petal_labels()` or the higher level `venn()` instead"
+    ))
+    if fill is None:
+        fill = ["number"]
+
+    fmt = ""
+    if "logic" in fill:
+        fmt += "{logic}: "
+    if "number" in fill:
+        fmt += "{size} "
+    if "percent" in fill:
+        fmt += "({percentage:.1f}%)"
+    return generate_petal_labels(data, fmt)
+
+
 def _init_axes(ax):
     """Create axes if do not exist, set axes parameters"""
     if ax is None:
-        ax = gca()
+        # ax = gca()
+        _, ax = subplots(nrows=1, ncols=1, figsize=(7, 7))
 
     ax.set_axis_off()
     return ax
 
 
-def get_n_sets(petal_labels, dataset_labels):
+def _get_n_sets(petal_labels, dataset_labels):
     """Infer number of sets, check consistency"""
     n_sets = len(dataset_labels)
     petal_labels_set = _generate_logics(n_sets)
@@ -228,10 +299,13 @@ def get_n_sets(petal_labels, dataset_labels):
     return n_sets
 
 
-def venn(dataset, dataset_labels, palette=None, alpha=0.4, fontsize=14, legend_loc=None, ax=None):
+def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=None, ax=None):
     """Draw Venn diagram, annotate petals and dataset labels.
     """
-    n_sets = get_n_sets(dataset, dataset_labels)
+    if (names is None) or (not isinstance(names, list)):
+        raise ValueError("Names of sets should be a list and must not be None.")
+
+    n_sets = _get_n_sets(data, names)
     if 2 <= n_sets < 6:
         draw_shape = draw_ellipse
     elif n_sets == 6:
@@ -241,7 +315,7 @@ def venn(dataset, dataset_labels, palette=None, alpha=0.4, fontsize=14, legend_l
 
     ax = _init_axes(ax)
     if palette is None:
-        palette = [COLORS[i] for i in range(n_sets)]
+        palette = [DEFAULT_COLORS[i] for i in range(n_sets)]
     else:
         palette = generate_colors(n_colors=n_sets, cmap=palette, alpha=alpha)
 
@@ -257,17 +331,203 @@ def venn(dataset, dataset_labels, palette=None, alpha=0.4, fontsize=14, legend_l
         draw_shape(ax, *coords, *dims, angle, color)
 
     # annotate the value for each petal of venn plot
-    for k, value in dataset.items():
+    for k, value in data.items():
         if k in PETAL_LABEL_COORDS[n_sets]:
             x, y = PETAL_LABEL_COORDS[n_sets][k]
             draw_text(ax, x, y, value, fontsize=fontsize)
 
-    # plot the name for each dataset
-    for i in range(n_sets):
-        x, y, ha, va = LABEL_LEGEND_COORDS[n_sets][i]
-        draw_text(ax, x, y, dataset_labels[i], fontsize=fontsize + 2, ha=ha, va=va)
-
     if legend_loc is not None:
-        ax.legend(dataset_labels, loc=legend_loc, bbox_to_anchor=(1.0, 0.5), fontsize=fontsize, fancybox=True)
+        ax.legend(names, loc=legend_loc, prop={"size": fontsize})
+    else:
+        # plot the name for each dataset
+        for i in range(n_sets):
+            x, y, ha, va = LABEL_LEGEND_COORDS[n_sets][i]
+            draw_text(ax, x, y, names[i], fontsize=fontsize + 2, ha=ha, va=va)
 
     return ax
+
+
+def is_valid_dataset_dict(data):
+    """Validate passed data (must be dictionary of sets)"""
+    if not (hasattr(data, "keys") and hasattr(data, "values")):
+        return False
+    for dataset in data.values():
+        if not isinstance(dataset, set):
+            return False
+    else:
+        return True
+
+
+def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, legend_loc=None, ax=None):
+    """Generate venn diagram by input petal labels data.
+
+    Parameters
+    ----------
+    data : dict, require
+        dictionaries of dataset that will produce the venn diagram.
+
+    names : list, optional, default ``list(data.keys())``
+        The label names for each petal in venn plot.
+
+    palette : string, list, or :class:`matplotlib.colors.Colormap`, optional, default: DEFAULT_COLOR.
+        String values are passed to :func:`generate_colors`. List values imply categorical
+        mapping, while a colormap object implies numeric mapping.
+
+    alpha : float scalar, default is 0.4, optional
+        The alpha blending value, between 0(transparent) and 1(opaque)
+
+    fontsize : integer, optional, default: 14
+        Set the fontsize for plot.
+
+    legend_loc : string. optional
+        Place a legend on the axes. String value is passed to matplotlib :rc:`legend.loc`.
+
+    ax : matplotlib axis, optional
+        Axis to plot on, otherwise create a default axis by plt.subplots() with figsize=(7, 7)
+        in ``_draw_venn()``.
+
+    Return
+    ------
+    ax : matplotlib Axes
+        Axes object with the venn plot.
+
+    Examples
+    --------
+
+    Plot a three sets venn diagram.
+
+    .. plot::
+        :context: close-figs
+
+        >>> from numpy.random import choice
+        >>> import matplotlib.pyplot as plt
+        >>> from geneview import vennx, generate_petal_labels
+        >>> dataset_dict = {name: set(choice(1000, 250, replace=False)) for name in list("ABCD")}
+        >>> petal_labels = generate_petal_labels(dataset_dict.values(), fmt="{size}\n({percentage:.1f}%)")
+        >>> ax = vennx(data=petal_labels)
+        >>> plt.show()
+
+    Set the labels for each petal by the keys of dataset.
+
+    .. plot::
+        :context: close-figs
+        >>> ax = vennx(data=petal_labels, names=list(dataset_dict.keys()))
+
+    Or set the labels by customer names
+
+    .. plot::
+        :context: close-figs
+        >>> ax = vennx(data=petal_labels, names=["set 1", "set 2", "set 3", "set 4"])
+
+    """
+    return _draw_venn(
+        data=data,
+        names=list(data.keys()) if names is None else names,
+        palette=palette,
+        alpha=alpha,
+        fontsize=fontsize,
+        legend_loc=legend_loc,
+        ax=ax
+    )
+
+
+def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=14, legend_loc=None, ax=None):
+    """Check input, generate petal labels, draw venn diagram.
+
+    Parameters
+    ----------
+    data : dict, require
+        dictionaries of dataset that will produce the venn diagram.
+
+    names : list, optional, default ``list(data.keys())``
+        The label names for each petal in venn plot.
+
+    fmt : string, optional, default: "{size}"
+        A Python 3 style format string that understands {size}, {percentage}, and {logic}.
+        Here set the data format for petal datasets' lebals.
+
+    palette : string, list, or :class:`matplotlib.colors.Colormap`, optional, default: "viridis".
+        String values are passed to :func:`generate_colors`. List values imply categorical
+        mapping, while a colormap object implies numeric mapping.
+
+    alpha : float scalar, default is 0.4, optional
+        The alpha blending value, between 0(transparent) and 1(opaque)
+
+    fontsize : integer, optional, default: 14
+        Set the fontsize for plot.
+
+    legend_loc : string. optional
+        Place a legend on the axes. String value is passed to matplotlib :rc:`legend.loc`.
+
+    ax : matplotlib axis, optional
+        Axis to plot on, otherwise create a default axis by plt.subplots() with figsize=(7, 7)
+        in ``_draw_venn()``.
+
+    Return
+    ------
+    ax : matplotlib Axes
+        Axes object with the venn plot.
+
+    Examples
+    --------
+
+    Plot a minimal venn plot example.
+
+    .. plot::
+        :context: close-figs
+
+        >>> from numpy.random import choice
+        >>> import matplotlib.pyplot as plt
+        >>> from geneview import venn
+        >>> musicians = {
+        ... "Members of The Beatles": {"Paul McCartney", "John Lennon", "George Harrison", "Ringo Starr"},
+        ... "Guitarists": {"John Lennon", "George Harrison", "Jimi Hendrix", "Eric Clapton", "Carlos Santana"},
+        ... "Played at Woodstock": {"Jimi Hendrix", "Carlos Santana", "Keith Moon"}}
+        >>> ax = venn(musicians)
+        >>> plt.show()
+
+   Rename the labels for each petal by manual.
+
+    .. plot::
+        :context: close-figs
+        >>> ax = venn(musicians, names=["A", "B", "C"])
+
+    Examples of Venn diagrams for various numbers of sets.
+
+    Venn diagrams can be plotted for 2, 3, 4, or 5 sets using ellipses, and for 6 sets using triangles.
+    The venn() function accepts optional arguments data, names, fmt, palette, alpha, fontsize,
+    legend_loc and ax.
+
+    .. plot::
+        :context: close-figs
+        >>> from itertools import chain, islice
+        >>> from string import ascii_uppercase
+        >>> from numpy.random import choice
+        >>> _, top_axs = plt.subplots(ncols=3, nrows=1, figsize=(18, 5))
+        >>> _, bot_axs = plt.subplots(ncols=2, nrows=1, figsize=(18, 8))
+        >>> cmaps = ["cool", list("rgb"), "plasma", "viridis", "Set1"]
+        >>> letters = iter(ascii_uppercase)
+        >>> for n_sets, cmap, ax in zip(range(2, 7), cmaps, chain(top_axs, bot_axs)):
+        ...    dataset_dict = {
+        ...        name: set(choice(1000, 700, replace=False))
+        ...        for name in islice(letters, n_sets)
+        ...    }
+        >>> venn(dataset_dict,
+        ...      fmt="{percentage:.1f}%", # "{size}", "{logic}"
+        ...      palette=cmap,
+        ...      fontsize=12,
+        ...      # legend_loc="upper left",
+        ...      ax=ax)
+    """
+    if not is_valid_dataset_dict(data):
+        raise TypeError("Only dictionaries of sets are understood")
+
+    return _draw_venn(
+        data=generate_petal_labels(data.values(), fmt=fmt),
+        names=list(data.keys()) if names is None else names,
+        palette=palette,
+        alpha=alpha,
+        fontsize=fontsize,
+        legend_loc=legend_loc,
+        ax=ax
+    )
