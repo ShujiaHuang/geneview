@@ -13,8 +13,8 @@ from itertools import cycle
 from pandas import DataFrame
 import numpy as np
 
-import matplotlib.pyplot as plt
-from .utils import General, adjust_text
+from matplotlib.pyplot import subplots
+from .utils import adjust_text
 
 
 # learn something from "https://github.com/reneshbedre/bioinfokit/blob/38fb4966827337f00421119a69259b92bb67a7d0/bioinfokit/visuz.py"
@@ -24,8 +24,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
                   xtick_label_set=None, CHR=None, xticklabel_kws=None,
                   suggestiveline=1e-5, genomewideline=5e-8, sign_line_cols="#D62728,#2CA02C", hline_kws=None,
                   sign_marker_p=None, sign_marker_color="r",
-                  is_annotate_topsnp=False, text_kws=None, ld_block_size=50000,
-                  is_show=None, dpi=300, figname=None, **kwargs):
+                  is_annotate_topsnp=False, text_kws=None, ld_block_size=50000, **kwargs):
     """Creates a manhattan plot from PLINK assoc output (or any data frame with chromosome, position, and p-value).
 
     Parameters
@@ -119,17 +118,6 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     ld_block_size : integer, default is 50000, optional
         Set the size of LD block which for finding top SNP. And the top SNP's annotation represent the block.
 
-    is_show : boolean or None, default is None, Optional. 
-        Display the plot in screen or not.
-        You can set this parameter by your wish, or it'll set to be True automatically 
-        if ``is_show`` and ``figname`` are None simultaneously.
-
-    dpi : float or 'figure', default is 300, optional.
-        The resolution in dots-pet-inch for plot. If 'figure', use the figure's dpi value.
-
-    figname : string, or None, optional
-        Output plot file name.
-
     kwargs : key, value pairings, optional
         Other keyword arguments are passed to ``plt.scatter()`` or
         ``plt.vlines()`` (in matplotlib.pyplot) depending on whether 
@@ -159,20 +147,19 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         :context: close-figs
 
         >>> import pandas as pd
-        >>> from qmplot import manhattanplot
-        >>> df = pd.read_table("tests/data/gwas_plink_result.tsv", sep="\t")
-        >>> df = df.dropna(how="any", axis=0)  # clean data
+        >>> from geneview import manhattanplot
+        >>> from geneview.utils import load_dataset
+        >>> df = load_dataset("gwas")
         >>> ax = manhattanplot(data=df)
 
-    Plot a basic manhattan plot with horizontal xtick labels and save the plot
-    to a file name "manhattan.png":
+    Plot a basic manhattan plot with horizontal xtick labels:
 
     .. plot::
         :context: close-figs
 
         >>> xtick = set(['chr' + i for i in list(map(str, range(1, 10))) + ['11', '13', '15', '18', '21', 'X']])
         >>> manhattanplot(data=df, xlabel="Chromosome", ylabel=r"$-log_{10}{(P)}$",
-        ...               xtick_label_set=xtick, figname="manhattan.png")
+        ...               xtick_label_set=xtick)
 
     Add a horizontal at y position=3 line with linestyle="--" and lingwidth=1.3
     across the axis:
@@ -219,9 +206,6 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         ...               ld_block_size=50000,  # 50000 bp
         ...               annotext_kws={"fontsize": 12,  # The fontsize of annotate text
         ...                             "arrowprops": dict(arrowstyle="-", color="k", alpha=0.6)},
-        ...               dpi=300,  # set the resolution of plot figure
-        ...               is_show=False,  # do not show the figure
-        ...               figname="output_manhattan_plot.png",
         ...               ax=ax)
     """
     if not isinstance(data, DataFrame):
@@ -243,7 +227,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     # Draw the plot and return the Axes
     if ax is None:
         # ax = plt.gca()
-        _, ax = plt.subplots(figsize=(9, 3), facecolor="w", edgecolor="k")  # default
+        _, ax = subplots(figsize=(9, 3), facecolor="w", edgecolor="k")  # default
 
     if xticklabel_kws is None:
         xticklabel_kws = {}
@@ -347,11 +331,6 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-
-    if (is_show is None) and (figname is None):
-        is_show = True
-
-    General.get_figure(is_show, fig_name=figname, dpi=dpi)
     return ax
 
 

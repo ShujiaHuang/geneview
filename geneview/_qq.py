@@ -6,9 +6,9 @@ Date: 2021-02-21
 """
 import numpy as np
 from scipy.stats import norm
-import matplotlib.pyplot as plt
+from matplotlib.pyplot import subplots
 
-from .utils import General, is_numeric
+from .utils import is_numeric
 
 
 def ppoints(n, a=0.5):
@@ -59,8 +59,8 @@ def ppoints(n, a=0.5):
     return (np.arange(n, dtype=float) + 1 - a) / (n + 1 - 2 * a)
 
 
-def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0.8, title=None, xlabel=None,
-           ylabel=None, ablinecolor="r", is_show=None, dpi=300, figname=None, **kwargs):
+def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0.8, title=None,
+           xlabel=None, ylabel=None, ablinecolor="r", **kwargs):
     """Creat Q-Q plot.
     **CAUSION: The x-axis(expected) is created from uniform distribution.**
 
@@ -104,17 +104,6 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
         Color for the abline in plot. if set ``ablinecolor=None`` 
         means do not plot the abline.
 
-    is_show : boolean or None, default is None, Optional.
-        Display the plot in screen or not.
-        You can set this parameter by your wish, or it'll set to be True automatically 
-        if ``is_show`` and ``figname`` are None simultaneously.
-
-    dpi : float or 'figure', default is 300, optional.
-        The resolution in dots-pet-inch for plot. If 'figure', use the figure's dpi value.
-
-    figname : string, or None, optional
-        Output plot file name.
-
     kwargs : key, value pairings, optional
         Other keyword arguments are passed to ``plt.scatter()``
         (in matplotlib.pyplot).
@@ -147,9 +136,9 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
         :context: close-figs
 
         >>> import pandas as pd
-        >>> from qmplot import qqplot
-        >>> df = pd.read_table("tests/data/gwas_plink_result.tsv", sep="\t")
-        >>> df = df.dropna(how="any", axis=0)
+        >>> from geneview import qqplot
+        >>> from geneview.utils import load_dataset
+        >>> df = load_dataset("gwas")
         >>> qqplot(data=df["P"],
         ...        xlabel=r"Expected $-log_{10}{(P)}$",
         ...        ylabel=r"Observed $-log_{10}{(P)}$")
@@ -165,8 +154,6 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
         ...        title="Test",
         ...        xlabel=r"Expected $-log_{10}{(P)}$",
         ...        ylabel=r"Observed $-log_{10}{(P)}$",
-        ...        dpi=300,
-        ...        figname="output_QQ_plot.png",
         ...        ax=ax)
 
     We could even create a QQ plot base on two different dataset:
@@ -223,15 +210,11 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    if (is_show is None) and (figname is None):
-        is_show = True
-
-    General.get_figure(is_show, fig_name=figname, dpi=dpi)
     return ax
 
 
-def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed', color=None, ablinecolor='r', alpha=0.8,
-           is_show=None, dpi=300, figname=None, **kwargs):
+def qqnorm(data, ax=None, xlabel="Expected", ylabel="Observed", color=None, ablinecolor="r",
+           alpha=0.8, **kwargs):
     """Creat Q-Q plot against the normal distribution values.
     *CAUSION: The x-axis(expected) is created from normal distribution.*
 
@@ -261,17 +244,6 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed', color=None, abli
 
     alpha : float scalar, default is 0.8, optional
         The alpha blending value, between 0(transparent) and 1(opaque)
-
-    is_show : boolean or None, default is None, Optional.
-        Display the plot in screen or not.
-        You can set this parameter by your wish, or it'll set to be True automatically 
-        if ``is_show`` and ``figname`` are None simultaneously.
-
-    dpi : float or 'figure', default is 300, optional.
-        The resolution in dots-pet-inch for plot. If 'figure', use the figure's dpi value.
-
-    figname : string, or None, optional
-        Output plot file name.
 
     kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.scatter()``
@@ -313,8 +285,8 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed', color=None, abli
         :context: close-figs
 
         >>> import pandas as pd
-        >>> df = pd.read_table("tests/data/gwas_plink_result.tsv", sep="\t")
-        >>> df = df.dropna(how="any", axis=0)
+        >>> from geneview.utils import load_dataset
+        >>> df = load_dataset("gwas")
         >>> qqnorm(data=df["P"],
         ...        xlabel="Expected value",
         ...        ylabel="Observed value")
@@ -337,10 +309,6 @@ def qqnorm(data, ax=None, xlabel='Expected', ylabel='Observed', color=None, abli
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    if (is_show is None) and (figname is None):
-        is_show = True
-
-    General.get_figure(is_show, fig_name=figname, dpi=dpi)
     return ax
 
 
@@ -379,7 +347,7 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor="r", alpha=0.8, **kwargs):
     # Draw the plot and return the Axes
     if ax is None:
         # ax = plt.gca()
-        _, ax = plt.subplots(figsize=(5, 5), facecolor="w", edgecolor="k")
+        _, ax = subplots(figsize=(5, 5), facecolor="w", edgecolor="k")
 
     # Get the color from the current color cycle
     if color is None:
@@ -394,6 +362,7 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor="r", alpha=0.8, **kwargs):
 
     if ablinecolor:
         # plot the y=x line by expected: uniform distribution data
-        ax.plot([x.min(), ax.get_xlim()[1]], [x.min(), ax.get_xlim()[1]], color=ablinecolor, linestyle="-")
+        ax.plot([x.min(), ax.get_xlim()[1]], [x.min(), ax.get_xlim()[1]],
+                color=ablinecolor, linestyle="-")
 
     return ax
