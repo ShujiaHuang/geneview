@@ -2,15 +2,9 @@
 Utility functions for getting datasets from geneview online dataset repository.
 """
 import os
-
-import csv
 import pandas as pd
 
-try:
-    from six.moves.urllib.request import urlopen, urlretrieve
-except ImportError:
-    from ..ext.six.moves.urllib.request import urlopen, urlretrieve
-
+from six.moves.urllib.request import urlopen, urlretrieve
 from ._misc import is_numeric
 
 def get_dataset_names():
@@ -49,7 +43,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     Load the preview data of GOYA
 
         >>> import geneview as gv
-        >>> goya_preview = gv.util.load_dataset('GOYA_preview')
+        >>> goya_preview = gv.utils.load_dataset('GOYA_preview')
 
     """
     path = "https://github.com/ShujiaHuang/geneview-data/raw/master/{0}.csv"
@@ -95,8 +89,7 @@ def _get_data_home(data_home=None):
     environment variable ``GENEVIEW_DATA``.
     """
     if data_home is None:
-        data_home = os.environ.get('GENEVIEW_DATA',
-                                   os.path.join('~', 'geneview-data'))
+        data_home = os.environ.get('GENEVIEW_DATA', os.path.join('~', 'geneview-data'))
     data_home = os.path.expanduser(data_home)
     if not os.path.exists(data_home):
         os.makedirs(data_home)

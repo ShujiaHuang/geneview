@@ -1,8 +1,6 @@
 """
 This module contains miscellaneous functions for ``geneview``.
 """
-from __future__ import print_function, division
-
 import operator
 import pandas as pd
 import numpy as np

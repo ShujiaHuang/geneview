@@ -1,7 +1,5 @@
 """Functions for visulization distributions from seaborn"""
-from __future__ import division
 import numpy as np
-from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 

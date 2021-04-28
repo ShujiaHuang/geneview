@@ -1,8 +1,4 @@
-from __future__ import print_function, division
 import colorsys
-import warnings
-import os
-
 from distutils.version import LooseVersion
 
 import matplotlib as mpl

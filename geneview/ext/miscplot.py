@@ -1,4 +1,3 @@
-from __future__ import division
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -28,7 +27,7 @@ def palplot(pal, size=1):
 
 def puppyplot(grown_up=False):
     """Plot today's daily puppy. Only works in the IPython notebook."""
-    from .six.moves.urllib.request import urlopen
+    from six.moves.urllib.request import urlopen
     from IPython.display import HTML
     try:
         from bs4 import BeautifulSoup
@@ -40,10 +39,7 @@ def puppyplot(grown_up=False):
         puppy = soup.find("div", {"class": "daily_puppy"})
         return HTML(str(puppy.img))
     except ImportError:
-        #html = ('<img  src="http://cdn-www.dailypuppy.com/dog-images/'
-        #        'decker-the-nova-scotia-duck-tolling-retriever_'
-        #        '72926_2013-11-04_w450.jpg" style="width:450px;"/>')
         html = ('<img src="http://cdn-www.dailypuppy.com/media/dogs/'
-                '77165_20151221_023650412_iOS.jpg_w750.jpg" ' 
+                '77165_20151221_023650412_iOS.jpg_w750.jpg" '
                 'style="width:450px;"/>')
         return HTML(html)

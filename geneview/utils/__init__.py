@@ -9,8 +9,7 @@ unit-testing convenience functions.
 """
 from ._misc import chr_id_cmp, is_numeric, is_integer, iqr, _kde_support, \
                    categorical_order, freedman_diaconis_bins
-from ._plott import General, axlabel, despine, offset_spines, set_hls_values, \
-                    get_color_cycle
+from ._plott import General, set_hls_values
 from ._palette import desaturate, set_hls_values, get_color_cycle
 from ._dataset import get_dataset_names, load_dataset
 from ._adjust_text import adjust_text
@@ -21,10 +20,7 @@ __all__ = [ "chr_id_cmp",
             "iqr",
             "_kde_support", 
             "General",
-            "axlabel", 
-            "despine", 
-            "offset_spines", 
-            "desaturate", 
+            "desaturate",
             "set_hls_values", 
             "get_color_cycle", 
             "get_dataset_names",

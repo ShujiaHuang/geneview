@@ -1,28 +1,20 @@
-from __future__ import division
 import colorsys
 from itertools import cycle
 
 import numpy as np
 import matplotlib as mpl
 
-try:
-    from six import string_types
-    from six.moves import range
-except ImportError:
-    from ..ext.six import string_types
-    from ..ext.six.moves import range
+from six import string_types
 
 from ..ext import husl
-
 from ..utils import desaturate, set_hls_values, get_color_cycle
-
 from ._xkcd_rgb import xkcd_rgb
 from ._crayons import crayons
 from ._circos import circos
 
 GENEVIEW_PALETTES = dict(
     dbright=["#056EEE", "#1BD948", "#EE056E",
-             "#9641E5","#EE8505","#00C2E6"],
+             "#9641E5", "#EE8505", "#00C2E6"],
     deep=["#4C72B0", "#55A868", "#C44E52",
           "#8172B2", "#CCB974", "#64B5CD"],
     muted=["#4878CF", "#6ACC65", "#D65F5F",
@@ -37,11 +29,12 @@ GENEVIEW_PALETTES = dict(
                 "#CC79A7", "#F0E442", "#56B4E9"],
     colorful=["#3399FF", "#6DC066", "#FD482F",
               "#8A2BE2", "#FE9900", "#00ABA9"]
-    )
+)
 
 
 class _ColorPalette(list):
     """Set the color palette in a with statement, otherwise be a list."""
+
     def __enter__(self):
         """Open the context."""
         from ._rcmod import set_palette
@@ -698,7 +691,7 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
     midpoint = dict(light=[(.95, .95, .95, 1.)],
                     dark=[(.133, .133, .133, 1.)])[center]
     mid = midpoint * sep
-    pal = blend_palette(np.concatenate([neg, mid,  pos]), n, as_cmap=as_cmap)
+    pal = blend_palette(np.concatenate([neg, mid, pos]), n, as_cmap=as_cmap)
     return pal
 
 
