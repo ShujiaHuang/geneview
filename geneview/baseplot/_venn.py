@@ -541,7 +541,7 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         ...         palette=cmap,
         ...         fontsize=12,
         ...         legend_use_petal_color=True,
-        ...         # legend_loc="upper left",
+        ...         legend_loc="upper left",
         ...         ax=ax)
     """
     if not is_valid_dataset_dict(data):
