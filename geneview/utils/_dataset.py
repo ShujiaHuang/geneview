@@ -7,6 +7,7 @@ import pandas as pd
 from six.moves.urllib.request import urlopen, urlretrieve
 from ._misc import is_numeric
 
+
 def get_dataset_names():
     """Report available example datasets, useful for reporting issues."""
     # delayed import to not demand bs4 unless this function is actually used

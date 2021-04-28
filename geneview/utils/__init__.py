@@ -8,23 +8,23 @@ unit-testing convenience functions.
 
 """
 from ._misc import chr_id_cmp, is_numeric, is_integer, iqr, _kde_support, \
-                   categorical_order, freedman_diaconis_bins
+    categorical_order, freedman_diaconis_bins
 from ._plott import General
 from ._palette import desaturate, set_hls_values, get_color_cycle
 from ._dataset import get_dataset_names, load_dataset
 from ._adjust_text import adjust_text
 
-__all__ = [ "chr_id_cmp",
-            "is_numeric",
-            "is_integer",
-            "iqr",
-            "_kde_support", 
-            "General",
-            "desaturate",
-            "get_dataset_names",
-            "load_dataset", 
-            "set_hls_values", 
-            "categorical_order", 
-            "get_color_cycle",
-            "freedman_diaconis_bins", 
-            "adjust_text"]
+__all__ = ["chr_id_cmp",
+           "is_numeric",
+           "is_integer",
+           "iqr",
+           "_kde_support",
+           "General",
+           "desaturate",
+           "get_dataset_names",
+           "load_dataset",
+           "set_hls_values",
+           "categorical_order",
+           "get_color_cycle",
+           "freedman_diaconis_bins",
+           "adjust_text"]

@@ -10,12 +10,13 @@ import numpy as np
 from pandas import DataFrame
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle 
+from matplotlib.patches import Rectangle
 
 from ..utils import chr_id_cmp
-from ..palette import circos, set_style  # ``circos`` is a color dict
+from ..palette import circos  # ``circos`` is a color dict
 
-def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5, 
+
+def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5,
               CHR=None, alpha=0.8, color4none='#34728B', **kwargs):
     """ Create karyotype plot.
 
@@ -65,12 +66,12 @@ def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5,
     if isinstance(data, str):
         # suppose to be a path to the input file or a url to the file
         data = pd.read_table(
-            data, header=0, 
+            data, header=0,
             names=['chrom', 'start', 'end', 'name', 'gie_stain'])
     elif isinstance(data, DataFrame):
         # reset the columns
         data = DataFrame(
-            data.values, 
+            data.values,
             columns=['chrom', 'start', 'end', 'name', 'gie_stain'])
     else:
         # convert to DataFrame of pandas
@@ -78,16 +79,16 @@ def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5,
             data, columns=['chrom', 'start', 'end', 'name', 'gie_stain'])
 
     yaxis = []
-    for i, (chrom, kc_df) in enumerate(sorted(data.groupby('chrom'), 
+    for i, (chrom, kc_df) in enumerate(sorted(data.groupby('chrom'),
                                               key=lambda x: x[0],
                                               cmp=chr_id_cmp)):
-        
+
         if CHR is not None and chrom != CHR: continue
         yaxis.append(chrom)
 
         for _, r in kc_df.iterrows():
             band_color = circos[r.gie_stain] if r.gie_stain in circos else color4none
-            band_rec = Rectangle((r.start, i), r.end-r.start, width, 
+            band_rec = Rectangle((r.start, i), r.end - r.start, width,
                                  color=band_color, **kwargs)
             ax.add_patch(band_rec)
 
@@ -97,7 +98,7 @@ def karyoplot(data, ax=None, xlabel=None, ylabel=None, width=0.5,
     ax.set_xticklabels(['{0}M'.format(int(i / 10 ** 6)) for i in xticks])
     ax.set_xlim(0, xmax)
 
-    ax.set_yticks([i + width/2 for i in range(len(yaxis))])
+    ax.set_yticks([i + width / 2 for i in range(len(yaxis))])
     ax.set_yticklabels(yaxis)
     ax.set_ylim(0, len(yaxis))
 
