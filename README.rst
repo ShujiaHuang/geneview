@@ -8,8 +8,8 @@ actively developed.
 Examples
 --------
 
-* For **manhattan** and **Q-Q** plot: `<./docs/tutorial/gwas_plot.ipynb>`_
-* For **venn** plot: `<./docs/tutorial/venn.ipynb>`_
+* For **manhattan** and **Q-Q** plot: `tutorial <./docs/tutorial/gwas_plot.ipynb>`_
+* For **venn** plot: `tutorial <./docs/tutorial/venn.ipynb>`_
 
 Citing
 ------
