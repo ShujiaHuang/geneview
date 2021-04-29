@@ -392,8 +392,8 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
         Axis to plot on, otherwise create a default axis by plt.subplots() with figsize=(7, 7)
         in ``_draw_venn()``.
 
-    Return
-    ------
+    Returns
+    -------
     ax : matplotlib Axes
         Axes object with the venn plot.
 
@@ -473,8 +473,8 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         Axis to plot on, otherwise create a default axis by plt.subplots() with figsize=(7, 7)
         in ``_draw_venn()``.
 
-    Return
-    ------
+    Returns
+    -------
     ax : matplotlib Axes
         Axes object with the venn plot.
 
