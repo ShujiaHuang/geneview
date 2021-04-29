@@ -11,11 +11,13 @@ Installation
 To install the released version, just do
 
 .. code-block::
+
    pip install geneview
 
 You may instead want to use the development version from Github, by running
 
 .. code-block::
+
    pip install git+git://github.com/ShujiaHuang/geneview.git#egg=geneview
 
 Examples
