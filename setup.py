@@ -53,7 +53,6 @@ if __name__ == "__main__":
               "pandas",
               "matplotlib",
               "seaborn",
-              "Cycler",  # option, rarely use
           ],
           packages=find_packages(),
           classifiers=[
