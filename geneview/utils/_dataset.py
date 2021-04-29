@@ -48,7 +48,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         >>> gwas_data = gv.utils.load_dataset("gwas")
 
     """
-    path = "https://github.com/ShujiaHuang/geneview-data/blob/master/{0}.csv"
+    path = "https://raw.githubusercontent.com/ShujiaHuang/geneview-data/master/{0}.csv"
     full_path = path.format(name)
 
     if cache:
