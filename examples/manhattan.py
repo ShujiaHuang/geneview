@@ -9,6 +9,6 @@ gv.manhattanplot(data=df.loc[:,["#CHROM","POS","P"]],
                  ylabel="-Log10(P-value)",
                  xticklabel_kws={"rotation": 45},
                  xtick_label_set = set(xtick))
-#plt.tight_layout()
+plt.tight_layout()
 #plt.savefig("manhattan.png")
 plt.show()
