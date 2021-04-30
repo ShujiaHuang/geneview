@@ -8,12 +8,22 @@ from itertools import cycle
 from ..algorithm import hierarchical_cluster
 
 
-def plot_admixture(
-    data=None, group_order=None, palette=None, xticklabels=None, xticklabel_kws=None, ax=None
+def admixtureplot(
+        data=None,
+        group_order=None,
+        xticklabels=None,
+        xticklabel_kws=None,
+        palette=None,
+        ax=None
 ):
-    """Plot admixture."""
-    # From tab10
-    TAB10 = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", 
+    """Plot admixture.
+
+    Parameters
+    ----------
+        data : dict
+
+    """
+    TAB10 = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
              "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"] 
     palette = cycle(TAB10 if palette is None else palette)
         
