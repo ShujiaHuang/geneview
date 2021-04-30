@@ -8,6 +8,7 @@ venv/
 .idea/
 dist/
 build/
+__pycache__/
 learn_from/
 trash/
 tmp/
