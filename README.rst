@@ -23,8 +23,8 @@ You may instead want to use the development version from Github, by running
 Tutorials
 ---------
 
-* For **manhattan** and **Q-Q** plot: `tutorial <./docs/tutorial/gwas_plot.ipynb>`_
-* For **venn** plot: `tutorial <./docs/tutorial/venn.ipynb>`_
+* **Manhattan** and **Q-Q** plot: `tutorial <./docs/tutorial/gwas_plot.ipynb>`_
+* **Venn diagrams for 2, 3, 4, 5, 6 sets**: `tutorial <./docs/tutorial/venn.ipynb>`_
 
 Dependencies
 ------------

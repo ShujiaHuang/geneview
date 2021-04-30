@@ -1,21 +1,20 @@
-# Copyright (C) 2016 Shujia Huang <huangshujia9@gmail.com>
-import os
+# Copyright (C) 2016-2021 Shujia Huang <huangshujia9@gmail.com>
 # temporarily redirect config directory to prevent matplotlib importing
 # testing that for writeable directory which results in sandbox error in
 # certain easy_install versions
-#os.environ["MPLCONFIGDIR"] = "."
+import os
 
 DESCRIPTION = "Geneview: A python package for genomics data visualization"
 LONG_DESCRIPTION = """\
-Geneview is a library for making attractive and informative genomics graphics in Python. It is built on top of matplotlib and tightly integrated with the PyData stack, including support for numpy data structures.
+Geneview is a library for making attractive and informative genomics graphics in Python. 
+It is built on top of matplotlib and tightly integrated with the PyData stack, including 
+support for numpy and pandas data structures.
 
-Some of the features that geneview offers are
+Some of the features that geneview offers are: 
 
-- Functions for visualizing univariate and bivariate distributions or for comparing them between subsets of data
-
-- Tools that fit and visualize linear regression models for different kinds of independent and dependent variables
-
-- High-level abstractions for structuring grids of plots that let you easily build complex visualizations
+- Functions for visualizing univariate and bivariate distributions or for comparing them between subsets of data.
+- Tools that fit and visualize linear regression models for different kinds of independent and dependent variables.
+- High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
 """
 
 DISTNAME = "geneview"
