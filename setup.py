@@ -3,8 +3,9 @@
 # testing that for writeable directory which results in sandbox error in
 # certain easy_install versions
 import os
+from argparse import Namespace
 
-DESCRIPTION = "Geneview: A python package for genomics data visualization"
+DESCRIPTION = "Geneview: A python package for genomics data visualization."
 LONG_DESCRIPTION = """\
 Geneview is a library for making attractive and informative genomics graphics in Python. 
 It is built on top of matplotlib and tightly integrated with the PyData stack, including 
@@ -17,14 +18,15 @@ Some of the features that geneview offers are:
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
 """
 
-DISTNAME = "geneview"
-MAINTAINER = "Shujia Huang"
-MAINTAINER_EMAIL = "huangshujia9@gmail.com"
-URL = "https://github.com/ShujiaHuang/geneview"
-LICENSE = "BSD (3-clause)"
-DOWNLOAD_URL = "https://github.com/ShujiaHuang/geneview"
-VERSION = "0.0.5"
-
+meta = Namespace(
+    __DISTNAME__     = "geneview",
+    __AUTHOR__       = "Shujia Huang",
+    __AUTHOR_EMAIL__ = "huangshujia9@gmail.com",
+    __URL__          = "https://github.com/ShujiaHuang/geneview",
+    __LICENSE__      = "BSD (3-clause)",
+    __DOWNLOAD_URL__ = "https://github.com/ShujiaHuang/geneview",
+    __VERSION__ = "0.0.5",
+)
 
 try:
     from setuptools import setup, find_packages
@@ -35,17 +37,17 @@ except ImportError:
 
 if __name__ == "__main__":
 
-    setup(name=DISTNAME,
-          author=MAINTAINER,
-          author_email=MAINTAINER_EMAIL,
-          maintainer=MAINTAINER,
-          maintainer_email=MAINTAINER_EMAIL,
+    setup(name=meta.__DISTNAME__,
+          author=meta.__AUTHOR__,
+          author_email=meta.__AUTHOR_EMAIL__,
+          maintainer=meta.__AUTHOR__,
+          maintainer_email=meta.__AUTHOR_EMAIL__,
           description=DESCRIPTION,
           long_description=LONG_DESCRIPTION,
-          license=LICENSE,
-          url=URL,
-          version=VERSION,
-          download_url=DOWNLOAD_URL,
+          license=meta.__LICENSE__,
+          url=meta.__URL__,
+          version=meta.__VERSION__,
+          download_url=meta.__DOWNLOAD_URL__,
           install_requires=[
               "numpy",
               "scipy",
