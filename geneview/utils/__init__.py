@@ -13,6 +13,7 @@ from ._plott import General
 from ._palette import desaturate, set_hls_values, get_color_cycle
 from ._dataset import get_dataset_names, load_dataset
 from ._adjust_text import adjust_text
+from ._decorators import deprecate_positional_args
 
 __all__ = ["chr_id_cmp",
            "is_numeric",
@@ -27,4 +28,5 @@ __all__ = ["chr_id_cmp",
            "categorical_order",
            "get_color_cycle",
            "freedman_diaconis_bins",
-           "adjust_text"]
+           "adjust_text",
+           "deprecate_positional_args"]

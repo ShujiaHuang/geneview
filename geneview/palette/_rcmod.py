@@ -72,7 +72,7 @@ _context_keys = (
 
 
 def setup(context="notebook", style="darkgrid", palette="dbright",
-            font="sans-serif", font_scale=1, color_codes=False, rc=None):
+          font="sans-serif", font_scale=1, color_codes=False, rc=None):
     """Set aesthetic parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
@@ -185,17 +185,17 @@ def axes_style(style=None, rc=None):
                                 "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
-            }
+        }
 
         # Set grid on or off
         if "grid" in style:
             style_dict.update({
                 "axes.grid": True,
-                })
+            })
         else:
             style_dict.update({
                 "axes.grid": False,
-                })
+            })
 
         # Set the color of the background, spines, and grids
         if style.startswith("dark"):
@@ -204,7 +204,7 @@ def axes_style(style=None, rc=None):
                 "axes.edgecolor": "white",
                 "axes.linewidth": 0,
                 "grid.color": "white",
-                })
+            })
 
         elif style == "whitegrid":
             style_dict.update({
@@ -212,7 +212,7 @@ def axes_style(style=None, rc=None):
                 "axes.edgecolor": light_gray,
                 "axes.linewidth": 1,
                 "grid.color": light_gray,
-                })
+            })
 
         elif style in ["white", "ticks"]:
             style_dict.update({
@@ -220,7 +220,7 @@ def axes_style(style=None, rc=None):
                 "axes.edgecolor": dark_gray,
                 "axes.linewidth": 1.25,
                 "grid.color": light_gray,
-                })
+            })
 
         # Show or hide the axes ticks
         if style == "ticks":
@@ -229,14 +229,14 @@ def axes_style(style=None, rc=None):
                 "ytick.major.size": 6,
                 "xtick.minor.size": 3,
                 "ytick.minor.size": 3,
-                })
+            })
         else:
             style_dict.update({
                 "xtick.major.size": 0,
                 "ytick.major.size": 0,
                 "xtick.minor.size": 0,
                 "ytick.minor.size": 0,
-                })
+            })
 
     # Override these settings with the provided rc dictionary
     if rc is not None:
@@ -362,7 +362,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
 
             "xtick.major.pad": 7,
             "ytick.major.pad": 7,
-            }
+        }
 
         # Scale all the parameters by the same factor depending on the context
         scaling = dict(paper=.8, notebook=1, talk=1.3, poster=1.6)[context]
@@ -447,6 +447,7 @@ class _RCAesthetics(dict):
         def wrapper(*args, **kwargs):
             with self:
                 return func(*args, **kwargs)
+
         return wrapper
 
 
