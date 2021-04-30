@@ -1,0 +1,20 @@
+"""Release and publish geneview to PyPI.
+
+Author: Shujia Huang
+Date: 2021-04-30
+"""
+import importlib
+from subprocess import call
+
+spec = importlib.util.spec_from_file_location("_", "./setup.py")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+# Publish geneview to PyPI by using twine: https://segmentfault.com/a/1190000008663126
+# pip install twine
+# python setup.py register
+# python setup.py sdist build && twine upload dist/geneview-0.0.5.tar.gz
+tarball = "dist/{}-{}.tar.gz".format(module.meta.__DISTNAME__, module.meta.__VERSION__)
+call(["python", "setup.py", "sdist"])
+call(["twine", "upload", "-r", "pypi", tarball])
+
