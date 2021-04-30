@@ -87,7 +87,7 @@ PETAL_LABEL_COORDS = {
         "111101": (.591, .604), "111110": (.622, .477), "111111": (.501, .523)}
 }
 
-LABEL_LEGEND_COORDS = {
+DATASET_LEGEND_COORDS = {
     # n_set => [x, y, horizontalalignment, verticalalignment]
     2: {
         0: (0.20, 0.76, "right", "bottom"),
@@ -330,7 +330,7 @@ def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14,
     else:
         # plot the legend name for each dataset
         for i in range(n_sets):
-            x, y, ha, va = LABEL_LEGEND_COORDS[n_sets][i]
+            x, y, ha, va = DATASET_LEGEND_COORDS[n_sets][i]
             if legend_use_petal_color:
                 c = palette[i]
                 c[-1] = 1.0  # Set alpha blending value to opaque for legend text.
