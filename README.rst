@@ -20,8 +20,8 @@ You may instead want to use the development version from Github, by running
 
    pip install git+git://github.com/ShujiaHuang/geneview.git#egg=geneview
 
-Examples
---------
+Tutorials
+---------
 
 * For **manhattan** and **Q-Q** plot: `tutorial <./docs/tutorial/gwas_plot.ipynb>`_
 * For **venn** plot: `tutorial <./docs/tutorial/venn.ipynb>`_
