@@ -24,6 +24,7 @@ Tutorials
 ---------
 
 * **Manhattan** and **Q-Q** plot: `tutorial <./docs/tutorial/gwas_plot.ipynb>`_
+* **Admixture** plot: `tutorial <./docs/tutorial/admixture.ipynb>`_
 * **Venn diagrams for 2, 3, 4, 5, 6 sets**: `tutorial <./docs/tutorial/venn.ipynb>`_
 
 Dependencies
