@@ -27,8 +27,9 @@ def palplot(pal, size=1):
 
 def puppyplot(grown_up=False):
     """Plot today's daily puppy. Only works in the IPython notebook."""
-    from six.moves.urllib.request import urlopen
+    from urllib.request import urlopen
     from IPython.display import HTML
+
     try:
         from bs4 import BeautifulSoup
         url = "http://www.dailypuppy.com"
