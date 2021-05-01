@@ -128,10 +128,8 @@ def hierarchical_cluster(data=None, linkage=None, method="average", metric="eucl
     metric : str, optional
         Distance metric. Anything valid for scipy.spatial.distance.pdist
     axis : int, optional
-        Which axis to use to calculate linkage. 0 is rows, 1 is columns.
+        Which axis to use to calculate cluster. 0 is rows, 1 is columns.
         default: 1.
-    label : bool, optional
-        If True, label the dendrogram at leaves with column or row names.
 
     Returns
     -------
@@ -140,6 +138,6 @@ def hierarchical_cluster(data=None, linkage=None, method="average", metric="eucl
 
     """
     if _no_scipy:
-        raise RuntimeError("dendrogram cluster requires scipy to be installed.")
+        raise RuntimeError("hierarchical cluster requires scipy to be installed.")
     return _Dendrogram(data=data, linkage=linkage, method=method, metric=metric,
                        axis=axis)
