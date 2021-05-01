@@ -3,6 +3,8 @@ from itertools import cycle
 
 import numpy as np
 import matplotlib as mpl
+from matplotlib.colors import to_rgba
+from matplotlib.cm import ScalarMappable
 
 from six import string_types
 
@@ -30,6 +32,16 @@ GENEVIEW_PALETTES = dict(
     colorful=["#3399FF", "#6DC066", "#FD482F",
               "#8A2BE2", "#FE9900", "#00ABA9"]
 )
+
+
+def generate_colors_palette(cmap="viridis", n_colors=10):
+    """Generate colors from matplotlib colormap; pass list to use exact colors"""
+    if isinstance(cmap, list):
+        colors = [list(to_rgba(color)) for color in cmap]
+    else:
+        scalar_mappable = ScalarMappable(cmap=cmap)
+        colors = scalar_mappable.to_rgba(range(n_colors)).tolist()
+    return colors
 
 
 class _ColorPalette(list):
@@ -181,7 +193,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
 
     # Always return as many colors as we asked for
     pal_cycle = cycle(palette)
-    palette = [next(pal_cycle) for _ in range(n_colors)]
+    palette = cycle([next(pal_cycle) for _ in range(n_colors)])
 
     # Always return in r, g, b tuple format
     try:
@@ -744,7 +756,7 @@ def xkcd_palette(colors):
     See Also
     --------
     crayon_palette : Make a palette with Crayola crayon colors.
-    circos_palette : Make a palette with color names from the circos color 
+    circos_palette : Make a palette with color names from the circos color
                      survey.
 
     """
@@ -774,7 +786,7 @@ def crayon_palette(colors):
     See Also
     --------
     xkcd_palette : Make a palette with named colors from the XKCD color survey.
-    circos_palette : Make a palette with color names from the circos color 
+    circos_palette : Make a palette with color names from the circos color
                      survey.
 
     """
