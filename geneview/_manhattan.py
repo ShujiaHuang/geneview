@@ -59,7 +59,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
 
     marker : matplotlib markers for scatter plot, default is "o", optional
 
-    color : matplotlib color, optional, default: color_palette('colorful', 4)
+    color : matplotlib color, optional, defauft: "#3B5488,#53BBD5"
         Color used for the plot elements. Could hex-code or rgb,
         e.g: '#3B5488,#53BBD5' or 'rb'
 
