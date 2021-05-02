@@ -112,7 +112,9 @@ class _Dendrogram(object):
 
 
 @deprecate_positional_args
-def hierarchical_cluster(data=None, linkage=None, method="average", metric="euclidean", axis=1):
+def hierarchical_cluster(
+        data=None, linkage=None, method="average", metric="euclidean", axis=1
+):
     """A dendrogram cluster (or call hierarchical cluster method) to calculate
     the relationships within a matrix.
 
