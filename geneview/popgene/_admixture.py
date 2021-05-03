@@ -124,14 +124,30 @@ def _draw_admixtureplot(
     return ax
 
 
-def _load_admixture_from_file(in_admixture_fname, in_sample_info_fname):
+def _load_admixture_from_file(in_admixture_fname, in_sample_info_fname, shuffle_popsample_kws=None):
+
+    if ("axis" in shuffle_popsample_kws) and (shuffle_popsample_kws["axis"] == 1):
+        warnings.warn("axis=1 means sampling the data by columns, Which is not "
+                      "allow and may not be right in admixture data.")
+
     df = pd.read_table(in_admixture_fname, sep=" ", header=None)
     sample_info = pd.read_table(in_sample_info_fname, sep="\t", header=None, names=["Group"])
     popset = set(sample_info["Group"])
 
     data = {}
     for g in popset:
-        data[g] = df[sample_info["Group"] == g].copy()
+        g_data = df[sample_info["Group"] == g].copy()
+        g_size = len(g_data)
+        if shuffle_popsample_kws:
+            shuffle_raw_n = shuffle_popsample_kws["n"] if "n" in shuffle_popsample_kws else None
+            if shuffle_raw_n and shuffle_raw_n > g_size:
+                shuffle_popsample_kws["n"] = g_size
+                data[g] = g_data.sample(**shuffle_popsample_kws)
+                shuffle_popsample_kws["n"] = shuffle_raw_n  # reset to the raw N
+            else:
+                data[g] = g_data.sample(**shuffle_popsample_kws)
+        else:
+            data[g] = g_data
 
     return data
 
@@ -139,6 +155,7 @@ def _load_admixture_from_file(in_admixture_fname, in_sample_info_fname):
 def admixtureplot(
         data,
         population_info=None,
+        shuffle_popsample_kws=None,
         group_order=None,
         palette="tab10",
         xticklabels=None,
@@ -164,6 +181,10 @@ def admixtureplot(
             File path to a sample information list, each line only contain a group information
             for admixture row.
 
+        shuffle_popsample_kws : key, value pairings, or None, optional
+            The keyword argument of `pandas.sample` method to sample rows (in random order) for
+            each group of samples. If None,
+
         group_order : vector of strings, optional
             Specify the order of processing and plotting for the estimating sub populations.
 
@@ -179,7 +200,8 @@ def admixtureplot(
             maplotlib.axis.Axes.set_xticklabels.
 
         ylabel : string, optional
-            Set the y axis label of the current axis.
+            Set the y axis label of the current axis. The label will set to be the
+            column number of admixture output if ylabel is None.
 
         ylabel_kws : key, value pairings, or None, optional
             Other keyword arguments are passed to set y label in
@@ -215,33 +237,43 @@ def admixtureplot(
             ...                    population_info="../../examples/data/admixture_population.info")
 
 
-        If we only want to sampling some samples in the admixture plot, we have to deal with the data ourself.
+        Setting the ``shuffle_popsample_kws`` argument if you wish to sample some samples for each
+        population group in the admixture plot.
+
+        only sampling 80 samples for each population group.
+        .. plot::
+            :context: close-figs
+            >>> ax = admixtureplot(data="../../examples/data/admixture.output.Q",
+            ...                    population_info="../../examples/data/admixture_1KG_population.info",
+            ...                    shuffle_popsample_kws={"n": 80},
+            ...                    group_order=pop_group_1kg)
+
+        Or specifies the fraction of each group population.
+
+        .. plot::
+            :context: close-figs
+            >>> ax = admixtureplot(data="../../examples/data/admixture.output.Q",
+            ...                    population_info="../../examples/data/admixture_1KG_population.info",
+            ...                    shuffle_popsample_kws={"frac": 0.2},   # 0.2 means 20% of the data (in random order).
+            ...                    group_order=pop_group_1kg)
+
+
+        Admixtureplot also allow you to define your own data (in dict type) by yourself.
+
 
         .. plot::
             :context: close-figs
 
-            >>> import pandas pd
-            >>> import matplotlib.pyplot as plt
-            >>> pop_group_1kg = ["KHV", "CDX", "CHS", "CHB", "JPT", "BEB", "STU", "ITU",
-            ...                  "GIH", "PJL", "FIN", "CEU", "GBR", "IBS", "TSI", "PEL",
-            ...                  "PUR", "MXL", "CLM", "ASW", "ACB", "GWD", "MSL", "YRI",
-            ...                  "ESN", "LWK"]
             >>> df = pd.read_table("../../examples/data/admixture.output.Q", sep=" ", header=None)
-            >>> sample_info = pd.read_table("../../examples/data/admixture_population.info", sep="\t",
-            ...                             header=None, names=["Group"])
+            >>> sample_info = pd.read_table("../../examples/data/admixture_population.info", sep="\t", header=None, names=["Group"])
             >>> popset = set(sample_info["Group"])
             >>> data = {}
             >>> for g in popset:
             ...     g_data = df[sample_info["Group"]==g].copy()
-            ...     # Sub sampling: keep less than 100 samples for each group
-            ...     data[g] = g_data.sample(n=100) if len(g_data)>100 else g_data
-            >>> ax = admixtureplot(data=data, group_order=pop_group_1kg)
+            ...     # Sub sampling: keep less than 140 samples for each group
+            ...     data[g] = g_data.sample(n=140, random_state=100) if len(g_data)>140 else g_data
 
-        Define the figure by matplotlib
-
-        .. plot::
-            :context: close-figs
-
+            # Plot the figure
             >>> f, ax = plt.subplots(1, 1, figsize=(14, 3), facecolor="w", constrained_layout=True, dpi=300)
             >>> ax = admixtureplot(data=data,
             ...                    group_order=pop_group_1kg,
@@ -251,6 +283,8 @@ def admixtureplot(
             ...                    ylabel_kws={"rotation": 0, "ha": "right"},
             ...                    ax=ax)
         """
+    if shuffle_popsample_kws is None:
+        shuffle_popsample_kws = {}
 
     if (population_info is not None) and (not isinstance(population_info, str)):
         raise ValueError("`population_info` must be a file path which contain "
@@ -260,9 +294,16 @@ def admixtureplot(
     if isinstance(data, dict):
         pass
     elif isinstance(data, str):
-        data = _load_admixture_from_file(data, population_info)
+        data = _load_admixture_from_file(
+            data, population_info, shuffle_popsample_kws=shuffle_popsample_kws
+        )
     else:
         raise ValueError("`data` should be a dict or a file path to the admixture output(.Q).")
+
+    # infer ylabel if ylabel is None
+    if ylabel is None:
+        g = list(data.keys())[0]
+        ylabel = "K=%d" % len(data[g].columns)
 
     return _draw_admixtureplot(data=data,
                                group_order=group_order,
