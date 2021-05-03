@@ -66,7 +66,9 @@ def _draw_admixtureplot(
                "which could cause a confuse plot. Please reset the palette.")
         warnings.warn(msg)
 
-    palette = cycle(generate_colors_palette(cmap=palette, n_colors=len(column_names)))
+    colors = generate_colors_palette(cmap=palette, n_colors=len(column_names))
+    palette = cycle(colors)
+
     for k in column_names:
         c = next(palette)  # one color for one 'k'
 
@@ -131,7 +133,7 @@ def _load_admixture_from_file(in_admixture_fname, in_sample_info_fname, shuffle_
                       "allow and may not be right in admixture data.")
 
     df = pd.read_table(in_admixture_fname, sep=" ", header=None)
-    sample_info = pd.read_table(in_sample_info_fname, sep="\t", header=None, names=["Group"])
+    sample_info = pd.read_table(in_sample_info_fname, header=None, names=["Group"])
     popset = set(sample_info["Group"])
 
     data = {}
