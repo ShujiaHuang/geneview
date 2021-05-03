@@ -136,6 +136,10 @@ def _load_admixture_from_file(in_admixture_fname, in_sample_info_fname, shuffle_
     sample_info = pd.read_table(in_sample_info_fname, header=None, names=["Group"])
     popset = set(sample_info["Group"])
 
+    if len(sample_info) != len(df):
+        raise ValueError("The size of sample_info(%d) and input admixture result(%d) "
+                         "must be the same." % (len(sample_info), len(df)))
+
     data = {}
     for g in popset:
         g_data = df[sample_info["Group"] == g].copy()
