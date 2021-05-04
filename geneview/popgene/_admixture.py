@@ -189,7 +189,7 @@ def admixtureplot(
 
         shuffle_popsample_kws : key, value pairings, or None, optional
             The keyword argument of `pandas.sample` method to sample rows (in random order) for
-            each group of samples. If None,
+            each group of population. If None, keep the raw data.
 
         group_order : vector of strings, optional
             Specify the order of processing and plotting for the estimating sub populations.
@@ -297,14 +297,18 @@ def admixtureplot(
                          "the population information for each row of admixture "
                          "result. One element per line.")
 
-    if isinstance(data, dict):
-        pass
-    elif isinstance(data, str):
+    if (population_info is None) and (not isinstance(data, dict)):
+        raise ValueError("``data`` must be a dictionary and the key should be the group "
+                         "information, values should be a dataframe which contain the result "
+                         "of admixture.")
+
+    if (not isinstance(data, dict)) and (not isinstance(data, str)):
+        raise ValueError("`data` should be a dict or a file path to the admixture output(.Q).")
+
+    if isinstance(data, str):
         data = _load_admixture_from_file(
             data, population_info, shuffle_popsample_kws=shuffle_popsample_kws
         )
-    else:
-        raise ValueError("`data` should be a dict or a file path to the admixture output(.Q).")
 
     # infer ylabel if ylabel is None
     if ylabel is None:
