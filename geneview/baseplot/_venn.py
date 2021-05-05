@@ -9,8 +9,10 @@ from warnings import warn
 
 from matplotlib.pyplot import subplots
 from matplotlib.colors import to_rgba
-from matplotlib.cm import ScalarMappable
 from matplotlib.patches import Ellipse, Polygon
+
+# from matplotlib.cm import ScalarMappable
+from ..palette import generate_colors_palette
 
 __all__ = ["venn", "vennx", "generate_petal_labels"]
 
@@ -126,11 +128,8 @@ def generate_colors(cmap="viridis", n_colors=6, alpha=.4):
     """Generate colors from matplotlib colormap; pass list to use exact colors"""
     if not isinstance(n_colors, int) or (n_colors < 2) or (n_colors > 6):
         raise ValueError("n_colors must be an integer between 2 and 6")
-    if isinstance(cmap, list):
-        colors = [list(to_rgba(color, alpha=alpha)) for color in cmap]
-    else:
-        scalar_mappable = ScalarMappable(cmap=cmap)
-        colors = scalar_mappable.to_rgba(range(n_colors), alpha=alpha).tolist()
+
+    colors = generate_colors_palette(cmap=cmap, n_colors=n_colors, alpha=alpha)
     return colors[:n_colors]
 
 
@@ -277,7 +276,7 @@ def _get_n_sets(petal_labels, dataset_labels):
     return n_sets
 
 
-def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14, 
+def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14,
                legend_use_petal_color=False, legend_loc=None, ax=None):
     """Draw Venn diagram, annotate petals and dataset labels.
     """
@@ -352,7 +351,7 @@ def is_valid_dataset_dict(data):
         return True
 
 
-def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14, 
+def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
           legend_use_petal_color=False, legend_loc=None, ax=None):
     """Generate venn diagram by input petal labels data.
 
