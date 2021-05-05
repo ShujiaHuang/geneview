@@ -23,8 +23,8 @@ You may instead want to use the development version from Github, by running
 Tutorials
 ---------
 
-* **Manhattan** and **Q-Q** plot: `tutorial <./docs/tutorial/gwas_plot.ipynb>`_
-* **Admixture** plot: `tutorial <./docs/tutorial/admixture.ipynb>`_
+* **Manhattan** and **Q-Q** plot from the PLINK2.x GWAS result: `tutorial <./docs/tutorial/gwas_plot.ipynb>`_
+* Generate **Admixture** plot from the raw admixture output result: `tutorial <./docs/tutorial/admixture.ipynb>`_
 * **Venn diagrams for 2, 3, 4, 5, 6 sets**: `tutorial <./docs/tutorial/venn.ipynb>`_
 
 Dependencies
