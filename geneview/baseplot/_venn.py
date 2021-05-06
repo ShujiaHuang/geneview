@@ -290,7 +290,7 @@ def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14,
         [0.322, 0.322, 0.745, 0.2]
     ]
 
-    if (names is None) or (not isinstance(names, list)):
+    if not isinstance(names, list):
         raise ValueError("Names of sets should be a list and must not be empty.")
 
     n_sets = _get_n_sets(data, names)
@@ -349,6 +349,31 @@ def is_valid_dataset_dict(data):
             return False
     else:
         return True
+
+
+def is_already_venn_dataset(petal_labels, dataset_labels):
+    if not isinstance(dataset_labels, list):
+        return False
+
+    if not (hasattr(petal_labels, "keys") and hasattr(petal_labels, "values")):
+        return False
+
+    n_sets = len(dataset_labels)
+    petal_labels_set = set(_generate_logics(n_sets))
+    valid = True
+    for logic in petal_labels.keys():
+        if not isinstance(petal_labels[logic], str):
+            valid = False
+        if len(logic) != n_sets:
+            valid = False
+        if not (set(logic) <= {"0", "1"}):
+            valid = False
+        if logic not in petal_labels_set:
+            valid = False
+        if not valid:
+            break
+
+    return valid
 
 
 def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
@@ -424,8 +449,13 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
         :context: close-figs
         >>> ax = vennx(data=petal_labels, names=["set 1", "set 2", "set 3", "set 4"],
         ...            legend_use_petal_color=True)
-
     """
+    if not isinstance(names, list):
+        raise ValueError("Names of sets should be a list and must not be empty.")
+
+    if not is_already_venn_dataset(data, names):
+        raise TypeError("``data`` is not a dict or the value is not a string. ")
+
     return _draw_venn(data=data,
                       names=names,
                       palette=palette,
@@ -530,14 +560,23 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         ...         legend_loc="upper left",
         ...         ax=ax)
     """
-    if not is_valid_dataset_dict(data):
+    if is_already_venn_dataset(data, names):
+        return vennx(data=data,
+                     names=names,
+                     palette=palette,
+                     alpha=alpha,
+                     fontsize=fontsize,
+                     legend_use_petal_color=legend_use_petal_color,
+                     legend_loc=legend_loc, ax=ax)
+
+    elif not is_valid_dataset_dict(data):
         raise TypeError("Only dictionaries of sets are understood")
 
-    return _draw_venn(data=generate_petal_labels(data.values(), fmt=fmt),
-                      names=list(data.keys()) if names is None else names,
-                      palette=palette,
-                      alpha=alpha,
-                      fontsize=fontsize,
-                      legend_use_petal_color=legend_use_petal_color,
-                      legend_loc=legend_loc,
-                      ax=ax)
+    return vennx(data=generate_petal_labels(data.values(), fmt=fmt),
+                 names=list(data.keys()) if names is None else names,
+                 palette=palette,
+                 alpha=alpha,
+                 fontsize=fontsize,
+                 legend_use_petal_color=legend_use_petal_color,
+                 legend_loc=legend_loc,
+                 ax=ax)

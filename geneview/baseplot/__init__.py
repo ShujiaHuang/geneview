@@ -1,1 +1,1 @@
-from ._venn import venn, vennx, generate_petal_labels
+from ._venn import venn, generate_petal_labels
