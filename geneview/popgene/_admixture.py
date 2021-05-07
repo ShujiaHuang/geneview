@@ -41,7 +41,7 @@ def _draw_admixtureplot(
         Specify the order of processing and plotting for the estimating sub populations.
     """
     if ax is None:
-        _, ax = subplots(1, 1, figsize=(14, 2), facecolor="w", constrained_layout=True, dpi=300)
+        _, ax = subplots(1, 1, figsize=(14, 2), facecolor="w", constrained_layout=True)
 
     if hierarchical_kws is None:
         hierarchical_kws = {"method": "average", "metric": "euclidean"}
@@ -61,18 +61,16 @@ def _draw_admixtureplot(
     base_y = np.zeros(len(x))
 
     column_names = data[group_order[0]].columns
-    if isinstance(palette, list) and (len(palette) < len(column_names)):
+    colors = generate_colors_palette(cmap=palette, n_colors=len(column_names))
+    palette = cycle(colors)
+    if len(colors) < len(column_names):
         msg = ("The categories of colors setting by `palette` is less than "
                "the number of estimating sub populations (K) in admixture, "
                "which could cause a confuse plot. Please reset the palette.")
         warnings.warn(msg)
 
-    colors = generate_colors_palette(cmap=palette, n_colors=len(column_names))
-    palette = cycle(colors)
-
     for k in column_names:
         c = next(palette)  # one color for one 'k'
-
         start_g_pos = 0
         add_y = []
         for g in group_order:  # keep group order
@@ -128,7 +126,6 @@ def _draw_admixtureplot(
 
 
 def _load_admixture_from_file(in_admixture_fname, in_sample_info_fname, shuffle_popsample_kws=None):
-
     if ("axis" in shuffle_popsample_kws) and (shuffle_popsample_kws["axis"] == 1):
         warnings.warn("axis=1 means sampling the data by columns, Which is not "
                       "allow and may not be right in admixture data.")
@@ -219,8 +216,11 @@ def admixtureplot(
             ``maplotlib.axis.Axes.set_ylabel``.
 
         hierarchical_kws : key, value pairings, or None, optional
-            Other keyword arguments are passed to set the hierachical clustering in
+            Other keyword arguments are passed to set the hierarchical clustering in
             ``geneview.algorithm.hierarchical_cluster``.
+
+        ax : matplotlib axis, optional
+            Axis to plot on, otherwise define a subplot by ``admixtureplot()``.
 
         Returns
         -------
@@ -251,13 +251,13 @@ def admixtureplot(
             >>> ax = admixtureplot(data="../../examples/data/admixture.output.Q",
             ...                    population_info="../../examples/data/admixture_population.info")
 
-
         Setting the ``shuffle_popsample_kws`` argument if you wish to sample some samples for each
         population group in the admixture plot.
 
         only sampling 80 samples for each population group.
         .. plot::
             :context: close-figs
+
             >>> ax = admixtureplot(data="../../examples/data/admixture.output.Q",
             ...                    population_info="../../examples/data/admixture_1KG_population.info",
             ...                    shuffle_popsample_kws={"n": 80},
@@ -269,26 +269,29 @@ def admixtureplot(
             :context: close-figs
             >>> ax = admixtureplot(data="../../examples/data/admixture.output.Q",
             ...                    population_info="../../examples/data/admixture_1KG_population.info",
-            ...                    shuffle_popsample_kws={"frac": 0.2},   # 0.2 means 20% of the data (in random order).
+            ...                    shuffle_popsample_kws={"frac": 0.2},
             ...                    group_order=pop_group_1kg)
 
+        0.2 in `shuffle_popsample_kws` means shuffle 20% of the data for each estimate poplation group
+        in random order.
 
-        Admixtureplot also allow you to define your own data (in dict type) by yourself.
-
+        ``admixtureplot()`` also allow you to define your own data (in dict type) by manual.
 
         .. plot::
             :context: close-figs
 
             >>> df = pd.read_table("../../examples/data/admixture.output.Q", sep=" ", header=None)
-            >>> sample_info = pd.read_table("../../examples/data/admixture_population.info", sep="\t", header=None, names=["Group"])
-            >>> popset = set(sample_info["Group"])
+            >>> sample_info = pd.read_table("../../examples/data/admixture_population.info", sep="\t",
+            ...                             header=None, names=["Group"])
+            >>> pop_set = set(sample_info["Group"])
             >>> data = {}
-            >>> for g in popset:
+            >>> for g in pop_set:
             ...     g_data = df[sample_info["Group"]==g].copy()
             ...     # Sub sampling: keep less than 140 samples for each group
             ...     data[g] = g_data.sample(n=140, random_state=100) if len(g_data)>140 else g_data
 
             # Plot the figure
+            >>> import matplotlib.pyplot as plt
             >>> f, ax = plt.subplots(1, 1, figsize=(14, 3), facecolor="w", constrained_layout=True, dpi=300)
             >>> ax = admixtureplot(data=data,
             ...                    group_order=pop_group_1kg,
@@ -297,7 +300,7 @@ def admixtureplot(
             ...                    ylabel="K=11",
             ...                    ylabel_kws={"rotation": 0, "ha": "right"},
             ...                    ax=ax)
-        """
+    """
     if shuffle_popsample_kws is None:
         shuffle_popsample_kws = {}
 
@@ -309,7 +312,7 @@ def admixtureplot(
     if (population_info is None) and (not isinstance(data, dict)):
         raise ValueError("``data`` must be a dictionary and the key should be the group "
                          "information, values should be a dataframe which contain the result "
-                         "of admixture.")
+                         "of admixture if the ``population_info`` argument is None.")
 
     if (not isinstance(data, dict)) and (not isinstance(data, str)):
         raise ValueError("`data` should be a dict or a file path to the admixture output(.Q).")
