@@ -14,7 +14,10 @@ spec.loader.exec_module(module)
 # pip install twine
 # python setup.py register
 # python setup.py sdist build && twine upload dist/geneview-0.0.5.tar.gz
-tarball = "dist/{}-{}.tar.gz".format(module.meta.__DISTNAME__, module.meta.__VERSION__)
+
+#call(["pandoc", "--from=markdown", "--to=rst", "-o", "README.rst", "README.md"])
 call(["python", "setup.py", "sdist"])
+
+tarball = "dist/{}-{}.tar.gz".format(module.meta.__DISTNAME__, module.meta.__VERSION__)
 call(["twine", "upload", "-r", "pypi", tarball])
 
