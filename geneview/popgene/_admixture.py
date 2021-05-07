@@ -17,6 +17,7 @@ from ..palette import generate_colors_palette
 def _draw_admixtureplot(
         data=None,
         group_order=None,
+        linewidth=1.0,
         palette="tab10",
         xticklabels=None,
         xticklabel_kws=None,
@@ -95,12 +96,12 @@ def _draw_admixtureplot(
         xticks_pos.append(g_pos + 0.5 * g_size)
 
         g_pos += g_size
-        ax.axvline(x=g_pos, color="k", lw=1)
+        ax.axvline(x=g_pos, color="k", lw=linewidth)
 
-    ax.spines["left"].set_linewidth(1)
-    ax.spines["top"].set_linewidth(1)
-    ax.spines["right"].set_linewidth(1)
-    ax.spines["bottom"].set_linewidth(1)
+    ax.spines["left"].set_linewidth(linewidth)
+    ax.spines["top"].set_linewidth(linewidth)
+    ax.spines["right"].set_linewidth(linewidth)
+    ax.spines["bottom"].set_linewidth(linewidth)
 
     ax.set_xlim([x[0], x[-1]])
     ax.set_ylim([0, 1.0])
@@ -163,6 +164,7 @@ def admixtureplot(
         population_info=None,
         shuffle_popsample_kws=None,
         group_order=None,
+        linewidth=1.0,
         palette="tab10",
         xticklabels=None,
         xticklabel_kws=None,
@@ -193,6 +195,9 @@ def admixtureplot(
 
         group_order : vector of strings, optional
             Specify the order of processing and plotting for the estimating sub populations.
+
+        linewidth : float, optional, default: 1.0
+            Set the line width in plot
 
         palette : string, list, or :class:`matplotlib.colors.Colormap`, optional, default: tab10.
             String values are passed to :func:`generate_colors`. List values imply categorical
@@ -317,6 +322,7 @@ def admixtureplot(
 
     return _draw_admixtureplot(data=data,
                                group_order=group_order,
+                               linewidth=linewidth,
                                palette=palette,
                                xticklabels=xticklabels,
                                xticklabel_kws=xticklabel_kws,
