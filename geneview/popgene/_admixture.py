@@ -216,7 +216,11 @@ def admixtureplot(
 
         ylabel_kws : key, value pairings, or None, optional
             Other keyword arguments are passed to set y label in
-            maplotlib.axis.Axes.set_ylabel.
+            ``maplotlib.axis.Axes.set_ylabel``.
+
+        hierarchical_kws : key, value pairings, or None, optional
+            Other keyword arguments are passed to set the hierachical clustering in
+            ``geneview.algorithm.hierarchical_cluster``.
 
         Returns
         -------
