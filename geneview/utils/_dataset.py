@@ -48,30 +48,23 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         >>> gwas_data = gv.utils.load_dataset("gwas")
 
     """
-    path = "https://raw.githubusercontent.com/ShujiaHuang/geneview-data/master/{0}.csv"
-    full_path = path.format(name)
+    path_csv = "https://raw.githubusercontent.com/ShujiaHuang/geneview-data/master/{0}.csv"
+    path_full = "https://raw.githubusercontent.com/ShujiaHuang/geneview-data/master/{0}"
+    path_name = path_full.format(name) if "." in name else path_csv.format(name)
 
     if cache:
-        cache_path = os.path.join(_get_data_home(data_home),
-                                  os.path.basename(full_path))
+        cache_path = os.path.join(_get_data_home(data_home), os.path.basename(path_name))
         if not os.path.exists(cache_path):
-            urlretrieve(full_path, cache_path)
-        full_path = cache_path
+            urlretrieve(path_name, cache_path)
+        path_name = cache_path
 
-    """
-    data = []
-    with open(full_path) as f:
-        f_csv = csv.reader(f)
-        headers = next(f_csv)
-        # keep the first element as string in dataset(.csv format)
-        data = [[row[0]] + map(_tr, row[1:]) for row in f_csv] 
-    df = pd.DataFrame(data, columns=headers)
-    """
-    df = pd.read_csv(full_path, **kws)
-    if df.iloc[-1].isnull().all():
-        df = df.iloc[:-1]
-
-    return df
+    if path_name.endswith(".csv"):
+        df = pd.read_csv(path_name, **kws)
+        if df.iloc[-1].isnull().all():
+            df = df.iloc[:-1]
+        return df
+    else:
+        return path_name
 
 
 def _tr(s):
