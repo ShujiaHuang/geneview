@@ -235,9 +235,11 @@ def admixtureplot(
         .. plot::
             :context: close-figs
 
+            >>> from geneview.utils import load_dataset
             >>> from geneview import admixtureplot
-            >>> ax = admixtureplot(data="../../examples/data/admixture_1KG.output.Q",
-            ...                    population_info="../../examples/data/admixture_1KG_population.info")
+            >>> admixture_fn = load_dataset("admixture_output.Q")
+            >>> population_fn = load_dataset("admixture_population.info")
+            >>> ax = admixtureplot(data=admixture_fn, population_info=population_fn)
 
         Plot the admixture by a specify population order
 
@@ -248,8 +250,8 @@ def admixtureplot(
             ...                  "GIH", "PJL", "FIN", "CEU", "GBR", "IBS", "TSI", "PEL",
             ...                  "PUR", "MXL", "CLM", "ASW", "ACB", "GWD", "MSL", "YRI",
             ...                  "ESN", "LWK"]
-            >>> ax = admixtureplot(data="../../examples/data/admixture.output.Q",
-            ...                    population_info="../../examples/data/admixture_population.info")
+            >>> ax = admixtureplot(data=admixture_fn, population_info=population_fn,
+            ...                    group_order=pop_group_1kg)
 
         Setting the ``shuffle_popsample_kws`` argument if you wish to sample some samples for each
         population group in the admixture plot.
@@ -258,8 +260,8 @@ def admixtureplot(
         .. plot::
             :context: close-figs
 
-            >>> ax = admixtureplot(data="../../examples/data/admixture.output.Q",
-            ...                    population_info="../../examples/data/admixture_1KG_population.info",
+            >>> ax = admixtureplot(data=admixture_fn,
+            ...                    population_info=population_fn,
             ...                    shuffle_popsample_kws={"n": 80},
             ...                    group_order=pop_group_1kg)
 
@@ -267,8 +269,8 @@ def admixtureplot(
 
         .. plot::
             :context: close-figs
-            >>> ax = admixtureplot(data="../../examples/data/admixture.output.Q",
-            ...                    population_info="../../examples/data/admixture_1KG_population.info",
+            >>> ax = admixtureplot(data=admixture_fn,
+            ...                    population_info=population_fn,
             ...                    shuffle_popsample_kws={"frac": 0.2},
             ...                    group_order=pop_group_1kg)
 
@@ -280,9 +282,8 @@ def admixtureplot(
         .. plot::
             :context: close-figs
 
-            >>> df = pd.read_table("../../examples/data/admixture.output.Q", sep=" ", header=None)
-            >>> sample_info = pd.read_table("../../examples/data/admixture_population.info", sep="\\t",
-            ...                             header=None, names=["Group"])
+            >>> df = pd.read_table(admixture_fn, sep=" ", header=None)
+            >>> sample_info = pd.read_table(population_fn, sep="\\t", header=None, names=["Group"])
             >>> pop_set = set(sample_info["Group"])
             >>> data = {}
             >>> for g in pop_set:
