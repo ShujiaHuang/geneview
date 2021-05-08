@@ -281,7 +281,7 @@ def admixtureplot(
             :context: close-figs
 
             >>> df = pd.read_table("../../examples/data/admixture.output.Q", sep=" ", header=None)
-            >>> sample_info = pd.read_table("../../examples/data/admixture_population.info", sep="\t",
+            >>> sample_info = pd.read_table("../../examples/data/admixture_population.info", sep="\\t",
             ...                             header=None, names=["Group"])
             >>> pop_set = set(sample_info["Group"])
             >>> data = {}
