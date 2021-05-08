@@ -26,5 +26,6 @@ for n_sets, cmap, ax in zip(range(2, 7), cmaps, chain(top_axs, bot_axs)):
          ax=ax)
 
 plt.tight_layout()
+plt.savefig("images/venn.png")
 plt.show()
 
