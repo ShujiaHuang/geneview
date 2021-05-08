@@ -46,6 +46,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
 
         >>> import geneview as gv
         >>> gwas_data = gv.utils.load_dataset("gwas")
+        >>> file_path = gv.utils.load_dataset("bcftools.vcf.stats")  # only return a path name
 
     """
     path_csv = "https://raw.githubusercontent.com/ShujiaHuang/geneview-data/master/{0}.csv"
