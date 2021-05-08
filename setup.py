@@ -5,18 +5,11 @@
 import os
 from argparse import Namespace
 
+THIS_PATH = os.path.abspath(os.path.dirname(__file__))
+
 DESCRIPTION = "Geneview: A python package for genomics data visualization."
-LONG_DESCRIPTION = """\
-Geneview is a library for making attractive and informative genomics graphics in Python. 
-It is built on top of matplotlib and tightly integrated with the PyData stack, including 
-support for numpy and pandas data structures.
-
-Some of the features that geneview offers are: 
-
-- Functions for visualizing univariate and bivariate distributions or for comparing them between subsets of data.
-- Tools that fit and visualize linear regression models for different kinds of independent and dependent variables.
-- High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
-"""
+with open(os.path.join(THIS_PATH, "README.md"), encoding="utf-8") as f:
+    LONG_DESCRIPTION = f.read()
 
 meta = Namespace(
     __DISTNAME__     = "geneview",
@@ -44,6 +37,7 @@ if __name__ == "__main__":
           maintainer_email=meta.__AUTHOR_EMAIL__,
           description=DESCRIPTION,
           long_description=LONG_DESCRIPTION,
+          long_description_content_type="text/markdown",
           license=meta.__LICENSE__,
           url=meta.__URL__,
           version=meta.__VERSION__,

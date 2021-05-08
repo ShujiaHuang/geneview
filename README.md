@@ -1,9 +1,15 @@
 geneview: A python package for genomics data visualization
 ==========================================================
 
-**geneview** is a Python visualization library base on matplotlib. It
-provides a high-level interface for drawing attractive genomics
-graphics. And now it is actively developed.
+**geneview** is a library for making attractive and informative genomics graphics in Python.
+It is built on top of matplotlib and tightly integrated with the PyData stack, including
+support for numpy and pandas data structures. And now it is actively developed.
+
+Some of the features that geneview offers are:
+
+- Functions for visualizing gerneral genomics plots.
+- High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
+
 
 Installation
 ------------

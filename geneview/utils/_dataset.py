@@ -42,7 +42,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
 
     Examples
     --------
-    Load the preview data of GOYA
+    Load the preview data of GWAS
 
         >>> import geneview as gv
         >>> gwas_data = gv.utils.load_dataset("gwas")
