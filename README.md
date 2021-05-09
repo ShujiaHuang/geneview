@@ -40,23 +40,14 @@ Tutorials
 Dependencies
 ------------
 
--   Python 3.7+
+Geneview supports Python 3.7+ and no longer supports Python 2.
 
-### Mandatory
+Installation requires [numpy](http://www.numpy.org/), [scipy](http://www.scipy.org/), [pandas](http://pandas.pydata.org/), and [matplotlib](http://matplotlib.org/). Some functions will use [statsmodels](http://statsmodels.sourceforge.net/).
 
--   [numpy](http://www.numpy.org/)
--   [scipy](http://www.scipy.org/)
--   [pandas](http://pandas.pydata.org/)
--   [matplotlib](http://matplotlib.org/)
-
-### Recommended
-
--   [statsmodels](http://statsmodels.sourceforge.net/)
-
-We need the data structures: `DataFrame` and `Series` in **pandas**.
-It\'s easy and worth to learn, click
-[here](http://pda.readthedocs.org/en/latest/chp5.html) to see more
-detail tutorial for these two data type.
+We need the data structures: `DataFrame` and `Series` in **pandas**. 
+It's easy and worth to learn, click 
+[here](http://pda.readthedocs.org/en/latest/chp5.html) to see more detail 
+tutorial for these two data type.
 
 License
 -------
