@@ -18,7 +18,6 @@ gv.admixtureplot(data=admixture_output_fn,
                  xticklabel_kws={"rotation": 45},
                  ylabel_kws={"rotation": 0, "ha": "right"},
                  ax=ax)
-plt.savefig("images/admixture.png")
 plt.show()
 
 

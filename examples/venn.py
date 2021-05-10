@@ -22,7 +22,6 @@ for n_sets, cmap, ax in zip(range(2, 7), cmaps, chain(top_axs, bot_axs)):
          palette=cmap,
          fontsize=12,
          legend_use_petal_color=True,
-#          legend_loc="upper left",
          ax=ax)
 
 plt.tight_layout()
