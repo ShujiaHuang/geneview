@@ -5,12 +5,8 @@
 import os
 from argparse import Namespace
 
-THIS_PATH = os.path.abspath(os.path.dirname(__file__))
 
 DESCRIPTION = "Geneview: A python package for genomics data visualization."
-with open(os.path.join(THIS_PATH, "README.md"), encoding="utf-8") as f:
-    LONG_DESCRIPTION = f.read()
-
 meta = Namespace(
     __DISTNAME__     = "geneview",
     __AUTHOR__       = "Shujia Huang",
@@ -30,13 +26,18 @@ except ImportError:
 
 if __name__ == "__main__":
 
+    THIS_PATH = os.path.abspath(os.path.dirname(__file__))
+    long_description = os.path.join(THIS_PATH, "README.md")
+    #with open(os.path.join(THIS_PATH, "README.md"), encoding="utf-8") as f:
+    #    LONG_DESCRIPTION = f.read()
+
     setup(name=meta.__DISTNAME__,
           author=meta.__AUTHOR__,
           author_email=meta.__AUTHOR_EMAIL__,
           maintainer=meta.__AUTHOR__,
           maintainer_email=meta.__AUTHOR_EMAIL__,
           description=DESCRIPTION,
-          long_description=LONG_DESCRIPTION,
+          long_description=(open(long_description).read()),
           long_description_content_type="text/markdown",
           license=meta.__LICENSE__,
           url=meta.__URL__,
