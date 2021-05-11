@@ -2,6 +2,7 @@
 
 [![PyPI Version](https://img.shields.io/pypi/v/geneview.svg)](https://pypi.org/project/geneview/)
 [![License](https://img.shields.io/pypi/l/geneview.svg)](https://github.com/ShujiaHuang/geneview/blob/master/LICENSE)
+[![Code Coverage](https://codecov.io/gh/ShujiaHuang/geneview/branch/master/graph/badge.svg)](https://codecov.io/gh/ShujiaHuang/geneview)
 
 
 **geneview** is a library for making attractive and informative genomic graphics in Python.
@@ -88,12 +89,7 @@ ax = manhattanplot(data=df, xticklabel_kws={"rotation": "vertical"})
 
 ![manhattan_plot.png](./examples/images/manhattan_plot_xviertical.png)
 
-Or rotate the labels 45 degrees by setting
-`xticklabel_kws={"rotation": 45}`.
-
-The parameters of `manhattanplot()` defined the name of output figure
-file and the format of the figure file depending on the file suffix,
-which could be \".png\", \".jpg\", or \".pdf\".
+Or rotate the labels 45 degrees by setting `xticklabel_kws={"rotation": 45}`.
 
 When run with default parameters, the `manhattanplot()` function draws
 horizontal lines drawn at \$-[log](){10}{(1e-5)}\$ for \"suggestive\"
