@@ -1,5 +1,4 @@
 # This is a basic workflow to help you get started with Actions
-
 name: CI
 
 # Controls when the action will run. 
@@ -10,50 +9,87 @@ on:
   pull_request:
     branches: [ master ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+env:
+  PYTHON: "3.8"
+  NB_KERNEL: python
+  MPLBACKEND: Agg
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [3.7.x, 3.8.x, 3.9.x]
+        target: [test]
+        install: [all]
+        backend: [agg]
+
+        include:
+          - python: 3.7.x
+            target: unittests
+            install: all
+            backend: agg
+          - python: 3.9.x
+            target: unittests
+            install: light
+            backend: agg
+          - python: 3.9.x
+            target: test
+            install: all
+            backend: tkagg
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install geneview
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ci/utils.txt
+
+      - name: Cache datasets
+        run: python ci/cache_test_datasets.py
+
+      - name: Run tests
+        env:
+          MPLBACKEND: ${{ matrix.backend }}
+        run: |
+          if [[ ${{ matrix.backend }} == 'tkagg' ]]; then PREFIX='xvfb-run -a'; fi
+          $PREFIX make ${{ matrix.target }}
+#      - name: Upload coverage
+#        uses: codecov/codecov-action@v1
+#        if: ${{ success() }}
 
   # workflow for Codecov
   run-codecov:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    env:
-      OS: ${{ matrix.os }}
-      PYTHON: "3.7"
-      NB_KERNEL: python
-      MPLBACKEND: Agg
-
+    runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@master
+        with:
+          python-version: 3.8
 
-        - name: Checkout
-          uses: actions/checkout@v2
+      - name: Generate coverage report
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ci/utils.txt
+          pytest --cov=./ --cov-report=xml
 
-        - uses: actions/checkout@master
-        - name: Setup Python
-          uses: actions/setup-python@master
-          with:
-            python-version: 3.7
-
-        - name: Generate coverage report
-          run: |
-            pip install pytest
-            pip install pytest-cov
-            pytest --cov=./ --cov-report=xml
-
-        - name: Upload coverage to Codecov
-          uses: codecov/codecov-action@v1
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: ./coverage1.xml,./coverage2.xml
-            directory: ./coverage/reports/
-            flags: unittests
-            env_vars: OS,PYTHON
-            name: codecov-umbrella
-            fail_ci_if_error: true
-            path_to_write_report: ./coverage/codecov_report.txt
-            verbose: true
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          directory: ./coverage/reports/
+          flags: unittests
+          env_vars: PYTHON
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          path_to_write_report: ./coverage/codecov_report.txt
+          verbose: true
