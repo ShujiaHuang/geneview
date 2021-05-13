@@ -49,10 +49,11 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
         :context: close-figs
 
         >>> import matplotlib.pyplot as plt
-        >>> import geneview as gv
+        >>> from geneview.utils import load_dataset
+        >>> from geneview import karyoplot
         >>> fig, ax = plt.subplots(figsize=(20, 5))
-        >>> gv.karyoplot("https://raw.githubusercontent.com/ShujiaHuang/"
-        ...              "geneview-data/master/karyotype/karyotype_human_hg19.txt", ax=ax)
+        >>> k_fn = load_dataset("karyotype_human_hg19.txt")
+        >>> _ = karyoplot(k_fn, ax=ax)
 
     """
     # Draw the plot and return the Axes 

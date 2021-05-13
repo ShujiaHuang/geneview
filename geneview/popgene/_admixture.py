@@ -269,6 +269,7 @@ def admixtureplot(
 
         .. plot::
             :context: close-figs
+
             >>> ax = admixtureplot(data=admixture_fn,
             ...                    population_info=population_fn,
             ...                    shuffle_popsample_kws={"frac": 0.2},
@@ -301,6 +302,7 @@ def admixtureplot(
             ...                    ylabel="K=11",
             ...                    ylabel_kws={"rotation": 0, "ha": "right"},
             ...                    ax=ax)
+
     """
     if shuffle_popsample_kws is None:
         shuffle_popsample_kws = {}

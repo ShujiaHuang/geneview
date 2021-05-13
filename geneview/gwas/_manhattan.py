@@ -113,7 +113,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         Annotate the top SNP or not for the significant locus.
 
     text_kws: key, value pairings, or None, optional
-        keyword arguments for plotting plt.annotate in`` matplotlib.axes.Axes.text(x, y, s, fontdict=None, **kwargs)``
+        keyword arguments for plotting in`` matplotlib.axes.Axes.text(x, y, s, fontdict=None, **kwargs)``
 
     ld_block_size : integer, default is 50000, optional
         Set the size of LD block which for finding top SNP. And the top SNP's annotation represent the block.
@@ -158,8 +158,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         :context: close-figs
 
         >>> xtick = set(['chr' + i for i in list(map(str, range(1, 10))) + ['11', '13', '15', '18', '21', 'X']])
-        >>> manhattanplot(data=df, xlabel="Chromosome", ylabel=r"$-log_{10}{(P)}$",
-        ...               xtick_label_set=xtick)
+        >>> ax = manhattanplot(data=df, xlabel="Chromosome", ylabel=r"$-log_{10}{(P)}$", xtick_label_set=xtick)
 
     Add a horizontal at y position=3 line with linestyle="--" and lingwidth=1.3
     across the axis:
@@ -167,22 +166,20 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     .. plot::
         :context: close-figs
     
-        >>> manhattanplot(data=df,
-        ...               hline_kws={"linestyle": "--", "lw": 1.3},
-        ...               xlabel="Chromosome",
-        ...               ylabel=r"$-log_{10}{(P)}$",
-        ...               xtick_label_set = xtick)
+        >>> ax = manhattanplot(data=df, hline_kws={"linestyle": "--", "lw": 1.3}, xlabel="Chromosome",
+        ...                    ylabel=r"$-log_{10}{(P)}$",
+        ...                    xtick_label_set = xtick)
 
     Rotate the x-axis ticklabel by setting ``xticklabel_kws``:
 
     .. plot::
         :context: close-figs
 
-        >>> manhattanplot(data=df,
-        ...               hline_kws={"linestyle": "--", "lw": 1.3},
-        ...               xlabel="Chromosome",
-        ...               ylabel=r"$-log_{10}{(P)}$",
-        ...               xticklabel_kws={"rotation": "vertical"})
+        >>> ax = manhattanplot(data=df,
+        ...                    hline_kws={"linestyle": "--", "lw": 1.3},
+        ...                    xlabel="Chromosome",
+        ...                    ylabel=r"$-log_{10}{(P)}$",
+        ...                    xticklabel_kws={"rotation": "vertical"})
 
     Plot a better one with genome-wide significant mark and annotate the Top SNP and save
     the figure to "output_manhattan_plot.png":
@@ -190,23 +187,24 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     .. plot::
         :context: close-figs
 
-        >>> fig, ax = plt.subplots(figsize=(12, 4), facecolor="w", edgecolor="k")  # define a plot
-        >>> manhattanplot(data=df,
-        ...               marker=".",
-        ...               sign_marker_p=1e-6,  # Genome wide significant p-value
-        ...               sign_marker_color="r",
-        ...               snp="ID",
-        ...               title="Test",
-        ...               xtick_label_set=xtick,
-        ...               xlabel="Chromosome",
-        ...               ylabel=r"$-log_{10}{(P)}$",
-        ...               sign_line_cols=["#D62728", "#2CA02C"],
-        ...               hline_kws={"linestyle": "--", "lw": 1.3},
-        ...               is_annotate_topsnp=True,
-        ...               ld_block_size=50000,  # 50000 bp
-        ...               annotext_kws={"fontsize": 12,  # The fontsize of annotate text
-        ...                             "arrowprops": dict(arrowstyle="-", color="k", alpha=0.6)},
-        ...               ax=ax)
+        >>> from matplotlib.pyplot import subplots
+        >>> fig, ax = subplots(figsize=(12, 4), facecolor="w", edgecolor="k")  # define a plot
+        >>> ax = manhattanplot(data=df,
+        ...                    marker=".",
+        ...                    sign_marker_p=1e-6,  # Genome wide significant p-value
+        ...                    sign_marker_color="r",
+        ...                    snp="ID",
+        ...                    title="Test",
+        ...                    xtick_label_set=xtick,
+        ...                    xlabel="Chromosome",
+        ...                    ylabel=r"$-log_{10}{(P)}$",
+        ...                    sign_line_cols=["#D62728", "#2CA02C"],
+        ...                    hline_kws={"linestyle": "--", "lw": 1.3},
+        ...                    is_annotate_topsnp=True,
+        ...                    ld_block_size=50000,  # 50000 bp
+        ...                    text_kws={"fontsize": 12,  # The fontsize of text
+        ...                              "arrowprops": dict(arrowstyle="-", color="k", alpha=0.6)},
+        ...                    ax=ax)
     """
     if not isinstance(data, DataFrame):
         raise ValueError("[ERROR] Input data must be a pandas.DataFrame.")

@@ -7,34 +7,6 @@ import numpy as np
 from scipy import stats
 
 
-def chr_id_cmp(a, b):
-    """
-    Sorted the chromosome by the order.
-
-    Parameters
-    ----------
-        a, b : string or int.
-            a and b are the chromosomes' id. They could be 'chr1', 'chr2'
-            or '1' and '2'.
-
-    Returns
-    -------
-    Must be one of the number in [True, False]
-    """
-    a = a.lower().replace("_", "")
-    b = b.lower().replace("_", "")
-    achr = a[3:] if a.startswith("chr") else a
-    bchr = b[3:] if b.startswith("chr") else b
-
-    try:
-        # 1~22 chromosome
-        return operator.le(int(achr), int(bchr))
-    except ValueError:
-        # [1] 22 X
-        # [2] X Y
-        return operator.le(achr, bchr)
-
-
 def is_numeric(s):
     """
     It's a useful function for checking if a data is a numeric.

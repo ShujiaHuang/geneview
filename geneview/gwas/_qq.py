@@ -139,22 +139,21 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
         >>> from geneview import qqplot
         >>> from geneview.utils import load_dataset
         >>> df = load_dataset("gwas")
-        >>> qqplot(data=df["P"],
-        ...        xlabel=r"Expected $-log_{10}{(P)}$",
-        ...        ylabel=r"Observed $-log_{10}{(P)}$")
+        >>> ax = qqplot(data=df["P"])
 
-    Plot a better QQ plot and save the figure to "output_QQ_plot.png"
+    Plot a better QQ plot with title and label texts.
 
     .. plot::
         :context: close-figs
 
-        >>> fig, ax = plt.subplots(figsize=(6, 6), facecolor="w", edgecolor="k")  # define a plot
-        >>> qqplot(data=data["P"],
-        ...        marker="o",
-        ...        title="Test",
-        ...        xlabel=r"Expected $-log_{10}{(P)}$",
-        ...        ylabel=r"Observed $-log_{10}{(P)}$",
-        ...        ax=ax)
+        >>> from matplotlib.pyplot import subplots
+        >>> fig, ax = subplots(figsize=(6, 6), facecolor="w", edgecolor="k")  # define a plot
+        >>> ax = qqplot(data=df["P"],
+        ...             marker="o",
+        ...             title="Test",
+        ...             xlabel=r"Expected $-log_{10}{(P)}$",
+        ...             ylabel=r"Observed $-log_{10}{(P)}$",
+        ...             ax=ax)
 
     We could even create a QQ plot base on two different dataset:
 
@@ -164,8 +163,7 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
         >>> import numpy as np
         >>> data1 = np.random.normal(size = 100)
         >>> data2 = np.random.normal(5.0, 1.0, size = 100)
-        >>> qqplot(data=data1, other=data2, logp=False,
-        ...        xlabel="Expected", ylabel="Observe")
+        >>> ax = qqplot(data=data1, other=data2, logp=False, xlabel="Expected", ylabel="Observe")
     """
     if not all(map(is_numeric, data)):
         msg = 'Input must all be numeric in `data`.'
@@ -277,7 +275,7 @@ def qqnorm(data, ax=None, xlabel="Expected", ylabel="Observed", color=None, abli
 
         >>> import numpy as np
         >>> data = np.random.normal(size = 100)
-        >>> qqnorm(data=data)
+        >>> ax = qqnorm(data=data)
 
     Plot a QQ norm plot with GOYA_preview data:
 
@@ -287,9 +285,7 @@ def qqnorm(data, ax=None, xlabel="Expected", ylabel="Observed", color=None, abli
         >>> import pandas as pd
         >>> from geneview.utils import load_dataset
         >>> df = load_dataset("gwas")
-        >>> qqnorm(data=df["P"],
-        ...        xlabel="Expected value",
-        ...        ylabel="Observed value")
+        >>> ax = qqnorm(data=df["P"], xlabel="Expected value", ylabel="Observed value")
     """
     if not all(map(is_numeric, data)):
         msg = 'Input must all be numeric in `data`.'
@@ -338,7 +334,6 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor="r", alpha=0.8, **kwargs):
         Other keyword arguments are passed to ``plt.scatter()``
         (in matplotlib.pyplot).
 
-    
     Returns
     -------
     ax : matplotlib Axes

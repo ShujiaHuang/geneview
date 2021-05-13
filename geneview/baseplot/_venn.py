@@ -430,12 +430,10 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
         :context: close-figs
 
         >>> from numpy.random import choice
-        >>> import matplotlib.pyplot as plt
-        >>> from geneview import vennx, generate_petal_labels
-        >>> dataset_dict = {name: set(choice(1000, 250, replace=False)) for name in list("ABCD")}
+        >>> from geneview.baseplot._venn import vennx, generate_petal_labels
+        >>> dataset_dict = {name:set(choice(1000, 250, replace=False)) for name in list("ABCD")}
         >>> petal_labels = generate_petal_labels(dataset_dict.values(), fmt="{size}\\n({percentage:.1f}%)")
-        >>> ax = vennx(data=petal_labels)
-        >>> plt.show()
+        >>> ax = vennx(data=petal_labels, names=list(dataset_dict.keys()))
 
     Set the labels for each petal by the keys of dataset.
 
@@ -523,13 +521,13 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         ... "Guitarists": {"John Lennon", "George Harrison", "Jimi Hendrix", "Eric Clapton", "Carlos Santana"},
         ... "Played at Woodstock": {"Jimi Hendrix", "Carlos Santana", "Keith Moon"}}
         >>> ax = venn(musicians)
-        >>> plt.show()
 
    Rename the labels for each petal by manual and set the color of legend text to be the
    same as petal by setting bool variable as ``legend_use_petal_color=True``.
 
     .. plot::
         :context: close-figs
+
         >>> ax = venn(musicians, names=["A", "B", "C"], legend_use_petal_color=True)
 
     Examples of Venn diagrams for various numbers of sets.
@@ -540,25 +538,43 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
 
     .. plot::
         :context: close-figs
+
         >>> from itertools import chain, islice
         >>> from string import ascii_uppercase
         >>> from numpy.random import choice
+        >>> from geneview import venn
         >>> _, top_axs = plt.subplots(ncols=3, nrows=1, figsize=(18, 5))
         >>> _, bot_axs = plt.subplots(ncols=2, nrows=1, figsize=(18, 8))
         >>> cmaps = ["cool", list("rgb"), "plasma", "viridis", "Set1"]
         >>> letters = iter(ascii_uppercase)
         >>> for n_sets, cmap, ax in zip(range(2, 7), cmaps, chain(top_axs, bot_axs)):
-        ...    dataset_dict = {
-        ...        name: set(choice(1000, 700, replace=False))
-        ...        for name in islice(letters, n_sets)
-        ...    }
-        ...    venn(dataset_dict,
-        ...         fmt="{percentage:.1f}%", # "{size}", "{logic}"
-        ...         palette=cmap,
-        ...         fontsize=12,
-        ...         legend_use_petal_color=True,
-        ...         legend_loc="upper left",
-        ...         ax=ax)
+        ...    dataset_dict = {name: set(choice(1000, 700, replace=False)) for name in islice(letters, n_sets)}
+        ...    _ = venn(dataset_dict,
+        ...             fmt="{percentage:.1f}%",  # "{size}", "{logic}"
+        ...             palette=cmap,
+        ...             fontsize=12,
+        ...             legend_use_petal_color=True,
+        ...             legend_loc="upper left",
+        ...             ax=ax)
+
+    If necessary, the labels on the petals (i.e., various intersections in the Venn diagram) can be adjusted manually.
+    For this, generate_petal_labels() can be called first to get the petal_labels dictionary, or you can deal the data
+    by yourself, just make sure that the data is dictionary and the format should be like:
+
+        {'001': '0',   # The keys of dict is consist by 0 and 1, and the value should be str type.
+         '010': '5',
+         '011': '0',
+         '100': '3',
+         '101': '2',
+         '110': '2',
+         '111': '3'}
+
+    After modification, pass petal_labels to functions venn().
+
+    >>> from geneview import generate_petal_labels
+    >>> dataset_dict = {name: set(choice(1000, 250, replace=False)) for name in list("ABCD")}
+    >>> petal_labels = generate_petal_labels(dataset_dict.values(), fmt="{logic}\\n({percentage:.1f}%)")
+    >>> ax = venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_petal_color=True)
     """
     if is_already_venn_dataset(data, names):
         return vennx(data=data,
