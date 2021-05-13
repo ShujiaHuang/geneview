@@ -62,20 +62,17 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
 
     if isinstance(data, str):
         # suppose to be a path to the input file or a url to the file
-        data = pd.read_table(data,
-                             header=0,
+        data = pd.read_table(data, header=0,
                              names=["chrom", "start", "end", "name", "gie_stain"])
     elif isinstance(data, DataFrame):
         # reset the columns
-        data = DataFrame(data.values,
-                         columns=["chrom", "start", "end", "name", "gie_stain"])
+        data = DataFrame(data.values, columns=["chrom", "start", "end", "name", "gie_stain"])
     else:
         # convert to DataFrame of pandas
         data = DataFrame(data, columns=["chrom", "start", "end", "name", "gie_stain"])
 
     yaxis = []
-    for i, (chrom, kc_df) in enumerate(sorted(data.groupby("chrom"), key=lambda x: x[0],
-                                              cmp=chr_id_cmp)):
+    for i, (chrom, kc_df) in enumerate(sorted(data.groupby("chrom"), key=lambda x: x[0], cmp=chr_id_cmp)):
 
         if CHR is not None and chrom != CHR:
             continue
