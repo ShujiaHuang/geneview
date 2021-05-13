@@ -2,6 +2,7 @@
 
 [![PyPI Version](https://img.shields.io/pypi/v/geneview.svg)](https://pypi.org/project/geneview/)
 [![License](https://img.shields.io/pypi/l/geneview.svg)](https://github.com/ShujiaHuang/geneview/blob/master/LICENSE)
+![Tests](https://github.com/ShujiaHuang/geneview/workflows/CI/badge.svg)
 [![Code Coverage](https://codecov.io/gh/ShujiaHuang/geneview/branch/master/graph/badge.svg)](https://codecov.io/gh/ShujiaHuang/geneview)
 
 
