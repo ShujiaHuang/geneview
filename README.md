@@ -278,6 +278,8 @@ gv.popgen.admixtureplot(data=admixture_output_fn,
 
 **Venn diagrams for 2, 3, 4, 5, 6 sets.**
 
+![Venn.png](./examples/images/venn.png)
+
 #### Minimal venn plot example
 
 ```python

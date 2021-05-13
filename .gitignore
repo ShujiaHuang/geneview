@@ -12,6 +12,7 @@ dist/
 __pycache__/
 _draft/
 geneview.egg-info/
+.pytest_cache/
 .ipynb_checkpoints/
 .idea/
 
