@@ -1,0 +1,4 @@
+[run]
+omit =
+    geneview/conftest.py
+    geneview/tests/*
