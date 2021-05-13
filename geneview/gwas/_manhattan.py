@@ -14,7 +14,7 @@ from pandas import DataFrame
 import numpy as np
 
 from matplotlib.pyplot import subplots
-from .utils import adjust_text
+from ..utils import adjust_text
 
 
 # learn something from "https://github.com/reneshbedre/bioinfokit/blob/38fb4966827337f00421119a69259b92bb67a7d0/bioinfokit/visuz.py"

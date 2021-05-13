@@ -8,7 +8,7 @@ import numpy as np
 from scipy.stats import norm
 from matplotlib.pyplot import subplots
 
-from .utils import is_numeric
+from ..utils import is_numeric
 
 
 def ppoints(n, a=0.5):
