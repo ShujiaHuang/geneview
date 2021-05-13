@@ -10,7 +10,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-from ..utils import chr_id_cmp
 from ..palette import circos  # ``circos`` is a color dict
 
 
@@ -52,8 +51,8 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
         >>> import matplotlib.pyplot as plt
         >>> import geneview as gv
         >>> fig, ax = plt.subplots(figsize=(20, 5))
-        >>> gv.karyoplot("https://github.com/ShujiaHuang/geneview-data/raw/"
-        ...              "master/karyotype/karyotype_human_hg19.txt", ax=ax)
+        >>> gv.karyoplot("https://raw.githubusercontent.com/ShujiaHuang/"
+        ...              "geneview-data/master/karyotype/karyotype_human_hg19.txt", ax=ax)
 
     """
     # Draw the plot and return the Axes 
@@ -72,7 +71,7 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
         data = DataFrame(data, columns=["chrom", "start", "end", "name", "gie_stain"])
 
     yaxis = []
-    for i, (chrom, kc_df) in enumerate(sorted(data.groupby("chrom"), key=lambda x: x[0], cmp=chr_id_cmp)):
+    for i, (chrom, kc_df) in enumerate(sorted(data.groupby("chrom"), key=lambda x: x[0])):
 
         if CHR is not None and chrom != CHR:
             continue
