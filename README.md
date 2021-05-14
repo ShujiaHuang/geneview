@@ -1,9 +1,10 @@
 # geneview: A python package for genomics data visualization
 
 [![PyPI Version](https://img.shields.io/pypi/v/geneview.svg)](https://pypi.org/project/geneview/)
-[![License](https://img.shields.io/pypi/l/geneview.svg)](https://github.com/ShujiaHuang/geneview/blob/master/LICENSE)
+[![Python](https://img.shields.io/pypi/pyversions/geneview.svg?style=plastic)](https://badge.fury.io/py/geneview)
 ![Tests](https://github.com/ShujiaHuang/geneview/workflows/CI/badge.svg)
 [![Code Coverage](https://codecov.io/gh/ShujiaHuang/geneview/branch/master/graph/badge.svg)](https://codecov.io/gh/ShujiaHuang/geneview)
+[![License](https://img.shields.io/pypi/l/geneview.svg)](https://github.com/ShujiaHuang/geneview/blob/master/LICENSE)
 
 
 **geneview** is a library for making attractive and informative genomic graphics in Python.
