@@ -35,25 +35,25 @@ def deprecate_positional_args(f):
                 "From version 0.12, the only valid positional argument "
                 "will be `data`, and passing other arguments without an "
                 "explicit keyword will result in an error or misinterpretation."
-                .format(plural, article, plural,
-                        ", ".join(kwonly_args[:extra_args])),
+                    .format(plural, article, plural,
+                            ", ".join(kwonly_args[:extra_args])),
                 FutureWarning
             )
         kwargs.update({k: arg for k, arg in zip(sig.parameters, args)})
         return f(**kwargs)
+
     return inner_f
 
-
-def share_init_params_with_map(cls):
-    """Make cls.map a classmethod with same signature as cls.__init__."""
-    map_sig = signature(cls.map)
-    init_sig = signature(cls.__init__)
-
-    new = [v for k, v in init_sig.parameters.items() if k != "self"]
-    new.insert(0, map_sig.parameters["cls"])
-    cls.map.__signature__ = map_sig.replace(parameters=new)
-    cls.map.__doc__ = cls.__init__.__doc__
-
-    cls.map = classmethod(cls.map)
-
-    return cls
+# def share_init_params_with_map(cls):
+#     """Make cls.map a classmethod with same signature as cls.__init__."""
+#     map_sig = signature(cls.map)
+#     init_sig = signature(cls.__init__)
+#
+#     new = [v for k, v in init_sig.parameters.items() if k != "self"]
+#     new.insert(0, map_sig.parameters["cls"])
+#     cls.map.__signature__ = map_sig.replace(parameters=new)
+#     cls.map.__doc__ = cls.__init__.__doc__
+#
+#     cls.map = classmethod(cls.map)
+#
+#     return cls

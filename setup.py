@@ -28,8 +28,6 @@ if __name__ == "__main__":
 
     THIS_PATH = os.path.abspath(os.path.dirname(__file__))
     long_description = os.path.join(THIS_PATH, "README.md")
-    #with open(os.path.join(THIS_PATH, "README.md"), encoding="utf-8") as f:
-    #    LONG_DESCRIPTION = f.read()
 
     setup(name=meta.__DISTNAME__,
           author=meta.__AUTHOR__,
@@ -55,6 +53,7 @@ if __name__ == "__main__":
              "Intended Audience :: Science/Research",
              "Programming Language :: Python :: 3.7",
              "Programming Language :: Python :: 3.8",
+             "Programming Language :: Python :: 3.9",
              "License :: OSI Approved :: BSD License",
              "Topic :: Scientific/Engineering :: Bio-Informatics",
              "Topic :: Scientific/Engineering :: Visualization",

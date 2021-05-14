@@ -211,48 +211,6 @@ def generate_petal_labels(datasets, fmt="{size}"):
     return petal_labels
 
 
-def get_labels(data, fill=None):
-    """
-    get a dict of labels for groups in data
-
-    @type data: list[Iterable]
-    @rtype: dict[str, str]
-
-    input
-      data: data to get label for
-      fill: ["number"|"logic"|"percent"]
-
-    return
-      labels: a dict of labels for different sets
-
-    example:
-    In [12]: get_labels([range(10), range(5,15), range(3,8)], fill=["number"])
-    Out[12]:
-    {'001': '0',
-     '010': '5',
-     '011': '0',
-     '100': '3',
-     '101': '2',
-     '110': '2',
-     '111': '3'}
-    """
-    warn((
-            "`get_labels()` is retained for backwards compatibility; " +
-            "use `generate_petal_labels()` or the higher level `venn()` instead"
-    ))
-    if fill is None:
-        fill = ["number"]
-
-    fmt = ""
-    if "logic" in fill:
-        fmt += "{logic}: "
-    if "number" in fill:
-        fmt += "{size} "
-    if "percent" in fill:
-        fmt += "({percentage:.1f}%)"
-    return generate_petal_labels(data, fmt)
-
-
 def _init_axes(ax):
     """Create axes if do not exist, set axes parameters"""
     if ax is None:

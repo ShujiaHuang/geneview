@@ -6,8 +6,6 @@ import re
 import pandas as pd
 from urllib.request import urlopen, urlretrieve
 
-from ._misc import is_numeric
-
 
 def get_dataset_names():
     """Report available example datasets, useful for reporting issues."""
@@ -44,11 +42,12 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     --------
     Load the preview data of GWAS
 
-        >>> import geneview as gv
-        >>> gwas_data = gv.utils.load_dataset("gwas")
-        >>> file_path = gv.utils.load_dataset("bcftools.vcf.stats")  # only return a path name
-
+        >>> from geneview.utils import load_dataset, get_dataset_names
+        >>> names = get_dataset_names()  # Get the name list of dataset
+        >>> gwas_data = load_dataset("gwas")  # load GWAS data
+        >>> file_path = load_dataset("bcftools.vcf.stats")  # only return a path name
     """
+
     path_csv = "https://raw.githubusercontent.com/ShujiaHuang/geneview-data/master/{0}.csv"
     path_full = "https://raw.githubusercontent.com/ShujiaHuang/geneview-data/master/{0}"
     path_name = path_full.format(name) if "." in name else path_csv.format(name)
@@ -66,11 +65,6 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         return df
     else:
         return path_name
-
-
-def _tr(s):
-    """ transform numeric to be float data. """
-    return float(s) if is_numeric(s) else s
 
 
 def _get_data_home(data_home=None):
