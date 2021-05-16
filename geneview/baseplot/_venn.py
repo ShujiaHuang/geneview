@@ -5,13 +5,10 @@ Date: 2021-04-26 12:03:00
 
 Thanks to the code from tctianchi and LankyCyril: https://github.com/tctianchi/pyvenn
 """
-from warnings import warn
-
 from matplotlib.pyplot import subplots
 from matplotlib.colors import to_rgba
 from matplotlib.patches import Ellipse, Polygon
 
-# from matplotlib.cm import ScalarMappable
 from ..palette import generate_colors_palette
 
 __all__ = ["venn", "vennx", "generate_petal_labels"]
