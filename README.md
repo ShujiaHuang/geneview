@@ -40,7 +40,7 @@ We use a PLINK2.x association output data `gwas.csv` which
 is in [geneview-data](https://github.com/ShujiaHuang/geneview-data) directory, 
 as the input for the plots below. Here is the format preview of `gwas`:
 
-|**#CHROM**|**POS**|**ID**|**REF**|**ALT**|**A1**|**TEST**|**OBS\_CT**|**BETA**|**SE**|**T\_STAT**|**P**|
+|**#CHROM**|**POS**|**ID**|**REF**|**ALT**|**A1**|**TEST**|**OBS_CT**|**BETA**|**SE**|**T_STAT**|**P**|
 |:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
 |chr1|904165|1\_904165|G|A|A|ADD|282|-0.0908897|0.195476|-0.464967|0.642344|
 |chr1|1563691|1\_1563691|T|G|G|ADD|271|0.447021|0.422194|1.0588|0.290715|
@@ -80,7 +80,7 @@ ax = gv.manhattanplot(data=df)
 plt.show()
 ```
 
-![manhattan_plot.png](./examples/images/manhattan_plot.png)
+![manhattan_plot.png](./examples/figures/manhattan_plot.png)
 
 Rotate the x-axis tick label by setting `xticklabel_kws` to avoid label
 overlap:
@@ -89,7 +89,7 @@ overlap:
 ax = manhattanplot(data=df, xticklabel_kws={"rotation": "vertical"})
 ```
 
-![manhattan_plot.png](./examples/images/manhattan_plot_xviertical.png)
+![manhattan_plot.png](./examples/figures/manhattan_plot_xviertical.png)
 
 Or rotate the labels 45 degrees by setting `xticklabel_kws={"rotation": 45}`.
 
@@ -107,7 +107,7 @@ ax = manhattanplot(data=df,
                    xticklabel_kws={"rotation": "vertical"})
 ```
 
-![manhattan_plot_xviertical_noline.png](./examples/images/manhattan_plot_xviertical_noline.png)
+![manhattan_plot_xviertical_noline.png](./examples/figures/manhattan_plot_xviertical_noline.png)
 
 The behavior of the `manhattanplot` function changes slightly when
 results from only a single chromosome is used. Here, instead of plotting
@@ -119,7 +119,7 @@ on the chromosome is plotted on the x-axis:
 manhattanplot(data=df, CHR="chr8", xlabel="Chromosome 8")
 ```
 
-![manhattan_plot_xviertical_noline.png](./examples/images/manhattan_plot_chr8.png)
+![manhattan_plot_xviertical_noline.png](./examples/figures/manhattan_plot_chr8.png)
 
 `manhattanplot()` funcion has the ability to highlight SNPs with
 significant GWAS signal and annotate the Top SNP, which has the lowest
@@ -133,13 +133,13 @@ ax = manhattanplot(data=df,
                    xticklabel_kws={"rotation": "vertical"})
 ```
 
-![manhattan_anno_plot.png](./examples/images/manhattan_plot_chr8.png)
+![manhattan_anno_plot.png](./examples/figures/manhattan_plot_chr8.png)
 
 Additionally, highlighting SNPs of interest can be combined with
 limiting to a single chromosome to enable \"zooming\" into a particular
 region containing SNPs of interest.
 
-![manhattan_anno_plot.png](./examples/images/manhattan_anno_plot.png)
+![manhattan_anno_plot.png](./examples/figures/manhattan_anno_plot.png)
 
 #### Show a better manhattan plot
 Futher graphical parameters can be passed to the `manhattanplot()` function 
@@ -185,7 +185,7 @@ _ = gv.manhattanplot(data=df,
                                "arrowprops": dict(arrowstyle="-", color="k", alpha=0.6)},
                      ax=ax)
 ```
-![manhattan.png](./examples/images/manhattan.png)
+![manhattan.png](./examples/figures/manhattan.png)
 
 
 #### QQ plot with default parameters
@@ -207,7 +207,7 @@ plt.show()
 
 ```
 
-![qq.png](./examples/images/qq.png)
+![qq.png](./examples/figures/qq.png)
 
 #### Show a better QQ plot
 
@@ -246,7 +246,7 @@ admixtureplot(data=load_dataset("admixture_output.Q"),
               ylabel_kws={"rotation": 45, "ha": "right"},
               ax=ax)
 ```
-![admixtureplot](./examples/images/admixture.png)
+![admixtureplot](./examples/figures/admixture.png)
 
 or
 
@@ -271,7 +271,7 @@ gv.popgen.admixtureplot(data=admixture_output_fn,
                         ax=ax)
 ```
 
-![admixtureplot](./examples/images/admixture.png)
+![admixtureplot](./examples/figures/admixture.png)
 
 - [More tutorials about admixtureplot](./docs/tutorial/admixture.ipynb)
 
@@ -280,7 +280,7 @@ gv.popgen.admixtureplot(data=admixture_output_fn,
 
 **Venn diagrams for 2, 3, 4, 5, 6 sets.**
 
-![Venn.png](./examples/images/venn.png)
+![Venn.png](./examples/figures/venn.png)
 
 #### Minimal venn plot example
 
@@ -296,7 +296,7 @@ ax = gv.venn(table)
 
 ```
 
-![venn.png](./examples/images/venn3.png)
+![venn.png](./examples/figures/venn3.png)
 
 #### Manual adjustment of petal labels
 If necessary, the labels on the petals (i.e., various intersections in the 
@@ -320,7 +320,7 @@ petal_labels = gv.generate_petal_labels(dataset_dict.values(), fmt="{logic}\n({p
 ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_petal_color=True)
 
 ```
-![venn4.png](./examples/images/venn4.png)
+![venn4.png](./examples/figures/venn4.png)
 
 - [More tutorials about venn](./docs/tutorial/venn.ipynb)
 
