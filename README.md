@@ -4,8 +4,6 @@
 [![Python](https://img.shields.io/pypi/pyversions/geneview.svg?style=plastic)](https://badge.fury.io/py/geneview)
 ![Tests](https://github.com/ShujiaHuang/geneview/workflows/CI/badge.svg)
 [![Code Coverage](https://codecov.io/gh/ShujiaHuang/geneview/branch/master/graph/badge.svg)](https://codecov.io/gh/ShujiaHuang/geneview)
-[![License](https://img.shields.io/pypi/l/geneview.svg)](https://github.com/ShujiaHuang/geneview/blob/master/LICENSE)
-
 
 **geneview** is a library for making attractive and informative genomic graphics in Python.
 It is built on top of matplotlib and tightly integrated with the PyData stack, including
