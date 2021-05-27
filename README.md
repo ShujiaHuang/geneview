@@ -25,12 +25,7 @@ To install the released version, just do
 pip install geneview
 ```
 
-You may instead want to use the development version from Github, by
-running
-
-```bash
-pip install git+git://github.com/ShujiaHuang/geneview.git#egg=geneview
-```
+This command will install `geneview` and all the dependencies.
 
 ## Quick start
 
