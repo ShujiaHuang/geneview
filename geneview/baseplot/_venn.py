@@ -11,7 +11,7 @@ from matplotlib.patches import Ellipse, Polygon
 
 from ..palette import generate_colors_palette
 
-__all__ = ["venn", "vennx", "generate_petal_labels"]
+__all__ = ["venn", "generate_petal_labels"]
 
 SHAPE_COORDS = {
     2: [(.375, .500), (.625, .500)],
@@ -468,14 +468,13 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
     .. plot::
         :context: close-figs
 
-        >>> from numpy.random import choice
-        >>> import matplotlib.pyplot as plt
         >>> from geneview import venn
-        >>> musicians = {
-        ... "Members of The Beatles": {"Paul McCartney", "John Lennon", "George Harrison", "Ringo Starr"},
-        ... "Guitarists": {"John Lennon", "George Harrison", "Jimi Hendrix", "Eric Clapton", "Carlos Santana"},
-        ... "Played at Woodstock": {"Jimi Hendrix", "Carlos Santana", "Keith Moon"}}
-        >>> ax = venn(musicians)
+        >>> data = {
+        ...     "Dataset 1": {"A", "B", "D", "E"},
+        ...     "Dataset 2": {"C", "F", "B", "G"},
+        ...     "Dataset 3": {"J", "C", "K"}
+        ... }
+        >>> ax = venn(data)
 
    Rename the labels for each petal by manual and set the color of legend text to be the
    same as petal by setting bool variable as ``legend_use_petal_color=True``.
@@ -483,7 +482,17 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
     .. plot::
         :context: close-figs
 
-        >>> ax = venn(musicians, names=["A", "B", "C"], legend_use_petal_color=True)
+        >>> # Keep in mind that the order of ["A", "B", "C"] represent the patel: 001, 010 and 100, respectively.
+        >>> ax = venn(data, names=["A", "B", "C"], legend_use_petal_color=True)
+
+    `venn()` function could also use the prepared Venn data, directly.
+
+    .. plot::
+        :context: close-figs
+
+        >>> data = {'011': 'ns', '101': '48', '110': '50', '111': 'ns'}  # A three sets of venn data
+        >>> data_name = ["α", "β", "γ"]  # The names of the three data sets.
+        >>> ax = venn(data=data, names=data_name, palette="plasma")
 
     Examples of Venn diagrams for various numbers of sets.
 
@@ -497,6 +506,7 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         >>> from itertools import chain, islice
         >>> from string import ascii_uppercase
         >>> from numpy.random import choice
+        >>> import matplotlib.pyplot as plt
         >>> from geneview import venn
         >>> _, top_axs = plt.subplots(ncols=3, nrows=1, figsize=(18, 5))
         >>> _, bot_axs = plt.subplots(ncols=2, nrows=1, figsize=(18, 8))
@@ -514,9 +524,10 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
 
     If necessary, the labels on the petals (i.e., various intersections in the Venn diagram) can be adjusted manually.
     For this, generate_petal_labels() can be called first to get the petal_labels dictionary, or you can deal the data
-    by yourself, just make sure that the data is dictionary and the format should be like:
+    by yourself, just make sure that the data is store in a dictionary and the format should be like:
 
-        {'001': '0',   # The keys of dict is consist by 0 and 1, and the value should be str type.
+        # The keys of dict is consist by 0 and 1, and the value should be str type.
+        {'001': '0',
          '010': '5',
          '011': '0',
          '100': '3',
@@ -524,7 +535,7 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
          '110': '2',
          '111': '3'}
 
-    After modification, pass petal_labels to functions venn().
+    After modification, pass the dictionary to function venn().
 
     >>> from geneview import generate_petal_labels
     >>> dataset_dict = {name: set(choice(1000, 250, replace=False)) for name in list("ABCD")}
