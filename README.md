@@ -7,12 +7,12 @@
 
 **geneview** is a library for making attractive and informative genomic graphics in Python.
 It is built on top of matplotlib and tightly integrated with the PyData stack, including
-support for numpy and pandas data structures. And now it is actively developed.
+support for `numpy` and `pandas` data structures. And now it is actively developed.
 
 Some of the features that geneview offers are:
 
-- Functions for visualizing general genomic plots.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
+- Functions for visualizing general genomic plots.
 
 
 ## Installation
