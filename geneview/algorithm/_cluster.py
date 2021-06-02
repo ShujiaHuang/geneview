@@ -9,7 +9,6 @@ import pandas as pd
 
 try:
     from scipy.cluster import hierarchy
-
     _no_scipy = False
 except ImportError:
     _no_scipy = True
@@ -59,7 +58,8 @@ class _Dendrogram(object):
         # self.independent_coord = self.dendrogram["icoord"]
 
     def _calculate_linkage_scipy(self):
-        linkage = hierarchy.linkage(self.array, method=self.method,
+        linkage = hierarchy.linkage(self.array,
+                                    method=self.method,
                                     metric=self.metric)
         return linkage
 
@@ -141,5 +141,6 @@ def hierarchical_cluster(
     """
     if _no_scipy:
         raise RuntimeError("hierarchical cluster requires scipy to be installed.")
-    return _Dendrogram(data=data, linkage=linkage, method=method, metric=metric,
-                       axis=axis)
+
+    return _Dendrogram(data=data, linkage=linkage, method=method, metric=metric, axis=axis)
+
