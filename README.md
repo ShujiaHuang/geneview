@@ -319,7 +319,7 @@ ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_peta
 
 ## Dependencies
 
-Geneview supports Python 3.7+ and no longer supports Python 2.
+**Geneview** only supports Python 3.6+ and no longer supports Python 2.
 
 Installation requires [numpy](http://www.numpy.org/), 
 [scipy](http://www.scipy.org/), 
