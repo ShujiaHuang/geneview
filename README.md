@@ -56,8 +56,8 @@ columns containing the chromosomal name/id, chromosomal position,
 P-value and optionally the name of SNP(e.g. rsID in dbSNP).
 
 By default, `manhattanplot()` looks for column names corresponding to
-those outout by the plink2 association results, namely, "#CHROM",
-"POS", "P", and "ID", although different column names can be
+those outout by the plink2 association results, namely, `#CHROM`,
+`POS`, `P`, and `ID`, although different column names can be
 specificed by user. Calling `manhattanplot()` function with a data frame
 of GWAS results as the single argument draws a basic manhattan plot,
 defaulting to a darkblue and lightblue color scheme.
@@ -87,11 +87,13 @@ ax = manhattanplot(data=df, xticklabel_kws={"rotation": "vertical"})
 Or rotate the labels 45 degrees by setting `xticklabel_kws={"rotation": 45}`.
 
 When run with default parameters, the `manhattanplot()` function draws
-horizontal lines drawn at \$-[log](){10}{(1e-5)}\$ for \"suggestive\"
-associations and \$-[log](){10}{(5e-8)}\$ for the \"genome-wide
-significant\" threshold. These can be move to different locations or
+horizontal lines drawn at $-log_{10}{(1e-5)}$ for "**suggestive**"
+associations and $-log_{10}{(5e-8)}$ for the "**genome-wide
+significant**" threshold. These can be move to different locations or
 turned off completely with the arguments `suggestiveline` and
 `genomewideline`, respectively.
+
+
 
 ```python
 ax = manhattanplot(data=df,
