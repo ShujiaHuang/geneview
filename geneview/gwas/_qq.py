@@ -5,7 +5,7 @@ Date: 2021-02-21
 
 """
 import numpy as np
-from scipy.stats import norm
+from scipy.stats import norm, chi2
 from matplotlib.pyplot import subplots
 
 from ..utils import is_numeric
@@ -198,7 +198,8 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
         kwargs["marker"] = marker
     ax = _do_plot(e, o, ax=ax, color=color, ablinecolor=ablinecolor, alpha=alpha, **kwargs)
 
-    lambda_value = round(np.median(norm.ppf(data) ** 2 / 0.454), 3)
+    expected_median = chi2.ppf(0.5, 1)  # This value is equal to 0.4549364
+    lambda_value = round(np.median(norm.ppf(data) ** 2) / expected_median, 3)
     if title:
         title += r"$(\lambda = %s)$" % lambda_value
     else:
