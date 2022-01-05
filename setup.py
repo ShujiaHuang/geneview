@@ -14,7 +14,7 @@ meta = Namespace(
     __URL__          = "https://github.com/ShujiaHuang/geneview",
     __LICENSE__      = "BSD (3-clause)",
     __DOWNLOAD_URL__ = "https://github.com/ShujiaHuang/geneview",
-    __VERSION__      = "0.1.0",
+    __VERSION__      = "0.1.1",
 )
 
 try:
