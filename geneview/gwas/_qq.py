@@ -199,7 +199,7 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
     ax = _do_plot(e, o, ax=ax, color=color, ablinecolor=ablinecolor, alpha=alpha, **kwargs)
 
     expected_median = chi2.ppf(0.5, 1)  # This value is equal to 0.4549364
-    lambda_value = round(np.median(norm.ppf(data) ** 2) / expected_median, 3)
+    lambda_value = round(np.median(norm.ppf(1-data/2) ** 2) / expected_median, 3)
     if title:
         title += r"$(\lambda = %s)$" % lambda_value
     else:
