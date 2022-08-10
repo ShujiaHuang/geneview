@@ -1,4 +1,3 @@
-# This is a basic workflow to help you get started with Actions
 name: CI
 
 # Controls when the action will run. 
@@ -20,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [3.7.x, 3.8.x, 3.9.x]
+        python: [3.7.x, 3.8.x, 3.9.x, 3.10.x]
         target: [test]
         backend: [agg]
 
@@ -29,6 +28,9 @@ jobs:
             target: unittests
             backend: agg
           - python: 3.9.x
+            target: unittests
+            backend: agg
+          - python: 3.10.x
             target: unittests
             backend: agg
           - python: 3.9.x
