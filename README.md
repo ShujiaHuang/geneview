@@ -268,7 +268,7 @@ gv.popgen.admixtureplot(data=admixture_output_fn,
 
 ![admixtureplot](./examples/figures/admixture.png)
 
-- [More tutorials about admixtureplot](./docs/tutorial/admixture.ipynb)
+- [The format of input files and more details about admixtureplot](./docs/tutorial/admixture.ipynb)
 
 
 ### Venn plots
@@ -338,4 +338,4 @@ tutorial for these two data type.
 
 ## License
 
-Released under a BSD (3-clause) license
+Released under a GPL-3.0 license
