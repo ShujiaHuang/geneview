@@ -60,16 +60,16 @@ def _draw_admixtureplot(
     x = np.arange(n)
     base_y = np.zeros(len(x))
 
-    column_names = data[group_order[0]].columns
-    colors = generate_colors_palette(cmap=palette, n_colors=len(column_names))
+    k_names = data[group_order[0]].columns
+    colors = generate_colors_palette(cmap=palette, n_colors=len(k_names))
     palette = cycle(colors)
-    if len(colors) < len(column_names):
+    if len(colors) < len(k_names):
         msg = ("The categories of colors setting by `palette` is less than "
                "the number of estimating sub populations (K) in admixture, "
                "which could cause a confuse plot. Please reset the palette.")
         warnings.warn(msg)
 
-    for k in column_names:
+    for k in k_names:
         c = next(palette)  # one color for one 'k'
         start_g_pos = 0
         add_y = []
@@ -140,14 +140,14 @@ def _load_admixture_from_file(in_admixture_fname, in_sample_info_fname, shuffle_
 
     data = {}
     for g in popset:
-        g_data = df[sample_info["Group"] == g].copy()
+        g_data = df[sample_info["Group"] == g].copy()  # Get specify group data according to the order of sample_info
         g_size = len(g_data)
         if shuffle_popsample_kws:
             shuffle_raw_n = shuffle_popsample_kws["n"] if "n" in shuffle_popsample_kws else None
             if shuffle_raw_n and shuffle_raw_n > g_size:
                 shuffle_popsample_kws["n"] = g_size
                 data[g] = g_data.sample(**shuffle_popsample_kws)
-                shuffle_popsample_kws["n"] = shuffle_raw_n  # reset to the raw N
+                shuffle_popsample_kws["n"] = shuffle_raw_n  # reset to the raw shuffle N
             else:
                 data[g] = g_data.sample(**shuffle_popsample_kws)
         else:
