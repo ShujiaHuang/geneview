@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import geneview as gv
 
-admixture_output_fn = gv.utils.load_dataset("admixture_output.Q")
-population_group_fn = gv.utils.load_dataset("admixture_population.info")
+admixture_output_fn = gv.load_dataset("admixture_output.Q")
+population_group_fn = gv.load_dataset("admixture_population.info")
 
 # define the order for population to plot
 pop_group_1kg = ["KHV", "CDX", "CHS", "CHB", "JPT", "BEB", "STU", "ITU", "GIH", "PJL", "FIN", 
@@ -12,6 +12,7 @@ pop_group_1kg = ["KHV", "CDX", "CHS", "CHB", "JPT", "BEB", "STU", "ITU", "GIH", 
 f, ax = plt.subplots(1, 1, figsize=(14, 2), facecolor="w", constrained_layout=True)
 gv.admixtureplot(data=admixture_output_fn, 
                  population_info=population_group_fn,
+                 edgewidth=2.0,
                  group_order=pop_group_1kg,
                  shuffle_popsample_kws={"frac": 0.5},
                  palette="Set1", 

@@ -67,7 +67,7 @@ import matplotlib.pyplot as plt
 import geneview as gv
 
 # load data
-df = gv.utils.load_dataset("gwas")
+df = gv.load_dataset("gwas")
 # Plot a basic manhattan plot with horizontal xtick labels and the figure will display in screen.
 ax = gv.manhattanplot(data=df)
 plt.show()
@@ -195,7 +195,7 @@ import matplotlib.pyplot as plt
 import geneview as gv
 
 # load data
-df = gv.utils.load_dataset("gwas")
+df = gv.load_dataset("gwas")
 # Plot a basic manhattan plot with horizontal xtick labels and the figure will display in screen.
 ax = gv.qqplot(data=df["P"])
 plt.show()
@@ -232,7 +232,7 @@ Generate **Admixture** plot from the raw admixture output result:
 
 ```python
 import matplotlib.pyplot as plt
-from geneview.utils import load_dataset
+from geneview import load_dataset
 from geneview import admixtureplot
 
 f, ax = plt.subplots(1, 1, figsize=(14, 2), facecolor="w", constrained_layout=True, dpi=300)
@@ -249,8 +249,8 @@ or
 import matplotlib.pyplot as plt
 import geneview as gv
 
-admixture_output_fn = gv.utils.load_dataset("admixture_output.Q")
-population_group_fn = gv.utils.load_dataset("admixture_population.info")
+admixture_output_fn = gv.load_dataset("admixture_output.Q")
+population_group_fn = gv.load_dataset("admixture_population.info")
 
 # define the order for population to plot
 pop_group_1kg = ["KHV", "CDX", "CHS", "CHB", "JPT", "BEB", "STU", "ITU", "GIH", "PJL", "FIN", 
@@ -260,6 +260,7 @@ pop_group_1kg = ["KHV", "CDX", "CHS", "CHB", "JPT", "BEB", "STU", "ITU", "GIH", 
 f, ax = plt.subplots(1, 1, figsize=(14, 2), facecolor="w", constrained_layout=True, dpi=300)
 gv.popgen.admixtureplot(data=admixture_output_fn, 
                         population_info=population_group_fn,
+                        edgewidth=2.0,
                         group_order=pop_group_1kg,
                         shuffle_popsample_kws={"frac": 0.5},
                         ylabel_kws={"rotation": 45, "ha": "right"},

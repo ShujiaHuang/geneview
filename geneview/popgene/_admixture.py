@@ -18,6 +18,7 @@ def _draw_admixtureplot(
         data=None,
         group_order=None,
         linewidth=1.0,
+        edgewidth=1.0,
         palette="tab10",
         xticklabels=None,
         xticklabel_kws=None,
@@ -54,8 +55,10 @@ def _draw_admixtureplot(
     n = 0
     for g in group_order:
         n += len(data[g])
-        hc = hierarchical_cluster(data=data[g], **hierarchical_kws)
-        data[g] = hc.data.iloc[hc.reordered_index]  # re-order the data.
+        if len(data[g]) > 1:
+            # Only for the group sample larger than 1 need cluster.
+            hc = hierarchical_cluster(data=data[g], **hierarchical_kws)
+            data[g] = hc.data.iloc[hc.reordered_index]  # re-order data.
 
     x = np.arange(n)
     base_y = np.zeros(len(x))
@@ -69,6 +72,7 @@ def _draw_admixtureplot(
                "which could cause a confuse plot. Please reset the palette.")
         warnings.warn(msg)
 
+    bar_width = 1.0
     for k in k_names:
         c = next(palette)  # one color for one 'k'
         start_g_pos = 0
@@ -77,8 +81,9 @@ def _draw_admixtureplot(
             try:
                 y = data[g][k]
                 end_g_pos = start_g_pos + len(y)
-                ax.bar(x[start_g_pos:end_g_pos], y, bottom=base_y[start_g_pos:end_g_pos],
-                       color=c, width=1.0, linewidth=0)
+                ax.bar(x[start_g_pos:end_g_pos] + 0.5 * bar_width, y,
+                       bottom=base_y[start_g_pos:end_g_pos],
+                       color=c, width=bar_width, linewidth=0)
 
                 start_g_pos = end_g_pos
                 add_y.append(y)
@@ -96,12 +101,12 @@ def _draw_admixtureplot(
         g_pos += g_size
         ax.axvline(x=g_pos, color="k", lw=linewidth)
 
-    ax.spines["left"].set_linewidth(linewidth)
-    ax.spines["top"].set_linewidth(linewidth)
-    ax.spines["right"].set_linewidth(linewidth)
-    ax.spines["bottom"].set_linewidth(linewidth)
+    ax.spines["left"].set_linewidth(edgewidth)
+    ax.spines["top"].set_linewidth(edgewidth)
+    ax.spines["right"].set_linewidth(edgewidth)
+    ax.spines["bottom"].set_linewidth(edgewidth)
 
-    ax.set_xlim([x[0], x[-1]])
+    ax.set_xlim([x[0], x[-1]+bar_width])
     ax.set_ylim([0, 1.0])
     ax.tick_params(bottom=False, top=False, left=False, right=False)
 
@@ -162,6 +167,7 @@ def admixtureplot(
         shuffle_popsample_kws=None,
         group_order=None,
         linewidth=1.0,
+        edgewidth=1.0,
         palette="tab10",
         xticklabels=None,
         xticklabel_kws=None,
@@ -195,6 +201,9 @@ def admixtureplot(
 
         linewidth : float, optional, default: 1.0
             Set the line width in plot
+
+        edgewidth : float, optional, default: 1.0
+            Set the frame edge width in plot
 
         palette : string, list, or :class:`matplotlib.colors.Colormap`, optional, default: tab10.
             String values are passed to :func:`generate_colors`. List values imply categorical
@@ -260,7 +269,7 @@ def admixtureplot(
         .. plot::
             :context: close-figs
 
-            >>> ax = admixtureplot(data=admixture_fn,
+            >>> ax = admixtureplot(data=admixture_fn, edgewidth=1.0,
             ...                    population_info=population_fn,
             ...                    shuffle_popsample_kws={"n": 80},
             ...                    group_order=pop_group_1kg)
@@ -297,6 +306,7 @@ def admixtureplot(
             >>> f, ax = plt.subplots(1, 1, figsize=(14, 3), facecolor="w", constrained_layout=True, dpi=300)
             >>> ax = admixtureplot(data=data,
             ...                    group_order=pop_group_1kg,
+            ...                    edgewidth=2.0,
             ...                    palette="Set1",
             ...                    xticklabel_kws={"rotation": "vertical"},
             ...                    ylabel="K=11",
@@ -333,6 +343,7 @@ def admixtureplot(
     return _draw_admixtureplot(data=data,
                                group_order=group_order,
                                linewidth=linewidth,
+                               edgewidth=edgewidth,
                                palette=palette,
                                xticklabels=xticklabels,
                                xticklabel_kws=xticklabel_kws,
