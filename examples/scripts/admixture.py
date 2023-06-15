@@ -18,6 +18,7 @@ gv.admixtureplot(data=admixture_output_fn,
                  palette="Set1", 
                  xticklabel_kws={"rotation": 45},
                  ylabel_kws={"rotation": 0, "ha": "right"},
+                 set_xticklabel_top=True,
                  ax=ax)
 plt.show()
 

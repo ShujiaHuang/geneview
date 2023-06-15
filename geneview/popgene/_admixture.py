@@ -25,6 +25,7 @@ def _draw_admixtureplot(
         ylabel=None,
         ylabel_kws=None,
         hierarchical_kws=None,
+        set_xticklabel_top=False,
         ax=None
 ):
     """Plot admixture.
@@ -106,6 +107,9 @@ def _draw_admixtureplot(
     ax.spines["right"].set_linewidth(edgewidth)
     ax.spines["bottom"].set_linewidth(edgewidth)
 
+    if set_xticklabel_top:
+        ax.xaxis.tick_top()
+
     ax.set_xlim([x[0], x[-1]+bar_width])
     ax.set_ylim([0, 1.0])
     ax.tick_params(bottom=False, top=False, left=False, right=False)
@@ -174,6 +178,7 @@ def admixtureplot(
         ylabel=None,
         ylabel_kws=None,
         hierarchical_kws=None,
+        set_xticklabel_top=False,
         ax=None
 ):
     """Plot admixture.
@@ -228,6 +233,9 @@ def admixtureplot(
             Other keyword arguments are passed to set the hierarchical clustering in
             ``geneview.algorithm.hierarchical_cluster``.
 
+        set_xticklabel_top : bool, optional
+            Place the x-axis ticklabels at the top of the image. Default: False
+
         ax : matplotlib axis, optional
             Axis to plot on, otherwise define a subplot by ``admixtureplot()``.
 
@@ -248,6 +256,7 @@ def admixtureplot(
             >>> from geneview import admixtureplot
             >>> admixture_fn = load_dataset("admixture_output.Q")
             >>> population_fn = load_dataset("admixture_population.info")
+            >>> ax = admixtureplot(data=admixture_fn, population_info=population_fn, set_xticklabel_top=True)
             >>> ax = admixtureplot(data=admixture_fn, population_info=population_fn)
 
         Plot the admixture by a specify population order
@@ -350,4 +359,5 @@ def admixtureplot(
                                ylabel=ylabel,
                                ylabel_kws=ylabel_kws,
                                hierarchical_kws=hierarchical_kws,
+                               set_xticklabel_top=set_xticklabel_top,
                                ax=ax)
