@@ -277,7 +277,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     # plot the main manhattan dot plot
     ax.scatter(x, y, c=c, alpha=alpha, edgecolors="none", **kwargs)
 
-    if is_annotate_topsnp is not None:
+    if is_annotate_topsnp:
         index = _find_SNPs_which_overlap_sign_neighbour_region(
             sign_snp_neighbour_region=_sign_snp_regions(sign_snp_sites, ld_block_size),
             x=x)
