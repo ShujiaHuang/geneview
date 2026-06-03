@@ -56,9 +56,9 @@ if __name__ == "__main__":
           },
           classifiers=[
              "Intended Audience :: Science/Research",
-             "Programming Language :: Python :: 3.7",
              "Programming Language :: Python :: 3.8",
              "Programming Language :: Python :: 3.9",
+             "Programming Language :: Python :: 3.10",
              "License :: OSI Approved :: BSD License",
              "Topic :: Scientific/Engineering :: Bio-Informatics",
              "Topic :: Scientific/Engineering :: Visualization",
