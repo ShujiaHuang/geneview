@@ -19,18 +19,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [3.8.x, 3.9.x, 3.10.x]
+        python: [3.9.x, 3.10.x, 3.12.x]
         target: [test]
         backend: [agg]
 
         include:
-          - python: 3.8.x
-            target: unittests
-            backend: agg
           - python: 3.9.x
             target: unittests
             backend: agg
           - python: 3.10.x
+            target: test
+            backend: tkagg
+          - python: 3.12.x
             target: test
             backend: tkagg
 
