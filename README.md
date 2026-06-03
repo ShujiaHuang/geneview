@@ -5,9 +5,14 @@
 ![Tests](https://github.com/ShujiaHuang/geneview/workflows/CI/badge.svg)
 [![Code Coverage](https://codecov.io/gh/ShujiaHuang/geneview/branch/master/graph/badge.svg)](https://codecov.io/gh/ShujiaHuang/geneview)
 
-**geneview** is a library for making attractive and informative genomics graphics in Python.
+**geneview** is a toolkit for making attractive and informative genomics graphics, available as both a **Python library** and a **command-line tool**.
 It is built on top of [matplotlib](https://matplotlib.org/) and tightly integrated with the PyData 
 stack, including support for `numpy` and `pandas` data structures. And now it is actively developed.
+
+**geneview** provides two ways to use:
+
+- **Python library** — Import `geneview` in your scripts for full programmatic control over genomics figures.
+- **Command-line tool** — Run `geneview <subcommand>` directly from the terminal to create publication-quality plots without writing any Python code.
 
 Some of the features that geneview offers are:
 
@@ -40,7 +45,114 @@ pip install .
 
 ## Quick start
 
-### **Manhattan** and **Q-Q** plot
+**geneview** can be used in two ways: as a **command-line tool** for quick plotting without coding, or as a **Python library** for programmatic access.
+
+---
+
+### Command-line interface (CLI)
+
+After installation, the `geneview` command is available in your terminal. Run `geneview --help` to see all available subcommands:
+
+```bash
+geneview --help
+```
+
+```
+subcommands:
+  manhattan    Create a Manhattan plot from GWAS association results.
+  qq           Create a Q-Q plot from GWAS association results.
+  venn         Create a Venn diagram from 2-6 input files.
+  admixture    Create an Admixture plot from ADMIXTURE .Q output.
+```
+
+Use `geneview <subcommand> --help` for detailed options of each command.
+
+#### Manhattan plot
+
+Create a Manhattan plot from a PLINK2.x association output (tab-delimited, with columns `#CHROM`, `POS`, `P`):
+
+```bash
+geneview manhattan -i gwas_results.assoc -o manhattan.png
+```
+
+Add significance markers and annotate top SNPs:
+
+```bash
+geneview manhattan -i gwas_results.assoc -o manhattan.png \
+    --title "My GWAS" \
+    --sign-marker-p 1e-6 \
+    --annotate-topsnp
+```
+
+Plot only a specific chromosome:
+
+```bash
+geneview manhattan -i gwas_results.assoc --chr chr8 -o manhattan_chr8.png
+```
+
+Use CSV input with custom column names:
+
+```bash
+geneview manhattan -i gwas.csv --sep "," --chrom CHROM --pos BP --pv PVAL -o manhattan.png
+```
+
+#### Q-Q plot
+
+Create a Q-Q plot from a file containing a P-value column:
+
+```bash
+geneview qq -i gwas_results.assoc -o qq.png
+```
+
+Customize title and appearance:
+
+```bash
+geneview qq -i gwas_results.assoc -o qq.png \
+    --title "GWAS QQ Plot" \
+    --marker "o" --figsize 6 6
+```
+
+#### Venn diagram
+
+Create a Venn diagram by comparing 2–6 gene/variant list files (one identifier per line):
+
+```bash
+geneview venn -i genes_A.txt genes_B.txt -o venn2.png
+```
+
+Compare three datasets with custom names and colors:
+
+```bash
+geneview venn -i DEG_list1.txt DEG_list2.txt DEG_list3.txt \
+    --names "Study A" "Study B" "Study C" \
+    --palette plasma \
+    --legend-use-petal-color \
+    -o venn3.png
+```
+
+#### Admixture plot
+
+Create an Admixture plot from the standard ADMIXTURE `.Q` output and a population info file:
+
+```bash
+geneview admixture -i output.3.Q -p population.txt -o admixture.png
+```
+
+Customize appearance and specify population order:
+
+```bash
+geneview admixture -i output.5.Q -p population.txt \
+    --palette Set1 --edgewidth 2.0 \
+    --group-order POP1 POP2 POP3 POP4 POP5 \
+    --set-xticklabel-top \
+    -o admixture_K5.png
+```
+
+---
+
+### Python API
+
+#### **Manhattan** and **Q-Q** plot
 
 We use a PLINK2.x association output data `gwas.csv` which
 is in [geneview-data](https://github.com/ShujiaHuang/geneview-data) directory, 
