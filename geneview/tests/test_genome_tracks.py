@@ -984,3 +984,113 @@ class TestIdeogramTrack:
         bands = _make_bands()
         ideo = IdeogramTrack(bands, chromosome="chrX")
         assert len(ideo._chr_bands) == 0
+
+    def test_outline_enabled(self):
+        """Test IdeogramTrack with outline=True."""
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7", outline=True)
+        assert ideo.outline is True
+        fig, ax = plt.subplots(figsize=(12, 2))
+        region = GenomicInterval("chr7", 0, 100000000)
+        ideo.draw(ax, region)
+        plt.close("all")
+
+    def test_genome_build_attribute(self):
+        """Test that genome_build attribute is stored correctly."""
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7", genome_build="hg19")
+        assert ideo.genome_build == "hg19"
+
+        ideo2 = IdeogramTrack(bands, chromosome="chr7")
+        assert ideo2.genome_build == "hg38"  # default
+
+
+# =============================================================================
+# Heatmap enhancements tests
+# =============================================================================
+
+class TestHeatmapEnhancements:
+
+    def _make_heatmap_data(self):
+        """Create multi-sample heatmap data."""
+        rng = np.random.RandomState(42)
+        n = 20
+        return pd.DataFrame({
+            "chrom": ["chr7"] * n,
+            "start": np.linspace(2000000, 2040000, n, dtype=int),
+            "end": np.linspace(2002000, 2042000, n, dtype=int),
+            "sample_A": rng.randn(n).cumsum() / 3,
+            "sample_B": rng.randn(n).cumsum() / 3 + 2,
+            "sample_C": rng.randn(n).cumsum() / 3 - 1,
+        })
+
+    def test_heatmap_with_separator(self):
+        """Test heatmap with separator lines between rows."""
+        data = self._make_heatmap_data()
+        dt = DataTrack(data, type="heatmap", separator=2)
+        assert dt.separator == 2
+        region = GenomicInterval("chr7", 2000000, 2050000)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_heatmap_show_sample_names(self):
+        """Test heatmap with sample names displayed."""
+        data = self._make_heatmap_data()
+        dt = DataTrack(data, type="heatmap", show_sample_names=True)
+        assert dt.show_sample_names is True
+        region = GenomicInterval("chr7", 2000000, 2050000)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_heatmap_blues_colormap(self):
+        """Test that heatmap uses Blues colormap (Gviz default)."""
+        from geneview.genometracks._data_track import _HEATMAP_CMAP
+        assert _HEATMAP_CMAP == "Blues"
+
+
+# =============================================================================
+# AnnotationTrack transparent edge tests
+# =============================================================================
+
+class TestAnnotationTrackTransparentEdge:
+
+    def test_default_col_is_transparent(self):
+        """Test that AnnotationTrack col defaults to 'transparent' (Gviz)."""
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [2000000, 2100000],
+            "end": [2050000, 2150000],
+            "strand": ["+", "-"],
+            "name": ["feat1", "feat2"],
+        })
+        atrack = AnnotationTrack(data)
+        assert atrack.get_param("col") == "transparent"
+
+    def test_draw_with_transparent_edge(self):
+        """Test that drawing works with transparent edge color."""
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [2000000, 2100000],
+            "end": [2050000, 2150000],
+            "strand": ["+", "-"],
+            "name": ["feat1", "feat2"],
+        })
+        atrack = AnnotationTrack(data)
+        region = GenomicInterval("chr7", 1900000, 2200000)
+        axes = plot_tracks([atrack], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_custom_col_overrides_transparent(self):
+        """Test that custom col overrides transparent default."""
+        data = pd.DataFrame({
+            "chrom": ["chr7"],
+            "start": [2000000],
+            "end": [2050000],
+            "strand": ["+"],
+            "name": ["feat1"],
+        })
+        atrack = AnnotationTrack(data, display_params={"col": "black"})
+        assert atrack.get_param("col") == "black"

@@ -269,6 +269,7 @@ from geneview.genometracks import (
 | Track Type | Purpose |
 |------------|---------|
 | `GenomeAxisTrack` | Genomic coordinate ruler with auto-formatted labels |
+| `IdeogramTrack` | Chromosome ideogram with cytobands (auto-loads from geneview-data) |
 | `AnnotationTrack` | Generic genomic ranges (boxes, ellipses, arrows) |
 | `GeneRegionTrack` | Gene models (exons, UTRs, introns) |
 | `DataTrack` | Numeric data (line, histogram, heatmap, etc.) |
@@ -279,7 +280,8 @@ from geneview.genometracks import (
 ```python
 import pandas as pd
 from geneview.genometracks import (
-    GenomeAxisTrack, AnnotationTrack, GenomicInterval, plot_tracks,
+    GenomeAxisTrack, AnnotationTrack, IdeogramTrack,
+    GenomicInterval, plot_tracks,
 )
 import matplotlib.pyplot as plt
 
@@ -293,12 +295,13 @@ data = pd.DataFrame({
 })
 
 # Build tracks
+itrack = IdeogramTrack(chromosome="chr7")  # Auto-loads hg38 karyotype
 gtrack = GenomeAxisTrack()
 atrack = AnnotationTrack(data, name="Features")
 
 # Plot
 region = GenomicInterval("chr7", 1900000, 2200000)
-axes = plot_tracks([gtrack, atrack], region=region, figsize=(12, 4))
+axes = plot_tracks([itrack, gtrack, atrack], region=region, figsize=(12, 5))
 fig = axes[0].figure
 fig.savefig("genome_tracks.png", dpi=300, bbox_inches="tight")
 plt.show()
@@ -421,6 +424,7 @@ fig.savefig("tracks.png", dpi=300, bbox_inches="tight")
 | Class | Description |
 |-------|-------------|
 | `GenomeAxisTrack` | Coordinate axis |
+| `IdeogramTrack` | Chromosome ideogram (auto-loads karyotype) |
 | `AnnotationTrack` | Genomic range annotations |
 | `GeneRegionTrack` | Gene model tracks |
 | `DataTrack` | Numeric data tracks |
@@ -440,6 +444,7 @@ Full example scripts are available in the [`examples/scripts/`](../examples/scri
 | `venn.py` | Venn diagrams (2-6 sets) |
 | `admixture.py` | ADMIXTURE plot |
 | `genome_tracks_basic.py` | Basic genome tracks |
+| `genome_tracks_advanced.py` | IdeogramTrack and advanced features |
 | `genome_tracks_gene_region.py` | Gene region tracks |
 | `genome_tracks_data.py` | Data track plot types |
 | `genome_tracks_highlight.py` | Highlight regions |
