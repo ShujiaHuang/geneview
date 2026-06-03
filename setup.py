@@ -48,6 +48,9 @@ if __name__ == "__main__":
               "matplotlib",
               "seaborn",
           ],
+          extras_require={
+              "genometracks": ["pyranges", "pyBigWig", "pysam"],
+          },
           packages=find_packages(),
           entry_points={
               "console_scripts": [

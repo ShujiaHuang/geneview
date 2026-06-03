@@ -8,6 +8,10 @@ from .karyotype import karyoplot
 from .baseplot import venn, generate_petal_labels
 from .gwas import manhattanplot, qqplot, qqnorm
 from .popgene import admixtureplot
+from .genometracks import (
+    plot_tracks, GenomeAxisTrack, AnnotationTrack,
+    GeneRegionTrack, DataTrack, HighlightTrack, GenomicInterval,
+)
 
 
 matplotlib.rcParams['ps.fonttype']     = 42
