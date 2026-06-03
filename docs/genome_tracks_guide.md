@@ -14,10 +14,11 @@ The genome tracks module in geneview provides a powerful system for visualizing 
 6. [GeneRegionTrack](#generegiontrack)
 7. [DataTrack](#datatrack)
 8. [HighlightTrack](#highlighttrack)
-9. [File I/O](#file-io)
-10. [Advanced: plot_tracks()](#advanced-plot_tracks)
-11. [Display Parameters Reference](#display-parameters-reference)
-12. [Complete Example](#complete-example)
+9. [OverlayTrack](#overlaytrack)
+10. [File I/O](#file-io)
+11. [Advanced: plot_tracks()](#advanced-plot_tracks)
+12. [Display Parameters Reference](#display-parameters-reference)
+13. [Complete Example](#complete-example)
 
 ---
 
@@ -33,6 +34,7 @@ AnnotationTrack  ─── generic ranges (boxes/arrows)
 GeneRegionTrack  ─── gene models (exons/UTRs/introns)
 DataTrack        ─── numeric data (line/histogram/heatmap)
 HighlightTrack   ─── cross-track highlights
+OverlayTrack     ─── overlay multiple tracks on same axes
 ```
 
 ### Track Hierarchy
@@ -47,6 +49,7 @@ Track (abstract base)
         └── NumericTrack (numeric value columns)
               └── DataTrack
         └── HighlightTrack (wrapper/container)
+  └── OverlayTrack (container, overlays tracks)
 ```
 
 ### Design Philosophy
@@ -186,6 +189,8 @@ GenomeAxisTrack(
     scale=None,            # None = full axis; float = scale bar
     label_pos="alternating",  # "above", "below", "alternating"
     little_ticks=False,    # Add minor tick marks
+    add53=False,           # Draw 5'->3' direction arrow
+    add35=False,           # Draw 3'->5' direction arrow
     display_params=None,
 )
 ```
@@ -228,6 +233,21 @@ gtrack = GenomeAxisTrack(label_pos="alternating")
 gtrack = GenomeAxisTrack(little_ticks=True)
 ```
 
+### Direction Indicators
+
+Show 5'→3' or 3'→5' direction arrows on the axis:
+
+```python
+# Draw 5'->3' arrow
+gtrack = GenomeAxisTrack(add53=True)
+
+# Draw 3'->5' arrow
+gtrack = GenomeAxisTrack(add35=True)
+
+# Both directions
+gtrack = GenomeAxisTrack(add53=True, add35=True)
+```
+
 ### Highlighting Regions on the Axis
 
 ```python
@@ -251,6 +271,8 @@ axes = plot_tracks([gtrack], region=GenomicInterval("chr7", 2000000, 2200000))
 | `lwd` | 2 | Axis line width |
 | `col_range` | `"#8B8378"` | Highlighted region border |
 | `fill_range` | `"#CDC8B1"` | Highlighted region fill |
+| `col_53` | `"#555555"` | 5'→3' arrow color |
+| `col_35` | `"#555555"` | 3'→5' arrow color |
 
 ---
 
@@ -264,9 +286,10 @@ Displays genomic ranges as shapes (boxes, ellipses, arrows) on a track. Supports
 AnnotationTrack(
     data,                  # DataFrame or file path (BED/GFF)
     stacking="squish",     # "squish", "pack", "dense", "full", "hide"
-    shape="box",           # "box", "ellipse", "arrow"
+    shape="box",           # "box", "ellipse", "arrow", "fixedArrow", "smallArrow"
     show_label=False,      # Show feature names
     label_pos="above",     # "above" or "below"
+    group_annotation=None, # Group features: "id", "group", "feature"
     name="Annotation",
     height=1.0,
     display_params=None,
@@ -302,6 +325,13 @@ atrack = AnnotationTrack(data, shape="ellipse")
 
 # Arrows (strand-aware)
 atrack = AnnotationTrack(data, shape="arrow")
+
+# Fixed-width arrows (head width controlled by arrowHeadWidth param)
+atrack = AnnotationTrack(data, shape="fixedArrow",
+    display_params={"arrowHeadWidth": 0.4})
+
+# Small arrows (50% head size)
+atrack = AnnotationTrack(data, shape="smallArrow")
 ```
 
 ### Stacking Modes
@@ -337,6 +367,22 @@ atrack = AnnotationTrack(data, display_params={
 atrack = AnnotationTrack(data, show_label=True, label_pos="above")
 ```
 
+### Group Annotation
+
+Draw connecting lines and labels between grouped features:
+
+```python
+# Group by 'feature' column and draw connecting lines
+atrack = AnnotationTrack(data, group_annotation="feature",
+    display_params={"col_line": "#888888"})
+
+# Group by 'id' column
+atrack = AnnotationTrack(data, group_annotation="id")
+
+# Group by custom 'group' column
+atrack = AnnotationTrack(data, group_annotation="group")
+```
+
 ### Loading from Files
 
 ```python
@@ -362,7 +408,7 @@ Displays gene models with exons as thick boxes, UTRs as thin boxes, and introns 
 GeneRegionTrack(
     data,                       # DataFrame or GFF/GTF file path
     stacking="squish",
-    collapse_transcripts=False, # False, True/"gene", "longest", "shortest"
+    collapse_transcripts=False, # False, True/"gene", "longest", "shortest", "meta"
     show_id="gene",             # "gene", "transcript", "exon", or None
     thin_box_features=None,     # Set of feature types drawn as thin boxes
     name="GeneRegion",
@@ -404,6 +450,9 @@ grtrack = GeneRegionTrack(data, collapse_transcripts="longest")
 
 # Show only the shortest transcript per gene
 grtrack = GeneRegionTrack(data, collapse_transcripts="shortest")
+
+# Meta-transcript: union of all exon positions per gene
+grtrack = GeneRegionTrack(data, collapse_transcripts="meta")
 ```
 
 ### Label Options
@@ -444,6 +493,11 @@ DataTrack(
     type="line",       # Plot type (see table below)
     ylim=None,         # Custom y-axis limits
     groups=None,       # Sample grouping factor
+    transformation=None,  # Callable applied to values (e.g., np.log2)
+    window=None,       # Windowing: int, "auto", or "fixed"
+    window_size=None,  # Bin size for window="fixed"
+    aggregation="mean", # Aggregation: "mean", "median", "sum", "min", "max"
+    legend=False,      # Show legend for groups
     name="Data",
     height=1.5,
     display_params=None,
@@ -462,6 +516,9 @@ DataTrack(
 | `"gradient"` | False-color image of summarized values |
 | `"heatmap"` | False-color image per sample |
 | `"boxplot"` | Box-and-whisker plot |
+| `"b"` | Combined line + points |
+| `"s"` | Stair steps (horizontal first, then vertical) |
+| `"S"` | Stair steps (vertical first, then horizontal) |
 
 ### Line Plot
 
@@ -532,6 +589,83 @@ dtrack = DataTrack(data, type="heatmap", name="Heatmap")
 dtrack = DataTrack(data, type="line", ylim=(-10, 10))
 ```
 
+### Combined Line + Points
+
+```python
+dtrack = DataTrack(data, type="b", name="Signal+Points")
+```
+
+### Stair Steps
+
+```python
+# Horizontal first, then vertical (post-step)
+dtrack = DataTrack(data, type="s", name="Steps")
+
+# Vertical first, then horizontal (pre-step)
+dtrack = DataTrack(data, type="S", name="Reverse Steps")
+```
+
+### Transformation
+
+Apply a function to all values before plotting:
+
+```python
+import numpy as np
+
+# Log-transform values
+dtrack = DataTrack(data, type="line", transformation=np.log2)
+
+# Custom transformation
+dtrack = DataTrack(data, type="line", transformation=lambda x: x**2)
+```
+
+### Windowing and Smoothing
+
+Reduce noise by binning data into windows:
+
+```python
+# Bin into 50 equal windows across the range
+dtrack = DataTrack(data, type="line", window=50)
+
+# Running window of 10 bins
+dtrack = DataTrack(data, type="line", window=-10)
+
+# Auto-detect window size based on data density
+dtrack = DataTrack(data, type="line", window="auto")
+
+# Fixed-size windows of 20 bins
+dtrack = DataTrack(data, type="line", window="fixed", window_size=20)
+```
+
+### Aggregation
+
+Control how values within windows are combined:
+
+```python
+dtrack = DataTrack(data, window=50, aggregation="median")
+dtrack = DataTrack(data, window=50, aggregation="sum")
+dtrack = DataTrack(data, window=50, aggregation="max")
+```
+
+### Legend
+
+Show a legend for grouped data:
+
+```python
+dtrack = DataTrack(data, type="line", groups=["A", "A", "B", "B"],
+                   legend=True,
+                   display_params={"group_colors": ["#3C5488", "#E64B35"]})
+```
+
+### Grid Lines
+
+Draw horizontal grid lines:
+
+```python
+dtrack = DataTrack(data, type="line",
+                   display_params={"grid": True, "col_grid": "#DDDDDD"})
+```
+
 ### Display Parameters
 
 | Parameter | Default | Description |
@@ -553,8 +687,8 @@ A wrapper/container track that adds colored highlight regions across multiple tr
 HighlightTrack(
     regions,           # DataFrame or list of GenomicInterval
     track_list=None,   # List of tracks to highlight
-    fill="#FFE3E6",    # Highlight fill color
-    col=None,          # Highlight border color
+    fill="#FFE3E6",    # Highlight fill color (str or list of str)
+    col=None,          # Highlight border color (str or list of str)
     alpha=0.3,         # Transparency
     name="Highlight",
     height=1.0,
@@ -616,6 +750,64 @@ highlights = [
     GenomicInterval("chr7", 26640000, 26660000),
 ]
 ht = HighlightTrack(regions=highlights, track_list=[atrack])
+```
+
+### Per-Region Colors
+
+Use a list of colors to assign different colors to each highlight region:
+
+```python
+ht = HighlightTrack(
+    regions=highlights,
+    track_list=[atrack],
+    fill=["#FF9999", "#99FF99", "#9999FF"],  # one color per region
+    col=["#CC0000", "#00CC00", "#0000CC"],
+    alpha=0.3,
+)
+```
+
+Colors are cycled if there are more regions than colors.
+
+### Highlight Targeting
+
+Highlights are only drawn on panels for tracks listed in `track_list`. Other tracks in the plot are not affected:
+
+```python
+# Only atrack and grtrack get highlighted; dtrack is unaffected
+ht = HighlightTrack(regions=regions, track_list=[atrack, grtrack])
+axes = plot_tracks([gtrack, ht, dtrack], region=region)
+```
+
+---
+
+## OverlayTrack
+
+Overlays multiple tracks on the same plot area, useful for comparing signals from different DataTracks.
+
+### Constructor
+
+```python
+OverlayTrack(
+    track_list,        # List of Track objects to overlay
+    name=None,         # Track name (defaults to first track's name)
+    display_params=None,
+)
+```
+
+### Basic Usage
+
+```python
+from geneview.genometracks import OverlayTrack
+
+# Create two data tracks with different signals
+dtrack1 = DataTrack(data1, type="line", name="Sample A",
+    display_params={"col": "#3C5488"})
+dtrack2 = DataTrack(data2, type="line", name="Sample B",
+    display_params={"col": "#E64B35", "alpha": 0.7})
+
+# Overlay them on the same axes
+otrack = OverlayTrack([dtrack1, dtrack2], name="Comparison")
+axes = plot_tracks([gtrack, otrack], region=region)
 ```
 
 ---
@@ -712,6 +904,8 @@ plot_tracks(
     figsize=None,        # Figure size (width, height) in inches
     extend_left=0,       # Extend left boundary (int bp or float fraction)
     extend_right=0,      # Extend right boundary
+    show_title=True,     # Show track title panels
+    reverse_strand=False, # Flip x-axis (3' on left)
     ax=None,             # Existing axes to plot into (single track only)
     **kwargs,            # Additional kwargs
 )
@@ -748,8 +942,23 @@ axes = plot_tracks([gtrack, atrack], region=region, title="My Genomic Region")
 # Extend by absolute base pairs
 axes = plot_tracks([gtrack, atrack], extend_left=50000, extend_right=50000)
 
-# Extend by fraction of data range
+# Extend by fraction of data range (float between -1 and 1)
 axes = plot_tracks([gtrack, atrack], extend_left=0.1, extend_right=0.1)
+```
+
+### Toggle Title Panel
+
+```python
+# Hide track title panels for a more compact layout
+axes = plot_tracks([gtrack, atrack], show_title=False)
+```
+
+### Reverse Strand
+
+Flip the x-axis so 3' is on the left:
+
+```python
+axes = plot_tracks([gtrack, atrack], reverse_strand=True)
 ```
 
 ### Shared X-axis
@@ -785,11 +994,12 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 |-----------|---------|-------------|
 | `col` | `"#3C5488"` | Border color |
 | `fill` | `"#5B8DB8"` | Fill color |
-| `col_border` | `"#333333"` | Feature border color |
+| `col_border` | `"#333333"` | Feature border color (uses `col` value) |
 | `fontsize` | 10 | Label font size |
 | `lwd` | 1.0 | Border line width |
 | `min_width` | 1 | Minimum feature width (px) |
 | `min_distance` | 1 | Minimum gap for stacking |
+| `arrowHeadWidth` | 0.3 | Head width for fixedArrow shape |
 
 ### GeneRegionTrack
 
@@ -811,6 +1021,8 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 | `fill` | `"#5B8DB8"` | Fill color |
 | `baseline` | 0 | Baseline y-position |
 | `ncolor` | 100 | Gradient color count |
+| `grid` | False | Draw horizontal grid lines |
+| `col_grid` | `"#DDDDDD"` | Grid line color |
 
 ### Common (All Tracks)
 
@@ -841,7 +1053,7 @@ import matplotlib.pyplot as plt
 
 from geneview.genometracks import (
     GenomeAxisTrack, AnnotationTrack, GeneRegionTrack, DataTrack,
-    HighlightTrack, GenomicInterval, plot_tracks,
+    HighlightTrack, OverlayTrack, GenomicInterval, plot_tracks,
     read_bed, read_gff, read_bedgraph,
 )
 

@@ -52,19 +52,29 @@ axes3 = plot_tracks([gtrack, grtrack_long], region=region,
 figs.append(axes3[0].figure)
 
 # ---------------------------------------------------------------------------
-# 4. Combined: axis + gene region + annotation (CpG islands)
+# 4. Meta-transcript (union of all exons)
+# ---------------------------------------------------------------------------
+grtrack_meta = GeneRegionTrack(gene_data, name="Meta-transcript",
+                               collapse_transcripts="meta")
+axes4 = plot_tracks([gtrack, grtrack_meta], region=region,
+                    title="Meta-transcript (union of all exons)",
+                    figsize=(14, 4))
+figs.append(axes4[0].figure)
+
+# ---------------------------------------------------------------------------
+# 5. Combined: axis + gene region + annotation (CpG islands)
 # ---------------------------------------------------------------------------
 from geneview.genometracks import read_bed
 cpg_data = read_bed(os.path.join(DATA_DIR, "cpg_islands.bed"))
 atrack = AnnotationTrack(cpg_data, name="CpG Islands")
 
-axes4 = plot_tracks(
+axes5 = plot_tracks(
     [gtrack, atrack, grtrack_all],
     region=region,
     title="Gene Models + CpG Islands",
     figsize=(14, 6),
 )
-figs.append(axes4[0].figure)
+figs.append(axes5[0].figure)
 
 # ---------------------------------------------------------------------------
 # Save all figures

@@ -61,6 +61,10 @@ class GenomeAxisTrack(Track):
         Default is 'alternating'.
     little_ticks : bool
         If True, add smaller sub-ticks between major ticks. Default is False.
+    add53 : bool
+        If True, draw 5'->3' direction indicator. Default is False.
+    add35 : bool
+        If True, draw 3'->5' direction indicator. Default is False.
     display_params : dict, optional
         Additional display parameters.
 
@@ -80,6 +84,8 @@ class GenomeAxisTrack(Track):
         scale: Optional[float] = None,
         label_pos: str = "alternating",
         little_ticks: bool = False,
+        add53: bool = False,
+        add35: bool = False,
         display_params: Optional[Dict[str, Any]] = None,
     ):
         dp = {
@@ -102,6 +108,8 @@ class GenomeAxisTrack(Track):
         self.scale = scale
         self.label_pos = label_pos
         self.little_ticks = little_ticks
+        self.add53 = add53
+        self.add35 = add35
 
     def get_region(self) -> Optional[GenomicInterval]:
         """GenomeAxisTrack doesn't define its own region."""
@@ -196,10 +204,54 @@ class GenomeAxisTrack(Track):
                         [y_center - minor_height, y_center + minor_height],
                         color=color, linewidth=lwd * 0.4, alpha=0.6, zorder=2)
 
+        # Draw direction indicators (Task 6)
+        if self.add53 or self.add35:
+            self._draw_direction_indicators(ax, region, y_center, color, lwd)
+
         # Configure axes
         ax.set_xlim(region.start, region.end)
         ax.set_ylim(0, 1)
         ax.axis("off")
+
+    def _draw_direction_indicators(self, ax, region, y_center, color, lwd):
+        """Draw 5'->3' and/or 3'->5' direction arrows on the axis."""
+        span = region.end - region.start
+        arrow_len = span * 0.03
+        y_offset = 0.15
+
+        fontsize = self.get_param("fontsize", 9)
+
+        if self.add53:
+            # 5'->3' arrow at right side
+            x_base = region.end - span * 0.08
+            x_tip = x_base + arrow_len
+            y_base = y_center + y_offset
+
+            ax.annotate("",
+                        xy=(x_tip, y_base), xytext=(x_base, y_base),
+                        arrowprops=dict(arrowstyle="-|>", color=color,
+                                        lw=lwd * 0.6, mutation_scale=10),
+                        zorder=5)
+            ax.text(x_base - span * 0.005, y_base, "5'", ha="right", va="center",
+                    fontsize=fontsize * 0.7, color=color, zorder=5)
+            ax.text(x_tip + span * 0.005, y_base, "3'", ha="left", va="center",
+                    fontsize=fontsize * 0.7, color=color, zorder=5)
+
+        if self.add35:
+            # 3'->5' arrow at left side
+            x_base = region.start + span * 0.08
+            x_tip = x_base - arrow_len
+            y_base = y_center + y_offset
+
+            ax.annotate("",
+                        xy=(x_tip, y_base), xytext=(x_base, y_base),
+                        arrowprops=dict(arrowstyle="-|>", color=color,
+                                        lw=lwd * 0.6, mutation_scale=10),
+                        zorder=5)
+            ax.text(x_base + span * 0.005, y_base, "3'", ha="left", va="center",
+                    fontsize=fontsize * 0.7, color=color, zorder=5)
+            ax.text(x_tip - span * 0.005, y_base, "5'", ha="right", va="center",
+                    fontsize=fontsize * 0.7, color=color, zorder=5)
 
     def _draw_scale_bar(self, ax, region: GenomicInterval) -> None:
         """Draw a simple scale bar instead of a full axis."""

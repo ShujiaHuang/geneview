@@ -1,8 +1,8 @@
 """DataTrack -- visualize numeric genomic data with multiple plot types.
 
-Demonstrates DataTrack with line, histogram, polygon, heatmap, points,
-mountain, and gradient plot types. Also shows multi-sample data and
-custom y-axis limits.
+Demonstrates DataTrack with all plot types (line, histogram, polygon,
+heatmap, points, mountain, gradient, boxplot, combined, stairs),
+transformation, windowing/smoothing, aggregation, legend, and grid.
 
 Run:  python examples/scripts/genome_tracks_data.py
 """
@@ -28,7 +28,8 @@ gtrack = GenomeAxisTrack()
 # ---------------------------------------------------------------------------
 # 1. Single DataTrack with different plot types
 # ---------------------------------------------------------------------------
-plot_types = ["line", "histogram", "polygon", "points", "mountain", "gradient"]
+plot_types = ["line", "histogram", "polygon", "points", "mountain",
+              "gradient", "b", "s", "S"]
 figs = []
 
 for ptype in plot_types:
@@ -75,11 +76,45 @@ axes_ylim = plot_tracks(
 figs.append(axes_ylim[0].figure)
 
 # ---------------------------------------------------------------------------
+# 4. Transformation (log2)
+# ---------------------------------------------------------------------------
+dtrack_log = DataTrack(cov_data, type="line", name="log2 Transform",
+                       transformation=np.log2)
+axes_log = plot_tracks(
+    [gtrack, dtrack_log], region=region,
+    title="DataTrack: transformation=np.log2", figsize=(12, 4),
+)
+figs.append(axes_log[0].figure)
+
+# ---------------------------------------------------------------------------
+# 5. Windowing / smoothing
+# ---------------------------------------------------------------------------
+dtrack_win = DataTrack(cov_data, type="line", name="Window=50",
+                       window=50, aggregation="mean")
+axes_win = plot_tracks(
+    [gtrack, dtrack_win], region=region,
+    title="DataTrack: window=50 (50 bins, mean aggregation)", figsize=(12, 4),
+)
+figs.append(axes_win[0].figure)
+
+# ---------------------------------------------------------------------------
+# 6. Grid lines
+# ---------------------------------------------------------------------------
+dtrack_grid = DataTrack(cov_data, type="line", name="With Grid",
+                        display_params={"grid": True, "col_grid": "#CCCCCC"})
+axes_grid = plot_tracks(
+    [gtrack, dtrack_grid], region=region,
+    title="DataTrack: grid=True", figsize=(12, 4),
+)
+figs.append(axes_grid[0].figure)
+
+# ---------------------------------------------------------------------------
 # Save all figures
 # ---------------------------------------------------------------------------
 out_dir = os.path.join(os.path.dirname(__file__), "..", "figures")
 os.makedirs(out_dir, exist_ok=True)
-labels = plot_types + ["heatmap", "custom_ylim"]
+labels = plot_types + ["heatmap", "custom_ylim", "transformation",
+                       "window", "grid"]
 for label, fig in zip(labels, figs):
     path = os.path.join(out_dir, f"genome_tracks_data_{label}.png")
     fig.savefig(path, dpi=150, bbox_inches="tight")

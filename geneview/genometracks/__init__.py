@@ -16,6 +16,8 @@ DataTrack
     Numeric data visualization (BigWig, bedGraph).
 HighlightTrack
     Cross-track region highlighting.
+OverlayTrack
+    Overlay multiple tracks on the same panel.
 
 Core Functions
 --------------
@@ -53,6 +55,7 @@ from ._annotation import AnnotationTrack
 from ._gene_region import GeneRegionTrack
 from ._data_track import DataTrack
 from ._highlight import HighlightTrack
+from ._overlay import OverlayTrack
 from ._track_plot import plot_tracks
 from ._io import (
     read_bed,
@@ -70,6 +73,7 @@ __all__ = [
     "GeneRegionTrack",
     "DataTrack",
     "HighlightTrack",
+    "OverlayTrack",
     # Core
     "plot_tracks",
     "GenomicInterval",

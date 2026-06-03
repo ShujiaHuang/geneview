@@ -28,13 +28,15 @@ def plot_tracks(
     sizes: Optional[List[float]] = None,
     title: Optional[str] = None,
     title_width: float = 0.08,
-    extend_left: int = 0,
-    extend_right: int = 0,
+    extend_left: Union[int, float] = 0,
+    extend_right: Union[int, float] = 0,
     figsize: Optional[Tuple[float, float]] = None,
     ax: Optional[Any] = None,
     main: Optional[str] = None,
     fontsize_main: float = 14,
     chromosome: Optional[str] = None,
+    show_title: bool = True,
+    reverse_strand: bool = False,
     **kwargs,
 ) -> List:
     """Plot one or more genome tracks in a vertically stacked layout.
@@ -57,10 +59,15 @@ def plot_tracks(
         Main title for the entire plot.
     title_width : float
         Fraction of figure width used for track title panels. Default is 0.08.
-    extend_left : int
-        Extend the plotting range to the left by this many bases.
-    extend_right : int
-        Extend the plotting range to the right by this many bases.
+    extend_left : int or float
+        Extend the plotting range to the left. If a float between -1 and 1
+        (exclusive), interpreted as a fraction of the region span.
+    extend_right : int or float
+        Extend the plotting range to the right. Same fractional semantics.
+    show_title : bool
+        Whether to show track title panels on the left. Default is True.
+    reverse_strand : bool
+        If True, reverse the x-axis so 3' is on the left. Default is False.
     figsize : tuple of float, optional
         Figure size (width, height) in inches. Auto-computed if None.
     ax : matplotlib Axes, optional
@@ -112,6 +119,10 @@ def plot_tracks(
     if not expanded_tracks:
         raise ValueError("No tracks to plot.")
 
+    # Build per-highlight target-panel mapping (Bug 1 fix)
+    for hl in highlights:
+        hl._target_ids = set(id(t) for t in hl.track_list)
+
     # Apply global display parameters to all tracks
     if kwargs:
         for track in expanded_tracks:
@@ -132,8 +143,11 @@ def plot_tracks(
                 "parameter or ensure tracks contain data."
             )
 
-    # Apply extensions
-    region = region.extend(left=extend_left, right=extend_right)
+    # Apply extensions (support fractional values like Gviz)
+    span = region.end - region.start
+    ext_l = int(extend_left * span) if isinstance(extend_left, float) and -1 < extend_left < 1 else int(extend_left)
+    ext_r = int(extend_right * span) if isinstance(extend_right, float) and -1 < extend_right < 1 else int(extend_right)
+    region = region.extend(left=ext_l, right=ext_r)
 
     # Determine sizes
     if sizes is None:
@@ -143,13 +157,22 @@ def plot_tracks(
 
     # Simple mode: plotting into a provided axes
     if ax is not None:
-        return _plot_single_ax(expanded_tracks, highlights, ax, region)
+        axes_list = _plot_single_ax(expanded_tracks, highlights, ax, region)
+        if reverse_strand:
+            for a in axes_list:
+                a.invert_xaxis()
+        return axes_list
 
     # Full layout mode with title panels
-    return _plot_full_layout(
+    axes_list = _plot_full_layout(
         expanded_tracks, highlights, region, norm_sizes,
         title_width, title, figsize, fontsize_main,
+        show_title=show_title,
     )
+    if reverse_strand:
+        for a in axes_list:
+            a.invert_xaxis()
+    return axes_list
 
 
 def _expand_tracks(track_list: List[Track]) -> Tuple[List[Track], List[HighlightTrack]]:
@@ -207,12 +230,16 @@ def _plot_single_ax(
     region: GenomicInterval,
 ) -> List:
     """Plot all tracks into a single axes (simple mode)."""
+    track_id_to_ax = {id(t): ax for t in tracks}
+
     for track in tracks:
         track.draw(ax, region)
 
-    # Apply highlights
+    # Apply highlights only to targeted track panels (Bug 1 fix)
     for hl in highlights:
-        hl.draw_highlights(ax, region)
+        target_ids = getattr(hl, '_target_ids', set())
+        if any(tid in track_id_to_ax for tid in target_ids):
+            hl.draw_highlights(track_id_to_ax[next(iter(target_ids))], region)
 
     return [ax]
 
@@ -226,9 +253,13 @@ def _plot_full_layout(
     title: Optional[str],
     figsize: Optional[Tuple[float, float]],
     fontsize_main: float,
+    show_title: bool = True,
 ) -> List:
     """Plot tracks with full layout: title panels + data panels."""
     n_tracks = len(tracks)
+
+    # Build track-id → panel-index mapping (Bug 1 fix)
+    track_id_to_idx = {id(t): i for i, t in enumerate(tracks)}
 
     # Compute figure size
     if figsize is None:
@@ -241,16 +272,21 @@ def _plot_full_layout(
     fig = plt.figure(figsize=figsize, facecolor="white")
 
     # Create GridSpec: 2 columns (title, data), n_tracks rows
-    has_title = title is not None and title != ""
+    has_title = show_title and title is not None and title != ""
     n_rows = n_tracks + (1 if has_title else 0)
 
-    width_ratios = [title_width, 1.0 - title_width]
+    # When show_title is False, collapse the title column
+    if show_title:
+        width_ratios = [title_width, 1.0 - title_width]
+    else:
+        width_ratios = [0, 1.0]
+
     gs = gridspec.GridSpec(
         n_rows, 2,
         width_ratios=width_ratios,
         height_ratios=([0.3] if has_title else []) + list(sizes),
         hspace=0.05,
-        wspace=0.02,
+        wspace=0.02 if show_title else 0,
     )
 
     axes_list = []
@@ -281,12 +317,17 @@ def _plot_full_layout(
         # Draw track content
         track.draw(ax_data, region)
 
-        # Draw title panel
-        _draw_title_panel(ax_title, track, region)
+        # Draw title panel (skip if show_title is False)
+        if show_title:
+            _draw_title_panel(ax_title, track, region)
+        else:
+            ax_title.axis("off")
 
-        # Apply highlights to this track's data panel
+        # Apply highlights only to targeted panels (Bug 1 fix)
         for hl in highlights:
-            hl.draw_highlights(ax_data, region)
+            target_ids = getattr(hl, '_target_ids', set())
+            if id(track) in target_ids:
+                hl.draw_highlights(ax_data, region)
 
         # Share x-axis between tracks (except the last one shows labels)
         is_last = (i == n_tracks - 1)

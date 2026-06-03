@@ -1,8 +1,9 @@
 """Comprehensive genome tracks showcase -- all track types in one plot.
 
 Combines GenomeAxisTrack, AnnotationTrack, GeneRegionTrack, DataTrack,
-and HighlightTrack into a single multi-panel figure with custom sizes,
-title, and region extension.
+HighlightTrack, and OverlayTrack into a single multi-panel figure with
+direction indicators, per-region highlight colors, and fractional
+region extension.
 
 Run:  python examples/scripts/genome_tracks_comprehensive.py
 """
@@ -15,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from geneview.genometracks import (
     GenomeAxisTrack, AnnotationTrack, GeneRegionTrack, DataTrack,
-    HighlightTrack, GenomicInterval, plot_tracks,
+    HighlightTrack, OverlayTrack, GenomicInterval, plot_tracks,
     read_bed, read_gff, read_bedgraph,
 )
 
@@ -37,7 +38,7 @@ region = GenomicInterval("chr7", 26_490_000, 26_720_000)
 # ---------------------------------------------------------------------------
 # Create tracks
 # ---------------------------------------------------------------------------
-gtrack = GenomeAxisTrack(little_ticks=True)
+gtrack = GenomeAxisTrack(little_ticks=True, add53=True)
 atrack_cpg = AnnotationTrack(cpg_data, name="CpG Islands",
                              display_params={"fill": "#3C5488"})
 atrack_ann = AnnotationTrack(ann_data, name="Regulatory",
@@ -46,7 +47,8 @@ atrack_ann = AnnotationTrack(ann_data, name="Regulatory",
 grtrack = GeneRegionTrack(gene_data, name="Gene Models",
                           collapse_transcripts="longest")
 dtrack = DataTrack(cov_data, type="histogram", name="Coverage",
-                   display_params={"fill": "#4DBBD5", "col": "#4DBBD5"})
+                   display_params={"fill": "#4DBBD5", "col": "#4DBBD5",
+                                   "grid": True})
 
 # ---------------------------------------------------------------------------
 # Highlight two regions of interest
@@ -58,7 +60,7 @@ ht = HighlightTrack(
         "end":   [26_535_000, 26_665_000],
     }),
     track_list=[atrack_cpg, atrack_ann, grtrack, dtrack],
-    fill="#FFF3BF",
+    fill=["#FFF3BF", "#FFD6E0"],
     alpha=0.3,
 )
 

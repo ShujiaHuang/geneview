@@ -564,3 +564,282 @@ class TestIO:
             with pytest.raises(ValueError, match="Cannot determine"):
                 read_auto(f.name)
         os.unlink(f.name)
+
+
+# =====================================================================
+# New tests for gap-analysis features
+# =====================================================================
+from geneview.genometracks._overlay import OverlayTrack
+from geneview.genometracks._data_track import DataTrack
+from geneview.genometracks._highlight import HighlightTrack
+from geneview.genometracks._annotation import AnnotationTrack
+from geneview.genometracks._gene_region import GeneRegionTrack
+from geneview.genometracks._genome_axis import GenomeAxisTrack
+from geneview.genometracks._track_plot import plot_tracks
+
+
+def _make_data(n=20, chrom="chr7", seed=42):
+    rng = np.random.RandomState(seed)
+    starts = np.linspace(1000, 2000, n, dtype=int)
+    return pd.DataFrame({
+        "chrom": [chrom] * n,
+        "start": starts,
+        "end": starts + 50,
+        "value": rng.randn(n).cumsum(),
+    })
+
+
+def _make_gene_data():
+    return pd.DataFrame({
+        "chrom": ["chr7"] * 6,
+        "start": [1000, 1200, 1500, 1000, 1200, 1800],
+        "end":   [1100, 1400, 1700, 1100, 1400, 2000],
+        "strand": ["+"] * 6,
+        "feature": ["CDS", "exon", "CDS", "CDS", "exon", "CDS"],
+        "transcript_id": ["tx1"] * 3 + ["tx2"] * 3,
+        "gene_name": ["GeneA"] * 6,
+    })
+
+
+class TestOverlayTrack:
+    def test_basic_overlay(self):
+        d1 = _make_data(seed=1)
+        d2 = _make_data(seed=2)
+        dt1 = DataTrack(d1, type="line", col="blue")
+        dt2 = DataTrack(d2, type="line", col="red")
+        ot = OverlayTrack(track_list=[dt1, dt2], name="Overlay")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([GenomeAxisTrack(), ot], region=region, figsize=(8, 4))
+        assert len(axes) == 2
+        plt.close("all")
+
+    def test_empty_overlay(self):
+        ot = OverlayTrack(track_list=[])
+        assert ot.name == "Overlay"
+        region = GenomicInterval("chr7", 1000, 2000)
+        fig, ax = plt.subplots()
+        ot.draw(ax, region)
+        plt.close("all")
+
+    def test_overlay_inherits_name(self):
+        dt = DataTrack(_make_data(), name="MyData")
+        ot = OverlayTrack(track_list=[dt])
+        assert ot.name == "MyData"
+
+
+class TestDataTrackNewFeatures:
+    def test_combined_plot_type(self):
+        dt = DataTrack(_make_data(), type="b")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_stairs_post(self):
+        dt = DataTrack(_make_data(), type="s")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_stairs_pre(self):
+        dt = DataTrack(_make_data(), type="S")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_transformation(self):
+        dt = DataTrack(_make_data(), type="line",
+                       transformation=lambda x: np.abs(x))
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_window_binning(self):
+        dt = DataTrack(_make_data(n=50), type="line", window=10)
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_window_auto(self):
+        dt = DataTrack(_make_data(n=50), type="histogram", window="auto")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_grid_display(self):
+        dt = DataTrack(_make_data(), type="line",
+                       display_params={"grid": True})
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_legend(self):
+        dt = DataTrack(_make_data(), type="line", groups=["A"], legend=True)
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_histogram_negative_baseline(self):
+        data = _make_data()
+        data["value"] = data["value"] - data["value"].mean()
+        dt = DataTrack(data, type="histogram", baseline=0)
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+
+class TestGeneRegionMetaCollapse:
+    def test_meta_collapse(self):
+        data = _make_gene_data()
+        grt = GeneRegionTrack(data, collapse_transcripts="meta")
+        region = GenomicInterval("chr7", 900, 2100)
+        axes = plot_tracks([GenomeAxisTrack(), grt], region=region, figsize=(8, 4))
+        assert len(axes) == 2
+        plt.close("all")
+
+    def test_meta_produces_single_transcript(self):
+        data = _make_gene_data()
+        grt = GeneRegionTrack(data, collapse_transcripts="meta")
+        collapsed = grt._collapse(data)
+        # Should have a single transcript_id
+        tx_ids = collapsed["transcript_id"].unique()
+        assert len(tx_ids) == 1
+        assert "meta" in tx_ids[0]
+
+
+class TestHighlightPerRegionColors:
+    def test_per_region_fill(self):
+        data = _make_data(n=5)
+        dt = DataTrack(data, type="line")
+        regions = pd.DataFrame({
+            "chrom": ["chr7", "chr7"],
+            "start": [1000, 1500],
+            "end": [1200, 1700],
+        })
+        ht = HighlightTrack(
+            track_list=[dt], regions=regions,
+            fill=["#FF0000", "#00FF00"], col=["red", "green"],
+        )
+        region = GenomicInterval("chr7", 900, 2100)
+        axes = plot_tracks([GenomeAxisTrack(), ht], region=region, figsize=(8, 4))
+        assert len(axes) == 2
+        plt.close("all")
+
+
+class TestAnnotationTrackShapes:
+    def test_fixed_arrow(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [1000, 1500],
+            "end": [1300, 1800],
+            "strand": ["+", "-"],
+        })
+        at = AnnotationTrack(data, shape="fixedArrow")
+        region = GenomicInterval("chr7", 900, 2000)
+        axes = plot_tracks([at], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_small_arrow(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [1000, 1500],
+            "end": [1300, 1800],
+            "strand": ["+", "-"],
+        })
+        at = AnnotationTrack(data, shape="smallArrow")
+        region = GenomicInterval("chr7", 900, 2000)
+        axes = plot_tracks([at], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_group_annotation(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 3,
+            "start": [1000, 1200, 1500],
+            "end": [1100, 1400, 1700],
+            "group": ["grp1", "grp1", "grp2"],
+            "name": ["a", "b", "c"],
+        })
+        at = AnnotationTrack(data, group_annotation="group")
+        region = GenomicInterval("chr7", 900, 2000)
+        axes = plot_tracks([at], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+
+class TestGenomeAxisDirection:
+    def test_add53(self):
+        at = GenomeAxisTrack(add53=True)
+        region = GenomicInterval("chr7", 1000, 5000)
+        axes = plot_tracks([at], region=region, figsize=(8, 2))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_add35(self):
+        at = GenomeAxisTrack(add35=True)
+        region = GenomicInterval("chr7", 1000, 5000)
+        axes = plot_tracks([at], region=region, figsize=(8, 2))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_both_directions(self):
+        at = GenomeAxisTrack(add53=True, add35=True)
+        region = GenomicInterval("chr7", 1000, 5000)
+        axes = plot_tracks([at], region=region, figsize=(8, 2))
+        assert len(axes) == 1
+        plt.close("all")
+
+
+class TestPlotTracksNewFeatures:
+    def test_show_title_false(self):
+        data = _make_data()
+        dt = DataTrack(data, type="line")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([GenomeAxisTrack(), dt], region=region,
+                           show_title=False, figsize=(8, 4))
+        assert len(axes) == 2
+        plt.close("all")
+
+    def test_reverse_strand(self):
+        data = _make_data()
+        dt = DataTrack(data, type="line")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([GenomeAxisTrack(), dt], region=region,
+                           reverse_strand=True, figsize=(8, 4))
+        assert len(axes) == 2
+        plt.close("all")
+
+    def test_fractional_extend(self):
+        data = _make_data()
+        dt = DataTrack(data, type="line")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([GenomeAxisTrack(), dt], region=region,
+                           extend_left=0.05, extend_right=0.05, figsize=(8, 4))
+        assert len(axes) == 2
+        plt.close("all")
+
+    def test_highlight_targeting(self):
+        """Bug 1 fix: highlights should only appear on targeted tracks."""
+        d1 = _make_data(seed=1)
+        d2 = _make_data(seed=2)
+        dt1 = DataTrack(d1, type="line", name="Track1")
+        dt2 = DataTrack(d2, type="line", name="Track2")
+        regions = pd.DataFrame({
+            "chrom": ["chr7"], "start": [1200], "end": [1500],
+        })
+        # Highlight only targets dt1
+        ht = HighlightTrack(track_list=[dt1], regions=regions, fill="yellow")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([GenomeAxisTrack(), ht, dt2], region=region,
+                           figsize=(8, 6))
+        assert len(axes) == 3
+        plt.close("all")

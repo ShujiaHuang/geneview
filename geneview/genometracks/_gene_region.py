@@ -74,6 +74,7 @@ class GeneRegionTrack(StackedTrack):
         - True or 'gene': collapse to gene level
         - 'longest': show only longest transcript
         - 'shortest': show only shortest transcript
+        - 'meta': union of all exons (meta-transcript)
         Default is False.
     show_id : str or None
         What identifier to show: 'gene', 'transcript', 'exon', or None.
@@ -262,6 +263,7 @@ class GeneRegionTrack(StackedTrack):
             # Get unique gene extents
             result_rows = []
             for gene, grp in data.groupby(gene_col):
+                grp = grp.copy()  # Bug 3 fix: avoid view modifications
                 # Take the first strand
                 strand = grp["strand"].iloc[0] if "strand" in grp.columns else "*"
                 # Merge overlapping exons
@@ -297,8 +299,11 @@ class GeneRegionTrack(StackedTrack):
 
             result_rows = []
             for gene, grp in data.groupby(gene_col):
+                grp = grp.copy()  # Bug 3 fix
+                if tx_col not in grp.columns:
+                    result_rows.append(grp)
+                    continue
                 # Find longest transcript
-                # include_groups param added in pandas 2.2.0
                 _apply_kwargs = {} if Version(pd.__version__) < Version("2.2.0") else {"include_groups": False}
                 tx_lengths = grp.groupby(tx_col).apply(
                     lambda g: g["end"].max() - g["start"].min(),
@@ -307,6 +312,48 @@ class GeneRegionTrack(StackedTrack):
                 longest_tx = tx_lengths.idxmax()
                 result_rows.append(grp[grp[tx_col] == longest_tx])
             return pd.concat(result_rows) if result_rows else data
+
+        elif self.collapse_transcripts == "meta":
+            # Meta-transcript: union of all exon positions per gene
+            gene_col = None
+            for col in ["gene_id", "gene", "gene_name"]:
+                if col in data.columns:
+                    gene_col = col
+                    break
+            if gene_col is None:
+                return data
+
+            result_rows = []
+            for gene, grp in data.groupby(gene_col):
+                grp = grp.copy()  # Bug 3 fix
+                strand = grp["strand"].iloc[0] if "strand" in grp.columns else "*"
+                chrom = grp["chrom"].iloc[0]
+
+                # Merge all exon ranges into a meta-transcript
+                exon_ranges = grp[["start", "end"]].sort_values("start").values
+                merged = [list(exon_ranges[0])]
+                for s, e in exon_ranges[1:]:
+                    if s <= merged[-1][1]:
+                        merged[-1][1] = max(merged[-1][1], e)
+                    else:
+                        merged.append([s, e])
+
+                # Create a single transcript_id for the meta-transcript
+                tx_col = self._get_group_column(grp)
+                tx_name = f"{gene}_meta" if tx_col else gene
+
+                for s, e in merged:
+                    row = {
+                        "chrom": chrom,
+                        "start": s, "end": e,
+                        "strand": strand,
+                        "feature": "CDS",
+                        gene_col: gene,
+                    }
+                    if tx_col:
+                        row[tx_col] = tx_name
+                    result_rows.append(row)
+            return pd.DataFrame(result_rows) if result_rows else data
 
         return data
 

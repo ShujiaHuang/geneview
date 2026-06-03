@@ -23,7 +23,17 @@ from ._base import NumericTrack, GenomicInterval
 _PLOT_TYPES = (
     "line", "histogram", "heatmap", "polygon", "gradient",
     "points", "mountain", "boxplot",
+    "b", "s", "S",  # Gviz-compatible: combined, stair-post, stair-pre
 )
+
+# Aggregation functions
+_AGG_FUNCS = {
+    "mean": np.nanmean,
+    "median": np.nanmedian,
+    "sum": np.nansum,
+    "min": np.nanmin,
+    "max": np.nanmax,
+}
 
 # Default color palettes
 _HEATMAP_CMAP = "RdYlBu_r"
@@ -62,6 +72,18 @@ class DataTrack(NumericTrack):
         Number of gradient levels. Default is 100.
     show_sample_names : bool, optional
         For heatmap type, show sample names on the y-axis. Default is True.
+    transformation : callable, optional
+        Function applied to value arrays before plotting (e.g. np.log2).
+    window : int or str, optional
+        Binning/windowing control. Positive int: bin into N windows.
+        Negative int: running window of that size. "auto": auto-detect.
+    window_size : int, optional
+        Fixed running window size in bins.
+    aggregation : str
+        Aggregation method for windowed/grouped data: "mean", "median",
+        "sum", "min", "max". Default is "mean".
+    legend : bool
+        If True and groups are set, show a legend. Default is False.
     name : str
         Track name. Default is "Data".
     height : float
@@ -98,6 +120,11 @@ class DataTrack(NumericTrack):
         gradient: Tuple[str, str] = ("white", "#3C5488"),
         ncolor: int = 100,
         show_sample_names: bool = True,
+        transformation: Optional[Any] = None,
+        window: Optional[Union[int, str]] = None,
+        window_size: Optional[int] = None,
+        aggregation: str = "mean",
+        legend: bool = False,
         name: str = "Data",
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
@@ -130,6 +157,11 @@ class DataTrack(NumericTrack):
         self.gradient_colors = gradient
         self.ncolor = ncolor
         self.show_sample_names = show_sample_names
+        self.transformation = transformation
+        self.window = window
+        self.window_size = window_size
+        self.aggregation = aggregation
+        self.legend = legend
 
     def get_ylim(self) -> Tuple[float, float]:
         """Get y-axis limits, using user-provided or auto-computed."""
@@ -166,12 +198,31 @@ class DataTrack(NumericTrack):
             "points": self._draw_points,
             "mountain": self._draw_mountain,
             "boxplot": self._draw_boxplot,
+            "b": self._draw_combined,
+            "s": self._draw_stairs_post,
+            "S": self._draw_stairs_pre,
         }
 
+        # Apply windowing if configured
+        plot_data, windowed_values = self._apply_window(sub)
+
         draw_method = draw_methods.get(self.plot_type, self._draw_line)
-        draw_method(ax, sub, region)
+        if self.window is not None and self.plot_type not in ("heatmap", "boxplot"):
+            # Use windowed data for applicable types
+            draw_method(ax, plot_data, region, _precomputed=windowed_values)
+        else:
+            draw_method(ax, sub, region)
+
+        # Draw grid if requested
+        if self.get_param("grid", False):
+            ax.grid(axis="y", color=self.get_param("col_grid", "#DDDDDD"),
+                    linewidth=0.3, alpha=0.7, zorder=1)
 
         self._format_y_axis(ax)
+
+        # Draw legend if requested
+        if self.legend and self.groups is not None:
+            ax.legend(loc="upper right", fontsize=6, framealpha=0.8)
 
     def _format_y_axis(self, ax):
         """Format the y-axis with appropriate labels."""
@@ -189,19 +240,75 @@ class DataTrack(NumericTrack):
         ax.set_xticklabels([])
 
     def _get_value_arrays(self, data: pd.DataFrame) -> List[Tuple[str, np.ndarray]]:
-        """Get value columns and their arrays."""
+        """Get value columns and their arrays, applying transformation if set."""
         result = []
         for col in self.value_columns:
             if col in data.columns:
                 vals = data[col].values.astype(float)
+                if self.transformation is not None:
+                    vals = self.transformation(vals)
                 result.append((col, vals))
         return result
+
+    def _apply_window(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[Tuple[str, np.ndarray]]]:
+        """Apply windowing/smoothing to data if configured.
+
+        Returns modified data and value arrays.
+        """
+        if self.window is None:
+            return data, self._get_value_arrays(data)
+
+        value_arrays = self._get_value_arrays(data)
+        if not value_arrays:
+            return data, value_arrays
+
+        agg_func = _AGG_FUNCS.get(self.aggregation, np.nanmean)
+        n = len(data)
+
+        if self.window == "auto":
+            win = max(1, n // 50)
+        elif isinstance(self.window, str):
+            win = self.window_size or max(1, n // 50)
+        elif isinstance(self.window, int):
+            if self.window > 0:
+                # Bin into N equal windows
+                win = max(1, n // self.window)
+            else:
+                win = abs(self.window)
+        else:
+            return data, value_arrays
+
+        if win <= 1:
+            return data, value_arrays
+
+        # Build windowed data
+        new_starts = []
+        new_ends = []
+        new_vals_dict = {name: [] for name, _ in value_arrays}
+        starts_arr = data["start"].values
+        ends_arr = data["end"].values
+
+        for i in range(0, n, win):
+            chunk_end = min(i + win, n)
+            new_starts.append(int(starts_arr[i]))
+            new_ends.append(int(ends_arr[chunk_end - 1]))
+            for name, vals in value_arrays:
+                chunk = vals[i:chunk_end]
+                new_vals_dict[name].append(agg_func(chunk))
+
+        new_data = pd.DataFrame({
+            "chrom": [data["chrom"].iloc[0]] * len(new_starts),
+            "start": new_starts,
+            "end": new_ends,
+        })
+        new_value_arrays = [(name, np.array(new_vals_dict[name])) for name, _ in value_arrays]
+        return new_data, new_value_arrays
 
     def _get_midpoints(self, data: pd.DataFrame) -> np.ndarray:
         """Get midpoint positions for data bins."""
         return (data["start"].values + data["end"].values) / 2.0
 
-    def _draw_line(self, ax, data, region):
+    def _draw_line(self, ax, data, region, _precomputed=None):
         """Draw data as line plot."""
         col = self.get_param("col", "#3C5488")
         if isinstance(col, list):
@@ -213,12 +320,13 @@ class DataTrack(NumericTrack):
         alpha = self.get_param("alpha", 1.0)
         midpoints = self._get_midpoints(data)
 
-        for i, (col_name, values) in enumerate(self._get_value_arrays(data)):
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        for i, (col_name, values) in enumerate(value_arrays):
             color = colors[i % len(colors)]
             ax.plot(midpoints, values, color=color, linewidth=lwd,
                     alpha=alpha, zorder=3, label=col_name)
 
-    def _draw_histogram(self, ax, data, region):
+    def _draw_histogram(self, ax, data, region, _precomputed=None):
         """Draw data as histogram (vertical bars)."""
         fill = self.get_param("fill", "#5B8DB8")
         col = self.get_param("col", "#3C5488")
@@ -228,27 +336,28 @@ class DataTrack(NumericTrack):
             colors = [col] * len(self.value_columns)
         alpha = self.get_param("alpha", 0.8)
 
-        for i, (col_name, values) in enumerate(self._get_value_arrays(data)):
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+
+        for i, (col_name, values) in enumerate(value_arrays):
             color = colors[i % len(colors)]
             # Draw vertical bars centered on each bin
             for j, (s, e, v) in enumerate(zip(data["start"], data["end"], values)):
                 if np.isnan(v):
                     continue
                 width = e - s
-                if self.baseline <= v:
-                    ax.bar(s + width / 2, v - self.baseline,
-                           width=width * 0.9, bottom=self.baseline,
-                           color=color, edgecolor="none", alpha=alpha, zorder=3)
-                else:
-                    ax.bar(s + width / 2, self.baseline - v,
-                           width=width * 0.9, bottom=v,
-                           color=color, edgecolor="none", alpha=alpha, zorder=3)
+                # Fix Bug 2: draw bars from baseline correctly
+                bar_bottom = min(self.baseline, v)
+                bar_height = abs(v - self.baseline)
+                bar_alpha = alpha if v >= self.baseline else alpha * 0.7
+                ax.bar(s + width / 2, bar_height,
+                       width=width * 0.9, bottom=bar_bottom,
+                       color=color, edgecolor="none", alpha=bar_alpha, zorder=3)
 
             # Draw baseline
             ax.axhline(y=self.baseline, color="#888888", linewidth=0.5,
                        linestyle="--", zorder=2)
 
-    def _draw_polygon(self, ax, data, region):
+    def _draw_polygon(self, ax, data, region, _precomputed=None):
         """Draw data as filled polygon (area plot)."""
         fill = self.get_param("fill", "#5B8DB8")
         col = self.get_param("col", "#3C5488")
@@ -260,7 +369,8 @@ class DataTrack(NumericTrack):
         lwd = self.get_param("lwd", 1.0)
         midpoints = self._get_midpoints(data)
 
-        for i, (col_name, values) in enumerate(self._get_value_arrays(data)):
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        for i, (col_name, values) in enumerate(value_arrays):
             color = colors[i % len(colors)]
             # Create polygon: baseline -> data -> baseline
             x = np.concatenate([[midpoints[0]], midpoints, [midpoints[-1]]])
@@ -335,7 +445,7 @@ class DataTrack(NumericTrack):
                   origin="lower", interpolation="nearest", zorder=3)
         ax.set_yticks([])
 
-    def _draw_points(self, ax, data, region):
+    def _draw_points(self, ax, data, region, _precomputed=None):
         """Draw data as scatter points."""
         col = self.get_param("col", "#3C5488")
         if isinstance(col, list):
@@ -345,13 +455,14 @@ class DataTrack(NumericTrack):
         alpha = self.get_param("alpha", 0.8)
         midpoints = self._get_midpoints(data)
 
-        for i, (col_name, values) in enumerate(self._get_value_arrays(data)):
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        for i, (col_name, values) in enumerate(value_arrays):
             color = colors[i % len(colors)]
             mask = np.isfinite(values)
             ax.scatter(midpoints[mask], values[mask], c=color,
                        s=10, alpha=alpha, zorder=3, label=col_name)
 
-    def _draw_mountain(self, ax, data, region):
+    def _draw_mountain(self, ax, data, region, _precomputed=None):
         """Draw smoothed mountain plot (area above baseline)."""
         fill = self.get_param("fill", "#5B8DB8")
         col = self.get_param("col", "#3C5488")
@@ -363,7 +474,8 @@ class DataTrack(NumericTrack):
         lwd = self.get_param("lwd", 1.0)
         midpoints = self._get_midpoints(data)
 
-        for i, (col_name, values) in enumerate(self._get_value_arrays(data)):
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        for i, (col_name, values) in enumerate(value_arrays):
             color = colors[i % len(colors)]
             # Simple smoothing via running average
             kernel_size = max(3, len(values) // 20)
@@ -413,3 +525,42 @@ class DataTrack(NumericTrack):
             for patch in bp["boxes"]:
                 patch.set_facecolor(col if isinstance(col, str) else col[0])
                 patch.set_alpha(alpha)
+
+    def _draw_combined(self, ax, data, region, _precomputed=None):
+        """Draw data as combined line + points (Gviz type 'b')."""
+        self._draw_points(ax, data, region, _precomputed=_precomputed)
+        self._draw_line(ax, data, region, _precomputed=_precomputed)
+
+    def _draw_stairs_post(self, ax, data, region, _precomputed=None):
+        """Draw stair-step plot, horizontal first then vertical (Gviz type 's')."""
+        col = self.get_param("col", "#3C5488")
+        if isinstance(col, list):
+            colors = col
+        else:
+            colors = [col] * len(self.value_columns)
+        lwd = self.get_param("lwd", 1.5)
+        alpha = self.get_param("alpha", 1.0)
+        midpoints = self._get_midpoints(data)
+
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        for i, (col_name, values) in enumerate(value_arrays):
+            color = colors[i % len(colors)]
+            ax.step(midpoints, values, where="post", color=color,
+                    linewidth=lwd, alpha=alpha, zorder=3, label=col_name)
+
+    def _draw_stairs_pre(self, ax, data, region, _precomputed=None):
+        """Draw stair-step plot, vertical first then horizontal (Gviz type 'S')."""
+        col = self.get_param("col", "#3C5488")
+        if isinstance(col, list):
+            colors = col
+        else:
+            colors = [col] * len(self.value_columns)
+        lwd = self.get_param("lwd", 1.5)
+        alpha = self.get_param("alpha", 1.0)
+        midpoints = self._get_midpoints(data)
+
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        for i, (col_name, values) in enumerate(value_arrays):
+            color = colors[i % len(colors)]
+            ax.step(midpoints, values, where="pre", color=color,
+                    linewidth=lwd, alpha=alpha, zorder=3, label=col_name)

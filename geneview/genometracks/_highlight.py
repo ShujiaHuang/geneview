@@ -35,10 +35,12 @@ class HighlightTrack(RangeTrack):
     regions : pd.DataFrame
         DataFrame with 'chrom', 'start', 'end' columns defining
         highlight regions.
-    fill : str
-        Fill color for highlight rectangles. Default is '#FFE3E6' (light red).
-    col : str
-        Edge color for highlight rectangles. Default is 'red'.
+    fill : str or list of str
+        Fill color(s) for highlight rectangles. If a list, one color per region.
+        Default is '#FFE3E6' (light red).
+    col : str or list of str
+        Edge color(s) for highlight rectangles. If a list, one color per region.
+        Default is 'red'.
     alpha : float
         Transparency of highlight (0=transparent, 1=opaque). Default is 0.3.
     in_background : bool
@@ -69,8 +71,8 @@ class HighlightTrack(RangeTrack):
         self,
         track_list: Optional[List[Track]] = None,
         regions: Optional[Union[pd.DataFrame, List[GenomicInterval]]] = None,
-        fill: str = "#FFE3E6",
-        col: str = "red",
+        fill: Union[str, List[str]] = "#FFE3E6",
+        col: Union[str, List[str]] = "red",
         alpha: float = 0.3,
         in_background: bool = True,
         name: str = "HighlightTrack",
@@ -100,11 +102,11 @@ class HighlightTrack(RangeTrack):
         self.in_background = in_background
 
     @property
-    def fill(self) -> str:
+    def fill(self) -> Union[str, List[str]]:
         return self.get_param("fill", "#FFE3E6")
 
     @property
-    def col(self) -> str:
+    def col(self) -> Union[str, List[str]]:
         return self.get_param("col", "red")
 
     @property
@@ -151,7 +153,7 @@ class HighlightTrack(RangeTrack):
         # Get current y-limits
         ylim = ax.get_ylim()
 
-        for _, row in sub.iterrows():
+        for row_idx, (_, row) in enumerate(sub.iterrows()):
             x_start = max(row["start"], region.start)
             x_end = min(row["end"], region.end)
             width = x_end - x_start
@@ -159,9 +161,13 @@ class HighlightTrack(RangeTrack):
             if width <= 0:
                 continue
 
+            # Support per-region colors (Task 9)
+            row_fill = fill[row_idx % len(fill)] if isinstance(fill, list) else fill
+            row_col = col[row_idx % len(col)] if isinstance(col, list) else col
+
             rect = mpatches.Rectangle(
                 (x_start, ylim[0]), width, ylim[1] - ylim[0],
-                facecolor=fill, edgecolor=col,
+                facecolor=row_fill, edgecolor=row_col,
                 linewidth=0.5, alpha=alpha, zorder=1,
             )
             ax.add_patch(rect)

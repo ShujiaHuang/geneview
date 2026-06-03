@@ -83,11 +83,34 @@ axes2 = plot_tracks(
 fig2 = axes2[0].figure
 
 # ---------------------------------------------------------------------------
+# 3. Per-region colors (list of fill/col)
+# ---------------------------------------------------------------------------
+ht_perregion = HighlightTrack(
+    regions=pd.DataFrame({
+        "chrom": ["chr7", "chr7", "chr7"],
+        "start": [26_500_000, 26_560_000, 26_640_000],
+        "end":   [26_530_000, 26_590_000, 26_670_000],
+    }),
+    track_list=[atrack, grtrack, dtrack],
+    fill=["#FF9999", "#99FF99", "#9999FF"],
+    col=["#CC0000", "#00CC00", "#0000CC"],
+    alpha=0.3,
+)
+
+axes3 = plot_tracks(
+    [gtrack, ht_perregion],
+    region=region,
+    title="Per-Region Colors (red / green / blue)",
+    figsize=(14, 7),
+)
+fig3 = axes3[0].figure
+
+# ---------------------------------------------------------------------------
 # Save figures
 # ---------------------------------------------------------------------------
 out_dir = os.path.join(os.path.dirname(__file__), "..", "figures")
 os.makedirs(out_dir, exist_ok=True)
-for i, fig in enumerate([fig1, fig2], 1):
+for i, fig in enumerate([fig1, fig2, fig3], 1):
     path = os.path.join(out_dir, f"genome_tracks_highlight_{i}.png")
     fig.savefig(path, dpi=150, bbox_inches="tight")
     print(f"[INFO] Saved {path}")

@@ -53,13 +53,17 @@ class AnnotationTrack(StackedTrack):
     feature_colors : dict, optional
         Mapping of feature types to colors. E.g. {"exon": "blue", "CDS": "red"}.
     shape : str
-        Feature shape: 'box', 'ellipse', or 'arrow'. Default is 'box'.
+        Feature shape: 'box', 'ellipse', 'arrow', 'fixedArrow', or 'smallArrow'.
+        Default is 'box'.
     show_label : bool
         Whether to show feature name labels. Default is False.
     label_pos : str
         Label position: 'above', 'below', or 'inside'. Default is 'above'.
     arrow_direction : bool
         If True, show strand direction with arrows. Default is True.
+    group_annotation : str or None
+        Label groups by: 'id', 'group', 'feature', or None.
+        When set, draw connecting lines and group labels. Default is None.
     name : str
         Track name for the title panel. Default is "Annotation".
     height : float
@@ -83,7 +87,7 @@ class AnnotationTrack(StackedTrack):
     >>> plot_tracks([track], region=GenomicInterval("chr7", 1900000, 2200000))
     """
 
-    SHAPES = ("box", "ellipse", "arrow")
+    SHAPES = ("box", "ellipse", "arrow", "fixedArrow", "smallArrow")
 
     def __init__(
         self,
@@ -94,6 +98,7 @@ class AnnotationTrack(StackedTrack):
         show_label: bool = False,
         label_pos: str = "above",
         arrow_direction: bool = True,
+        group_annotation: Optional[str] = None,
         name: str = "Annotation",
         height: float = 1.0,
         display_params: Optional[Dict[str, Any]] = None,
@@ -114,6 +119,7 @@ class AnnotationTrack(StackedTrack):
         self.show_label = show_label
         self.label_pos = label_pos
         self.arrow_direction = arrow_direction
+        self.group_annotation = group_annotation
 
     def _get_feature_color(self, feature: Optional[str], idx: int, color_cycle) -> str:
         """Get color for a feature, using feature_colors dict or cycling."""
@@ -204,7 +210,7 @@ class AnnotationTrack(StackedTrack):
             else:
                 color = self.get_param("fill", "#5B8DB8")
 
-            edge_color = self.get_param("col_border", "#333333")
+            edge_color = self.get_param("col", "#333333")  # Bug 4 fix: use 'col' not 'col_border'
             lwd = self.get_param("lwd", 0.5)
             alpha = self.get_param("alpha", 1.0)
 
@@ -218,6 +224,12 @@ class AnnotationTrack(StackedTrack):
             elif self.shape == "arrow":
                 self._draw_arrow(ax, x_start, y_center, width, feat_height,
                                  color, edge_color, lwd, alpha, row.get("strand", "*"))
+            elif self.shape == "fixedArrow":
+                self._draw_fixed_arrow(ax, x_start, y_center, width, feat_height,
+                                       color, edge_color, lwd, alpha, row.get("strand", "*"))
+            elif self.shape == "smallArrow":
+                self._draw_small_arrow(ax, x_start, y_center, width, feat_height,
+                                       color, edge_color, lwd, alpha, row.get("strand", "*"))
 
             # Draw strand direction indicator for boxes
             if self.shape == "box" and self.arrow_direction and row.get("strand", "*") in ("+", "-"):
@@ -243,6 +255,52 @@ class AnnotationTrack(StackedTrack):
                             color="#333333", clip_on=True, zorder=5)
 
         ax.axis("off")
+
+        # Draw group annotations with connecting lines (Task 13)
+        if self.group_annotation and "group" in sub.columns:
+            self._draw_group_annotations(ax, sub, region, stacks, stack_info)
+
+    def _draw_group_annotations(self, ax, data, region, stacks, stack_info):
+        """Draw group labels and connecting lines for grouped features."""
+        if "group" not in data.columns:
+            return
+
+        y_positions = stack_info["y_positions"]
+        total_rows = stack_info["total_rows"]
+        line_color = self.get_param("col_line", "#888888")
+        fontsize = self.get_param("fontsize", 7)
+
+        # Determine label column
+        label_col_map = {"id": "name", "group": "group", "feature": "feature"}
+        label_col = label_col_map.get(self.group_annotation, "group")
+        if label_col not in data.columns:
+            label_col = "group"
+        if label_col not in data.columns:
+            return
+
+        groups = data.groupby("group")
+        for grp_name, grp_data in groups:
+            if pd.isna(grp_name) or grp_name == ".":
+                continue
+
+            # Get group extent
+            grp_start = grp_data["start"].min()
+            grp_end = grp_data["end"].max()
+
+            # Draw connecting line between features in the group
+            if len(grp_data) > 1:
+                y_line = 0.02  # Near bottom
+                ax.plot([max(grp_start, region.start), min(grp_end, region.end)],
+                        [y_line, y_line],
+                        color=line_color, linewidth=0.5, alpha=0.5, zorder=1)
+
+            # Draw group label
+            actual_col = label_col if label_col in grp_data.columns else "group"
+            label = str(grp_data[actual_col].iloc[0]) if actual_col in grp_data.columns else str(grp_name)
+            x_label = (max(grp_start, region.start) + min(grp_end, region.end)) / 2
+            ax.text(x_label, -0.03, label,
+                    ha="center", va="top", fontsize=fontsize,
+                    color="#555555", fontstyle="italic", clip_on=True, zorder=5)
 
     def _draw_box(self, ax, x, y, w, h, color, edge_color, lwd, alpha, strand="*"):
         """Draw a rectangular feature."""
@@ -317,3 +375,71 @@ class AnnotationTrack(StackedTrack):
             ),
             zorder=4,
         )
+
+    def _draw_fixed_arrow(self, ax, x, y, w, h, color, edge_color, lwd, alpha, strand="*"):
+        """Draw a fixed-width arrow feature (arrowHeadWidth param controls head size)."""
+        head_width = self.get_param("arrow_head_width", None)
+        if head_width is None:
+            # Default: 20% of feature width or h*2, whichever is smaller
+            head_width = min(w * 0.2, h * 2)
+        else:
+            # Convert pixel-like param to data coords (approximate)
+            span = ax.get_xlim()
+            pixel_scale = (span[1] - span[0]) / 800  # approximate pixels to data
+            head_width = head_width * pixel_scale
+
+        if strand == "-":
+            verts = [
+                (x + head_width, y - h / 2),
+                (x + w, y - h / 2),
+                (x + w, y + h / 2),
+                (x + head_width, y + h / 2),
+                (x, y),
+                (x + head_width, y - h / 2),
+            ]
+        else:
+            verts = [
+                (x, y - h / 2),
+                (x + w - head_width, y - h / 2),
+                (x + w, y),
+                (x + w - head_width, y + h / 2),
+                (x, y + h / 2),
+                (x, y - h / 2),
+            ]
+
+        polygon = mpatches.Polygon(
+            verts, closed=True,
+            facecolor=color, edgecolor=edge_color,
+            linewidth=lwd, alpha=alpha, zorder=3,
+        )
+        ax.add_patch(polygon)
+
+    def _draw_small_arrow(self, ax, x, y, w, h, color, edge_color, lwd, alpha, strand="*"):
+        """Draw a small arrow (50% of regular arrow head)."""
+        arrow_width = min(w * 0.08, h * 1.0)  # Half the regular arrow
+
+        if strand == "-":
+            verts = [
+                (x + arrow_width, y - h / 2),
+                (x + w, y - h / 2),
+                (x + w, y + h / 2),
+                (x + arrow_width, y + h / 2),
+                (x, y),
+                (x + arrow_width, y - h / 2),
+            ]
+        else:
+            verts = [
+                (x, y - h / 2),
+                (x + w - arrow_width, y - h / 2),
+                (x + w, y),
+                (x + w - arrow_width, y + h / 2),
+                (x, y + h / 2),
+                (x, y - h / 2),
+            ]
+
+        polygon = mpatches.Polygon(
+            verts, closed=True,
+            facecolor=color, edgecolor=edge_color,
+            linewidth=lwd, alpha=alpha, zorder=3,
+        )
+        ax.add_patch(polygon)
