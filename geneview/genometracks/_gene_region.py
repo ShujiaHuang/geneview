@@ -102,7 +102,7 @@ class GeneRegionTrack(StackedTrack):
     ...     "gene_name": ["GeneA"] * 6,
     ... })
     >>> track = GeneRegionTrack(data)
-    >>> plot_tracks([track], region=GenomicInterval("chr7", 500, 5000))
+    >>> _ = plot_tracks([track], region=GenomicInterval("chr7", 500, 5000))
     """
 
     def __init__(

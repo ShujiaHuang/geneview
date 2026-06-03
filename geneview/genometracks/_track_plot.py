@@ -89,10 +89,18 @@ def plot_tracks(
 
     Examples
     --------
+    >>> import pandas as pd
     >>> from geneview.genometracks import (
     ...     plot_tracks, GenomeAxisTrack, AnnotationTrack,
     ...     GeneRegionTrack, DataTrack, GenomicInterval,
     ... )
+    >>> data = pd.DataFrame({
+    ...     "chrom": ["chr7"] * 4,
+    ...     "start": [2000000, 2070000, 2100000, 2160000],
+    ...     "end":   [2050000, 2130000, 2150000, 2170000],
+    ...     "strand": ["-", "+", "-", "-"],
+    ...     "name": ["feat1", "feat2", "feat3", "feat4"],
+    ... })
     >>> ax_track = GenomeAxisTrack()
     >>> ann_track = AnnotationTrack(data)
     >>> region = GenomicInterval("chr7", 2000000, 2200000)

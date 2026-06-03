@@ -1,0 +1,21 @@
+schema_version: 1
+module_path: ""
+title: Genomics Data Visualization Library
+scope:
+    - README.md
+    - Makefile
+    - setup.py
+    - requirements.txt
+    - .gitignore
+    - .coveragerc
+    - Todo.md
+    - functions.md
+    - publication_papers.md
+    - release.py
+    - .coverage
+    - LICENSE
+    - Visualizing Genomic Data Using Gviz and Bioconductor.pdf
+    - work.log.sh
+source_files: []
+depends_on: []
+related_to: []

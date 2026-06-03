@@ -1,0 +1,4 @@
+- Install released version: `pip install geneview`
+- Run tests with coverage: `make test` (invokes `pytest --doctest-modules --cov=geneview --cov-config=.coveragerc geneview`)
+- Lint code: `make lint` (invokes `flake8 geneview`)
+- Publish to PyPI: `python release.py` (builds sdist and uploads via twine)

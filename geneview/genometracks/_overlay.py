@@ -47,7 +47,7 @@ class OverlayTrack(Track):
     >>> dt1 = DataTrack(data1, type="line", col="blue", name="Sample A")
     >>> dt2 = DataTrack(data2, type="line", col="red", name="Sample B")
     >>> ot = OverlayTrack(track_list=[dt1, dt2], name="Overlay")
-    >>> plot_tracks([GenomeAxisTrack(), ot],
+    >>> _ = plot_tracks([GenomeAxisTrack(), ot],
     ...             region=GenomicInterval("chr7", 2_000_000, 2_050_000))
     """
 

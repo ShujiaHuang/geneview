@@ -43,9 +43,9 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     Load the preview data of GWAS
 
         >>> from geneview.utils import load_dataset, get_dataset_names
-        >>> names = get_dataset_names()  # Get the name list of dataset
-        >>> gwas_data = load_dataset("gwas")  # load GWAS data
-        >>> file_path = load_dataset("bcftools.vcf.stats")  # only return a path name
+        >>> names = get_dataset_names()  # doctest: +SKIP
+        >>> gwas_data = load_dataset("gwas")  # doctest: +SKIP
+        >>> file_path = load_dataset("bcftools.vcf.stats")  # doctest: +SKIP
     """
 
     path_csv = "https://raw.githubusercontent.com/ShujiaHuang/geneview-data/master/{0}.csv"

@@ -106,7 +106,7 @@ class DataTrack(NumericTrack):
     ...     "value": np.random.randn(50).cumsum(),
     ... })
     >>> track = DataTrack(data, type="histogram")
-    >>> plot_tracks([track], region=GenomicInterval("chr7", 2000000, 2050000))
+    >>> _ = plot_tracks([track], region=GenomicInterval("chr7", 2000000, 2050000))
     """
 
     def __init__(

@@ -73,7 +73,7 @@ class GenomeAxisTrack(Track):
     >>> from geneview.genometracks import GenomeAxisTrack, plot_tracks, GenomicInterval
     >>> ax_track = GenomeAxisTrack()
     >>> region = GenomicInterval("chr7", 2000000, 2200000)
-    >>> plot_tracks([ax_track], region=region)
+    >>> _ = plot_tracks([ax_track], region=region)
     """
 
     def __init__(

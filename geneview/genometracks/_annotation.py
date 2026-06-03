@@ -84,7 +84,7 @@ class AnnotationTrack(StackedTrack):
     ...     "group": ["grp1", "grp2", "grp1", "grp3"],
     ... })
     >>> track = AnnotationTrack(data, stacking="squish")
-    >>> plot_tracks([track], region=GenomicInterval("chr7", 1900000, 2200000))
+    >>> _ = plot_tracks([track], region=GenomicInterval("chr7", 1900000, 2200000))
     """
 
     SHAPES = ("box", "ellipse", "arrow", "fixedArrow", "smallArrow")

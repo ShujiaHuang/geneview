@@ -89,7 +89,7 @@ class IdeogramTrack(Track):
 
     >>> from geneview.genometracks import IdeogramTrack, plot_tracks, GenomicInterval
     >>> track = IdeogramTrack(chromosome="chr7")
-    >>> plot_tracks([track], region=GenomicInterval("chr7", 20000000, 60000000))
+    >>> _ = plot_tracks([track], region=GenomicInterval("chr7", 20000000, 60000000))
 
     Use hg19 build:
 
