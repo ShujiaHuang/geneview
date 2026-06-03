@@ -1,4 +1,0 @@
-- Plot functions accept a pandas DataFrame or Series as the `data` parameter and return a matplotlib Axes object for further customization.
-- Visualization functions expose keyword argument dictionaries (e.g., `xticklabel_kws`, `ylabel_kws`, `text_kws`, `hline_kws`) to pass styling parameters through to underlying matplotlib calls.
-- Functions support optional annotation and highlighting features controlled by boolean flags (e.g., `is_annotate_topsnp`) and threshold parameters (e.g., `sign_marker_p`).
-- Module imports follow the pattern `import geneview as gv` with functions accessed as `gv.manhattanplot()`, `gv.qqplot()`, etc.

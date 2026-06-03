@@ -1,1 +1,0 @@
-A Python package providing high-level abstractions for creating genomics-specific visualizations such as Manhattan plots, Q-Q plots, admixture plots, and Venn diagrams.

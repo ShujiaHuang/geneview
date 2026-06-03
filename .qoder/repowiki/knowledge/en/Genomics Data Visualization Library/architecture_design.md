@@ -1,5 +1,0 @@
-- Entry point is the `geneview` top-level package discovered via `find_packages()` in `setup.py`, with public API functions like `manhattanplot()`, `qqplot()`, `admixtureplot()`, and `venn()` exposed at the module root.
-- Built on matplotlib as the rendering backend, with seaborn included as a dependency; pandas DataFrame/Series are the primary data structures for input.
-- Packaging follows standard setuptools conventions: `setup.py` defines metadata, dependencies, and classifiers; `requirements.txt` mirrors the install_requires list.
-- Testing infrastructure uses pytest with coverage configured via `.coveragerc` (omitting conftest and tests); Makefile provides `test`, `unittests`, and `lint` targets invoking pytest and flake8 respectively.
-- Release automation is handled by `release.py`, which builds an sdist via `setup.py sdist` and uploads to PyPI using twine.

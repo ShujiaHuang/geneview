@@ -1,1 +1,0 @@
-Built on matplotlib for rendering with seaborn as a companion visualization library; uses numpy, scipy, and pandas for numerical/data manipulation. Packaging via setuptools with PyPI distribution through twine.

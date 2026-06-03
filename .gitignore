@@ -16,6 +16,8 @@ geneview.egg-info/
 .pytest_cache/
 .ipynb_checkpoints/
 .idea/
+.vscode/
+.qoder/
 
 trash/
 tmp/
