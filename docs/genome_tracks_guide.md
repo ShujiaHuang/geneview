@@ -542,7 +542,7 @@ atrack = AnnotationTrack("features.bed", name="BED Features")
 
 Displays gene models with exons as thick boxes, UTRs as thin boxes, and introns as connecting lines.
 
-### Constructor
+### GeneRegionTrack Constructor
 
 ```python
 GeneRegionTrack(
@@ -557,7 +557,7 @@ GeneRegionTrack(
 )
 ```
 
-### Basic Usage
+### Basic Usage of genometracks
 
 ```python
 from geneview.genometracks import GeneRegionTrack, read_gff, GenomicInterval, plot_tracks
@@ -608,10 +608,10 @@ grtrack = GeneRegionTrack(data, show_id="transcript")
 grtrack = GeneRegionTrack(data, show_id=None)
 ```
 
-### Display Parameters
+### Display Parameters of GeneRegionTrack
 
 | Parameter | Default | Description |
-|-----------|---------|-------------|
+| :-----------: | :---------: | :-------------: |
 | `fill` | `"orange"` | CDS exon fill color |
 | `fill_utr` | `"#FFD699"` | UTR fill color |
 | `col_intron` | `"#808080"` | Intron line color |
@@ -625,7 +625,7 @@ grtrack = GeneRegionTrack(data, show_id=None)
 
 Visualizes numeric genomic data along coordinates. Supports multiple plot types and multi-sample data.
 
-### Constructor
+### DataTrack Constructor
 
 ```python
 DataTrack(
@@ -1281,6 +1281,7 @@ plt.show()
 ```
 
 This produces a multi-panel figure showing:
+
 - A genome axis with minor ticks at the top
 - CpG island annotations (blue boxes)
 - Regulatory features (red ellipses)
