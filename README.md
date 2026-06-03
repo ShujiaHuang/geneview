@@ -21,6 +21,7 @@ Some of the features that geneview offers are:
 - **Admixture plot** — Population structure visualization from ADMIXTURE output (.Q files) with hierarchical clustering.
 - **Venn diagram** — Set intersection diagrams for 2–6 datasets with customizable petal labels and colors.
 - **Karyotype plot** — Cytogenetic band visualization with G-banding color schemes.
+- **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack (line/histogram/heatmap), HighlightTrack, and OverlayTrack.
 - **Color palettes** — Curated color schemes (XKCD RGB, Circos, matplotlib colormaps) optimized for genomics figures.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
 
@@ -34,6 +35,12 @@ pip install geneview
 ```
 
 This command will install `geneview` and all the dependencies.
+
+For genome tracks with BigWig and BAM support:
+
+```bash
+pip install geneview[genometracks]
+```
 
 ### Install from source
 
@@ -446,6 +453,77 @@ ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_peta
 
 - [More tutorials about venn](./docs/tutorial/venn.ipynb)
 
+### Genome Tracks
+
+The **genome tracks** module provides a Gviz-inspired track browser for visualizing genomic features along a shared coordinate axis. It supports multiple track types including IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack, HighlightTrack, and OverlayTrack.
+
+#### IdeogramTrack — Chromosome ideogram (auto-loaded)
+
+`IdeogramTrack` automatically downloads human karyotype data (hg38 or hg19) from the geneview-data repository — no manual data preparation needed:
+
+```python
+from geneview.genometracks import IdeogramTrack, GenomeAxisTrack, GenomicInterval, plot_tracks
+import matplotlib.pyplot as plt
+
+# Auto-load hg38 karyotype for chromosome 7
+itrack = IdeogramTrack(chromosome="chr7")
+gtrack = GenomeAxisTrack()
+
+region = GenomicInterval("chr7", 20_000_000, 60_000_000)
+axes = plot_tracks([itrack, gtrack], region=region, figsize=(12, 3))
+plt.show()
+```
+
+![genome_tracks_ideogram.png](./examples/figures/genome_tracks_ideogram.png)
+
+#### Comprehensive genome tracks example
+
+Combine all track types into a multi-panel figure:
+
+```python
+from geneview.genometracks import (
+    IdeogramTrack, GenomeAxisTrack, AnnotationTrack,
+    GeneRegionTrack, DataTrack, HighlightTrack,
+    GenomicInterval, plot_tracks, read_bed, read_gff, read_bedgraph,
+)
+import pandas as pd
+
+# Load data
+cpg_data = read_bed("examples/data/genome_tracks/cpg_islands.bed")
+gene_data = read_gff("examples/data/genome_tracks/gene_models.gtf")
+cov_data = read_bedgraph("examples/data/genome_tracks/coverage.bedgraph")
+
+region = GenomicInterval("chr7", 26_490_000, 26_720_000)
+
+# Create tracks
+itrack = IdeogramTrack(chromosome="chr7")
+gtrack = GenomeAxisTrack(little_ticks=True)
+atrack = AnnotationTrack(cpg_data, name="CpG Islands")
+grtrack = GeneRegionTrack(gene_data, name="Gene Models", collapse_transcripts="longest")
+dtrack = DataTrack(cov_data, type="histogram", name="Coverage")
+
+# Add highlights
+ht = HighlightTrack(
+    regions=pd.DataFrame({
+        "chrom": ["chr7", "chr7"],
+        "start": [26_505_000, 26_600_000],
+        "end":   [26_535_000, 26_665_000],
+    }),
+    track_list=[atrack, grtrack, dtrack],
+    fill="#FFF3BF", alpha=0.3,
+)
+
+# Plot
+axes = plot_tracks([itrack, gtrack, ht], region=region, figsize=(16, 10))
+plt.show()
+```
+
+![genome_tracks_comprehensive.png](./examples/figures/genome_tracks_comprehensive.png)
+
+- [Complete genome tracks guide](./docs/genome_tracks_guide.md)
+- [Genome tracks tutorial notebook](./docs/tutorial/genome_tracks.ipynb)
+- [More example scripts](./examples/scripts/)
+
 ### Karyotype plot
 
 **Karyotype** plots display cytogenetic bands with standard G-banding stain colors.
@@ -460,15 +538,30 @@ _ = gv.karyoplot(k_fn, ax=ax)
 plt.show()
 ```
 
+## Documentation
+
+Comprehensive documentation is available:
+
+- [User Guide](./docs/user_guide.md) — Overview of all features with examples
+- [Genome Tracks Guide](./docs/genome_tracks_guide.md) — Detailed guide for the genome tracks module
+- [Tutorial Notebooks](./docs/tutorial/) — Jupyter notebooks for GWAS, Venn, Admixture, Palettes, and Genome Tracks
+- [API Reference](./docs/user_guide.md#api-reference) — Function and class reference
+
 ## Dependencies
 
-**Geneview** supports Python 3.7+ and requires the following packages:
+**Geneview** supports Python 3.8+ and requires the following packages:
 
 - [numpy](http://www.numpy.org/)
 - [scipy](http://www.scipy.org/)
 - [pandas](http://pandas.pydata.org/)
 - [matplotlib](http://matplotlib.org/)
 - [seaborn](https://seaborn.pydata.org/)
+
+Optional dependencies for genome tracks (BigWig, BAM support):
+
+```bash
+pip install geneview[genometracks]  # installs pyranges, pyBigWig, pysam
+```
 
 ## Citation
 
