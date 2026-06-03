@@ -87,13 +87,14 @@ class GenomicInterval:
 _DEFAULT_DISPLAY_PARAMS: Dict[str, Any] = {
     "alpha": 1.0,
     "background_panel": "white",
-    "background_title": "#E8E8E8",
-    "col": "#3C5488",
-    "fill": "#5B8DB8",
-    "col_axis": "#666666",
-    "col_border": "#333333",
-    "col_grid": "#DDDDDD",
-    "col_title": "#333333",
+    "background_title": "#D3D3D3",      # Gviz: lightgray
+    "col": "#0080FF",                    # Gviz: DEFAULT_SYMBOL_COL
+    "fill": "lightgray",                 # Gviz: DEFAULT_FILL_COL
+    "col_axis": "#A9A9A9",               # Gviz: darkgray
+    "col_border": "transparent",          # Gviz: transparent by default
+    "col_grid": "#808080",               # Gviz: medium gray
+    "col_title": "white",                # Gviz: white text on gray
+    "col_border_title": "white",          # Gviz: white border on title
     "fontface": "normal",
     "fontface_title": "bold",
     "fontsize": 10,
@@ -104,12 +105,13 @@ _DEFAULT_DISPLAY_PARAMS: Dict[str, Any] = {
     "lty": "-",
     "show_title": True,
     "reverse_strand": False,
-    "rotation_title": 0,
+    "rotation_title": 90,                # Gviz: rotated 90 degrees
     "cex": 1.0,
     "min_width": 1,     # minimum feature width in pixels
     "min_height": 3,    # minimum feature height in pixels
     "min_distance": 1,  # minimum distance between features for collapsing
     "collapse": True,
+    "stack_height": 0.75,  # Gviz: use 75% of available row height
 }
 
 

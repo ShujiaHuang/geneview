@@ -55,9 +55,9 @@ overlay_data_b = pd.DataFrame({
 })
 
 dtrack_a = DataTrack(overlay_data_a, type="line", name="Sample A",
-                     display_params={"col": "#3C5488", "alpha": 0.9})
+                     display_params={"col": "#0080FF", "alpha": 0.9})
 dtrack_b = DataTrack(overlay_data_b, type="line", name="Sample B",
-                     display_params={"col": "#E64B35", "alpha": 0.7})
+                     display_params={"col": "#DC0000", "alpha": 0.7})
 
 otrack = OverlayTrack([dtrack_a, dtrack_b], name="Overlay A vs B")
 
@@ -105,8 +105,7 @@ plt.close(fig_shapes)
 
 for idx, shape in enumerate(["arrow", "fixedArrow", "smallArrow"]):
     at = AnnotationTrack(arrow_data, shape=shape, name=f"Shape: {shape}",
-                         show_label=True,
-                         display_params={"fill": "#3C5488"})
+                         show_label=True)
     ax_list = plot_tracks([at], region=region, figsize=(14, 2.5))
     fig_s = ax_list[0].figure
     fig_s.savefig(os.path.join(OUT_DIR, f"genome_tracks_shape_{shape}.png"),
@@ -136,8 +135,7 @@ print(f"[INFO] Saved genome_tracks_meta_collapse.png")
 # ---------------------------------------------------------------------------
 # 5. show_title=False and reverse_strand=True
 # ---------------------------------------------------------------------------
-dtrack = DataTrack(cov_data, type="histogram", name="Coverage",
-                   display_params={"fill": "#4DBBD5", "col": "#4DBBD5"})
+dtrack = DataTrack(cov_data, type="histogram", name="Coverage")
 
 # Compact layout without title panels
 axes5a = plot_tracks(

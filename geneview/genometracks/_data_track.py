@@ -115,9 +115,9 @@ class DataTrack(NumericTrack):
         groups: Optional[List] = None,
         ylim: Optional[Tuple[float, float]] = None,
         baseline: float = 0.0,
-        col: Union[str, List[str]] = "#3C5488",
-        fill: str = "#5B8DB8",
-        gradient: Tuple[str, str] = ("white", "#3C5488"),
+        col: Union[str, List[str]] = "#0080FF",  # Gviz: bright blue
+        fill: str = "#808080",           # Gviz: gray for histogram
+        gradient: Tuple[str, str] = ("#F7FBFF", "#08306B"),  # Gviz gradient
         ncolor: int = 100,
         show_sample_names: bool = True,
         transformation: Optional[Any] = None,
@@ -137,9 +137,11 @@ class DataTrack(NumericTrack):
         dp = {
             "col": col,
             "fill": fill,
+            "col_histogram": "#808080",    # Gviz: gray histogram bars
+            "fill_histogram": None,        # uses general fill if None
             "fontsize": 8,
             "fontcolor": "#555555",
-            "col_axis": "#666666",
+            "col_axis": "#A9A9A9",         # Gviz: darkgray
             "lwd": 1.5,
         }
         if display_params:
@@ -310,7 +312,7 @@ class DataTrack(NumericTrack):
 
     def _draw_line(self, ax, data, region, _precomputed=None):
         """Draw data as line plot."""
-        col = self.get_param("col", "#3C5488")
+        col = self.get_param("col", "#0080FF")
         if isinstance(col, list):
             colors = col
         else:
@@ -328,8 +330,8 @@ class DataTrack(NumericTrack):
 
     def _draw_histogram(self, ax, data, region, _precomputed=None):
         """Draw data as histogram (vertical bars)."""
-        fill = self.get_param("fill", "#5B8DB8")
-        col = self.get_param("col", "#3C5488")
+        fill = self.get_param("fill_histogram", self.get_param("fill", "#808080"))
+        col = self.get_param("col_histogram", self.get_param("col", "#808080"))
         if isinstance(col, list):
             colors = col
         else:
@@ -349,9 +351,12 @@ class DataTrack(NumericTrack):
                 bar_bottom = min(self.baseline, v)
                 bar_height = abs(v - self.baseline)
                 bar_alpha = alpha if v >= self.baseline else alpha * 0.7
+                bar_fill = fill if fill is not None else "none"
                 ax.bar(s + width / 2, bar_height,
                        width=width * 0.9, bottom=bar_bottom,
-                       color=color, edgecolor="none", alpha=bar_alpha, zorder=3)
+                       color=bar_fill, edgecolor=colors[i % len(colors)],
+                       linewidth=0.5,
+                       alpha=bar_alpha, zorder=3)
 
             # Draw baseline
             ax.axhline(y=self.baseline, color="#888888", linewidth=0.5,
@@ -359,8 +364,8 @@ class DataTrack(NumericTrack):
 
     def _draw_polygon(self, ax, data, region, _precomputed=None):
         """Draw data as filled polygon (area plot)."""
-        fill = self.get_param("fill", "#5B8DB8")
-        col = self.get_param("col", "#3C5488")
+        fill = self.get_param("fill", "#808080")
+        col = self.get_param("col", "#0080FF")
         if isinstance(col, list):
             colors = col
         else:
@@ -447,7 +452,7 @@ class DataTrack(NumericTrack):
 
     def _draw_points(self, ax, data, region, _precomputed=None):
         """Draw data as scatter points."""
-        col = self.get_param("col", "#3C5488")
+        col = self.get_param("col", "#0080FF")
         if isinstance(col, list):
             colors = col
         else:
@@ -464,8 +469,8 @@ class DataTrack(NumericTrack):
 
     def _draw_mountain(self, ax, data, region, _precomputed=None):
         """Draw smoothed mountain plot (area above baseline)."""
-        fill = self.get_param("fill", "#5B8DB8")
-        col = self.get_param("col", "#3C5488")
+        fill = self.get_param("fill", "#808080")
+        col = self.get_param("col", "#0080FF")
         if isinstance(col, list):
             colors = col
         else:
@@ -498,7 +503,7 @@ class DataTrack(NumericTrack):
 
     def _draw_boxplot(self, ax, data, region):
         """Draw data as boxplots at each genomic position."""
-        col = self.get_param("col", "#3C5488")
+        col = self.get_param("col", "#0080FF")
         alpha = self.get_param("alpha", 0.8)
         midpoints = self._get_midpoints(data)
 
@@ -533,7 +538,7 @@ class DataTrack(NumericTrack):
 
     def _draw_stairs_post(self, ax, data, region, _precomputed=None):
         """Draw stair-step plot, horizontal first then vertical (Gviz type 's')."""
-        col = self.get_param("col", "#3C5488")
+        col = self.get_param("col", "#0080FF")
         if isinstance(col, list):
             colors = col
         else:
@@ -550,7 +555,7 @@ class DataTrack(NumericTrack):
 
     def _draw_stairs_pre(self, ax, data, region, _precomputed=None):
         """Draw stair-step plot, vertical first then horizontal (Gviz type 'S')."""
-        col = self.get_param("col", "#3C5488")
+        col = self.get_param("col", "#0080FF")
         if isinstance(col, list):
             colors = col
         else:

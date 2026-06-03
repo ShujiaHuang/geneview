@@ -117,10 +117,10 @@ class GeneRegionTrack(StackedTrack):
         display_params: Optional[Dict[str, Any]] = None,
     ):
         dp = {
-            "col": "#3C5488",
-            "fill": "#3C5488",
-            "fill_utr": "#8DB4E2",
-            "col_intron": "#888888",
+            "col": "orange",              # Gviz: orange exon border
+            "fill": "orange",             # Gviz: orange exon fill
+            "fill_utr": "#FFD699",        # Gviz: lighter orange for UTR
+            "col_intron": "#808080",      # Gviz: darkgray intron lines
             "lwd": 0.8,
             "fontsize": 8,
             "fontcolor": "#333333",
@@ -205,8 +205,9 @@ class GeneRegionTrack(StackedTrack):
         ax.set_xlim(region.start, region.end)
         ax.set_ylim(-0.05, 1.05)
 
-        fill_color = self.get_param("fill", "#3C5488")
-        fill_utr = self.get_param("fill_utr", "#8DB4E2")
+        fill_color = self.get_param("fill", "orange")
+        fill_utr = self.get_param("fill_utr", "#FFD699")
+        edge_color = self.get_param("col", "orange")
         intron_color = self.get_param("col_intron", "#888888")
         lwd = self.get_param("lwd", 0.8)
         fontsize = self.get_param("fontsize", 8)
@@ -220,7 +221,7 @@ class GeneRegionTrack(StackedTrack):
                 y_center = y_positions[stack_row]
                 self._draw_transcript(
                     ax, grp, region, y_center, row_height,
-                    fill_color, fill_utr, intron_color, lwd, alpha,
+                    fill_color, fill_utr, edge_color, intron_color, lwd, alpha,
                 )
                 # Draw gene/transcript label
                 if self.show_id:
@@ -235,7 +236,7 @@ class GeneRegionTrack(StackedTrack):
                 y_center = y_positions[stack_row]
                 self._draw_single_feature(
                     ax, row, region, y_center, row_height,
-                    fill_color, fill_utr, lwd, alpha,
+                    fill_color, fill_utr, edge_color, lwd, alpha,
                 )
 
         ax.axis("off")
@@ -358,7 +359,7 @@ class GeneRegionTrack(StackedTrack):
         return data
 
     def _draw_transcript(self, ax, grp, region, y_center, row_height,
-                         fill_color, fill_utr, intron_color, lwd, alpha):
+                         fill_color, fill_utr, edge_color, intron_color, lwd, alpha):
         """Draw a complete transcript with intron lines and exon boxes."""
         # Sort exons by position
         grp = grp.sort_values("start")
@@ -397,7 +398,7 @@ class GeneRegionTrack(StackedTrack):
             rect = FancyBboxPatch(
                 (x_start, y_center - h / 2), width, h,
                 boxstyle="round,pad=0",
-                facecolor=color, edgecolor="#333333",
+                facecolor=color, edgecolor=edge_color,
                 linewidth=lwd * 0.5, alpha=alpha, zorder=3,
             )
             ax.add_patch(rect)
@@ -407,7 +408,7 @@ class GeneRegionTrack(StackedTrack):
                 self._draw_strand_chevrons(ax, x_start, x_end, y_center, h, strand, region)
 
     def _draw_single_feature(self, ax, row, region, y_center, row_height,
-                             fill_color, fill_utr, lwd, alpha):
+                             fill_color, fill_utr, edge_color, lwd, alpha):
         """Draw a single feature without transcript context."""
         x_start = max(row["start"], region.start)
         x_end = min(row["end"], region.end)
@@ -422,7 +423,7 @@ class GeneRegionTrack(StackedTrack):
         rect = FancyBboxPatch(
             (x_start, y_center - h / 2), width, h,
             boxstyle="round,pad=0",
-            facecolor=color, edgecolor="#333333",
+            facecolor=color, edgecolor=edge_color,
             linewidth=lwd * 0.5, alpha=alpha, zorder=3,
         )
         ax.add_patch(rect)

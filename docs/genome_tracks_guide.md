@@ -136,7 +136,7 @@ Every track has a `display_params` dictionary controlling its appearance. Parame
 
 ```python
 atrack = AnnotationTrack(data, name="Features", display_params={
-    "fill": "#3C5488",
+    "fill": "lightblue",
     "col": "#333333",
     "fontsize": 9,
 })
@@ -149,10 +149,10 @@ atrack = AnnotationTrack(data, name="Features", display_params={
 color = atrack.get_param("fill")
 
 # Set a parameter
-atrack.set_param("fill", "#E64B35")
+atrack.set_param("fill", "#DC0000")
 
 # Set multiple parameters at once
-atrack.set_params({"fill": "#E64B35", "col": "white"})
+atrack.set_params({"fill": "#DC0000", "col": "white"})
 ```
 
 ### Common Display Parameters (All Tracks)
@@ -161,10 +161,10 @@ atrack.set_params({"fill": "#E64B35", "col": "white"})
 |-----------|---------|-------------|
 | `alpha` | 1.0 | Opacity of plot elements |
 | `background_panel` | `"white"` | Background color of data panel |
-| `background_title` | `"#E8E8E8"` | Background color of title panel |
-| `col` | `"#3C5488"` | Line/border color |
-| `fill` | `"#5B8DB8"` | Fill color |
-| `col_border` | `"#333333"` | Border color |
+| `background_title` | `"#D3D3D3"` | Background color of title panel |
+| `col` | `"#0080FF"` | Line/border color |
+| `fill` | `"lightgray"` | Fill color |
+| `col_border` | `"transparent"` | Border color |
 | `fontsize` | 10 | Base font size |
 | `fontsize_title` | 10 | Title font size |
 | `lwd` | 1.0 | Line width |
@@ -356,7 +356,7 @@ Different feature types can have different colors:
 
 ```python
 atrack = AnnotationTrack(data, display_params={
-    "fill": "#3C5488",          # Default fill
+    "fill": "lightblue",          # Default fill
     "feature_color": True,      # Auto-color by feature type
 })
 ```
@@ -472,9 +472,9 @@ grtrack = GeneRegionTrack(data, show_id=None)
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `fill` | `"#3C5488"` | CDS exon fill color |
-| `fill_utr` | `"#8DB4E2"` | UTR fill color |
-| `col_intron` | `"#888888"` | Intron line color |
+| `fill` | `"orange"` | CDS exon fill color |
+| `fill_utr` | `"#FFD699"` | UTR fill color |
+| `col_intron` | `"#808080"` | Intron line color |
 | `fontsize` | 8 | Label font size |
 | `fontcolor` | `"#333333"` | Label text color |
 | `lwd` | 0.8 | Line width |
@@ -654,7 +654,7 @@ Show a legend for grouped data:
 ```python
 dtrack = DataTrack(data, type="line", groups=["A", "A", "B", "B"],
                    legend=True,
-                   display_params={"group_colors": ["#3C5488", "#E64B35"]})
+                   display_params={"group_colors": ["#0080FF", "#DC0000"]})
 ```
 
 ### Grid Lines
@@ -670,8 +670,8 @@ dtrack = DataTrack(data, type="line",
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `fill` | `"#5B8DB8"` | Fill color for histogram/polygon/mountain |
-| `col` | `"#3C5488"` | Line color |
+| `fill` | `"#808080"` | Fill color for histogram/polygon/mountain |
+| `col` | `"#0080FF"` | Line color |
 | `baseline` | 0 | Y-position of baseline for mountain/polygon |
 | `ncolor` | 100 | Number of colors for gradient |
 
@@ -801,9 +801,9 @@ from geneview.genometracks import OverlayTrack
 
 # Create two data tracks with different signals
 dtrack1 = DataTrack(data1, type="line", name="Sample A",
-    display_params={"col": "#3C5488"})
+    display_params={"col": "#0080FF"})
 dtrack2 = DataTrack(data2, type="line", name="Sample B",
-    display_params={"col": "#E64B35", "alpha": 0.7})
+    display_params={"col": "#DC0000", "alpha": 0.7})
 
 # Overlay them on the same axes
 otrack = OverlayTrack([dtrack1, dtrack2], name="Comparison")
@@ -992,8 +992,8 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `col` | `"#3C5488"` | Border color |
-| `fill` | `"#5B8DB8"` | Fill color |
+| `col` | `"orange"` | Border color |
+| `fill` | `"orange"` | Fill color |
 | `col_border` | `"#333333"` | Feature border color (uses `col` value) |
 | `fontsize` | 10 | Label font size |
 | `lwd` | 1.0 | Border line width |
@@ -1005,8 +1005,8 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `col` | `"#3C5488"` | Exon border color |
-| `fill` | `"#3C5488"` | CDS exon fill color |
+| `col` | `"orange"` | Exon border color |
+| `fill` | `"orange"` | CDS exon fill color |
 | `fill_utr` | `"#8DB4E2"` | UTR fill color |
 | `col_intron` | `"#888888"` | Intron line color |
 | `fontsize` | 8 | Label font size |
@@ -1017,8 +1017,8 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `col` | `"#3C5488"` | Line color |
-| `fill` | `"#5B8DB8"` | Fill color |
+| `col` | `"#0080FF"` | Line color |
+| `fill` | `"#808080"` | Fill color |
 | `baseline` | 0 | Baseline y-position |
 | `ncolor` | 100 | Gradient color count |
 | `grid` | False | Draw horizontal grid lines |
@@ -1030,7 +1030,7 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 |-----------|---------|-------------|
 | `alpha` | 1.0 | Opacity |
 | `background_panel` | `"white"` | Data panel background |
-| `background_title` | `"#E8E8E8"` | Title panel background |
+| `background_title` | `"#D3D3D3"` | Title panel background |
 | `show_title` | True | Show title panel |
 | `fontsize_title` | 10 | Title font size |
 | `fontface_title` | `"bold"` | Title font weight |
@@ -1071,17 +1071,17 @@ region = GenomicInterval("chr7", 26_490_000, 26_720_000)
 gtrack = GenomeAxisTrack(little_ticks=True)
 
 atrack_cpg = AnnotationTrack(cpg_data, name="CpG Islands",
-    display_params={"fill": "#3C5488"})
+    display_params={"fill": "lightblue"})
 
 atrack_ann = AnnotationTrack(ann_data, name="Regulatory",
     shape="ellipse",
-    display_params={"fill": "#E64B35"})
+    display_params={"fill": "#DC0000"})
 
 grtrack = GeneRegionTrack(gene_data, name="Gene Models",
     collapse_transcripts="longest")
 
 dtrack = DataTrack(cov_data, type="histogram", name="Coverage",
-    display_params={"fill": "#4DBBD5", "col": "#4DBBD5"})
+    display_params={"col": "#0080FF"})
 
 # --- Highlight regions ---
 ht = HighlightTrack(

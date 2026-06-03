@@ -342,8 +342,8 @@ def _plot_full_layout(
             ax_data.xaxis.set_major_formatter(_genomic_position_formatter(span))
             ax_data.tick_params(axis="x", labelsize=7)
             ax_data.spines["bottom"].set_visible(True)
-            ax_data.spines["bottom"].set_color("#666666")
-            ax_data.spines["bottom"].set_linewidth(0.5)
+            ax_data.spines["bottom"].set_color("darkgray")
+            ax_data.spines["bottom"].set_linewidth(0.8)
         else:
             ax_data.set_xticklabels([])
 
@@ -357,17 +357,21 @@ def _plot_full_layout(
 
 
 def _draw_title_panel(ax, track: Track, region: GenomicInterval) -> None:
-    """Draw the title panel for a track (left side label)."""
+    """Draw the title panel for a track (left side label).
+
+    Mimics Gviz's title panel: lightgray background, white bold text
+    rotated 90°, transparent border by default.
+    """
     show_title = track.get_param("show_title", True)
     if not show_title:
         ax.axis("off")
         return
 
-    bg_color = track.get_param("background_title", "#E8E8E8")
-    text_color = track.get_param("col_title", "#333333")
-    fontsize = track.get_param("fontsize_title", 9)
+    bg_color = track.get_param("background_title", "#D3D3D3")
+    text_color = track.get_param("col_title", "white")
+    fontsize = track.get_param("fontsize_title", 10)
     fontface = track.get_param("fontface_title", "bold")
-    rotation = track.get_param("rotation_title", 0)
+    rotation = track.get_param("rotation_title", 90)
 
     # Background
     ax.set_facecolor(bg_color)
@@ -397,14 +401,12 @@ def _draw_title_panel(ax, track: Track, region: GenomicInterval) -> None:
                 fontweight=weight, fontstyle=style,
                 transform=ax.transAxes)
 
-    # Border
-    border_color = track.get_param("col_border_title", "#CCCCCC")
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["left"].set_visible(True)
-    ax.spines["left"].set_color(border_color)
-    ax.spines["left"].set_linewidth(0.5)
+    # Border — Gviz default is transparent (no visible border)
+    border_color = track.get_param("col_border_title", "transparent")
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+        spine.set_color(border_color)
+        spine.set_linewidth(0.5)
 
     ax.set_xticks([])
     ax.set_yticks([])

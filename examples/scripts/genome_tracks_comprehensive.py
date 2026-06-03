@@ -39,16 +39,14 @@ region = GenomicInterval("chr7", 26_490_000, 26_720_000)
 # Create tracks
 # ---------------------------------------------------------------------------
 gtrack = GenomeAxisTrack(little_ticks=True, add53=True)
-atrack_cpg = AnnotationTrack(cpg_data, name="CpG Islands",
-                             display_params={"fill": "#3C5488"})
+atrack_cpg = AnnotationTrack(cpg_data, name="CpG Islands")
 atrack_ann = AnnotationTrack(ann_data, name="Regulatory",
                              shape="ellipse",
-                             display_params={"fill": "#E64B35"})
+                             display_params={"fill": "#DC0000"})
 grtrack = GeneRegionTrack(gene_data, name="Gene Models",
                           collapse_transcripts="longest")
 dtrack = DataTrack(cov_data, type="histogram", name="Coverage",
-                   display_params={"fill": "#4DBBD5", "col": "#4DBBD5",
-                                   "grid": True})
+                   display_params={"grid": True})
 
 # ---------------------------------------------------------------------------
 # Highlight two regions of interest

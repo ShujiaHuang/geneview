@@ -92,12 +92,12 @@ class GenomeAxisTrack(Track):
             "background_title": "transparent",
             "col_border_title": "transparent",
             "show_title": False,
-            "col": "#555555",
-            "col_range": "#8B8378",
-            "fill_range": "#CDC8B1",
+            "col": "darkgray",            # Gviz: darkgray axis line
+            "col_range": "cornsilk4",      # Gviz: cornsilk4
+            "fill_range": "cornsilk3",     # Gviz: cornsilk3
             "lwd": 2,
             "fontsize": 9,
-            "fontcolor": "#555555",
+            "fontcolor": "#808080",         # Gviz: gray labels
         }
         if display_params:
             dp.update(display_params)
@@ -133,7 +133,7 @@ class GenomeAxisTrack(Track):
     def _draw_full_axis(self, ax, region: GenomicInterval) -> None:
         """Draw a full genomic coordinate axis with ticks and labels."""
         span = region.end - region.start
-        color = self.get_param("col", "#555555")
+        color = self.get_param("col", "darkgray")
         lwd = self.get_param("lwd", 2)
         fontsize = self.get_param("fontsize", 9)
         fontcolor = self.get_param("fontcolor", "#555555")
@@ -256,7 +256,7 @@ class GenomeAxisTrack(Track):
     def _draw_scale_bar(self, ax, region: GenomicInterval) -> None:
         """Draw a simple scale bar instead of a full axis."""
         span = region.end - region.start
-        color = self.get_param("col", "#555555")
+        color = self.get_param("col", "darkgray")
         lwd = self.get_param("lwd", 2)
         fontsize = self.get_param("fontsize", 9)
         fontcolor = self.get_param("fontcolor", "#555555")

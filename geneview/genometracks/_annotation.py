@@ -20,17 +20,17 @@ from ._base import StackedTrack, GenomicInterval
 from ._stacking import compute_stacking, get_stack_heights, get_num_stacks
 
 
-# Default feature colors by feature type
+# Default feature colors by feature type (Gviz palette)
 _DEFAULT_FEATURE_COLORS = {
-    "exon": "#3C5488",
-    "CDS": "#3C5488",
-    "UTR": "#8DB4E2",
-    "five_prime_UTR": "#8DB4E2",
-    "three_prime_UTR": "#8DB4E2",
-    "intron": "#AAAAAA",
-    "gene": "#5B8DB8",
-    "transcript": "#5B8DB8",
-    "default": "#5B8DB8",
+    "exon": "lightblue",
+    "CDS": "#0080FF",
+    "UTR": "#ADD8E6",
+    "five_prime_UTR": "#ADD8E6",
+    "three_prime_UTR": "#ADD8E6",
+    "intron": "#808080",
+    "gene": "lightblue",
+    "transcript": "lightblue",
+    "default": "lightblue",
 }
 
 
@@ -94,7 +94,7 @@ class AnnotationTrack(StackedTrack):
         data: Union[pd.DataFrame, str, None] = None,
         stacking: str = "squish",
         feature_colors: Optional[Dict[str, str]] = None,
-        shape: str = "box",
+        shape: str = "arrow",
         show_label: bool = False,
         label_pos: str = "above",
         arrow_direction: bool = True,
@@ -106,9 +106,15 @@ class AnnotationTrack(StackedTrack):
         if shape not in self.SHAPES:
             raise ValueError(f"Shape must be one of {self.SHAPES}, got '{shape}'.")
 
+        dp = {
+            "fill": "lightblue",  # Gviz AnnotationTrack default
+        }
+        if display_params:
+            dp.update(display_params)
+
         super().__init__(
             data=data, stacking=stacking, name=name, height=height,
-            display_params=display_params,
+            display_params=dp,
         )
 
         self._feature_colors = dict(_DEFAULT_FEATURE_COLORS)
@@ -128,7 +134,7 @@ class AnnotationTrack(StackedTrack):
         if feature is not None and pd.notna(feature):
             # Assign color from cycle for unknown features
             return next(color_cycle)
-        return self.get_param("fill", "#5B8DB8")
+        return self.get_param("fill", "lightblue")
 
     def draw(self, ax, region: GenomicInterval) -> None:
         """Draw the annotation track.
@@ -172,8 +178,8 @@ class AnnotationTrack(StackedTrack):
         has_name = "name" in sub.columns or "id" in sub.columns
         label_col = "name" if "name" in sub.columns else ("id" if "id" in sub.columns else None)
 
-        # Color cycle for unknown features
-        default_colors = ["#3C5488", "#5B8DB8", "#DC0000", "#F8766D",
+        # Color cycle for unknown features (Gviz-inspired palette)
+        default_colors = ["lightblue", "#0080FF", "#DC0000", "#F8766D",
                           "#00BA38", "#619CFF", "#FDB462", "#B79F00"]
         color_cycle = cycle(default_colors)
         # Pre-assign colors to unique features
@@ -206,9 +212,9 @@ class AnnotationTrack(StackedTrack):
                 elif feat in feature_color_map:
                     color = feature_color_map[feat]
                 else:
-                    color = self.get_param("fill", "#5B8DB8")
+                    color = self.get_param("fill", "lightblue")
             else:
-                color = self.get_param("fill", "#5B8DB8")
+                color = self.get_param("fill", "lightblue")
 
             edge_color = self.get_param("col", "#333333")  # Bug 4 fix: use 'col' not 'col_border'
             lwd = self.get_param("lwd", 0.5)
