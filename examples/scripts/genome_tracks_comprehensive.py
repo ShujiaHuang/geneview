@@ -1,8 +1,8 @@
 """Comprehensive genome tracks showcase -- all track types in one plot.
 
-Combines GenomeAxisTrack, AnnotationTrack, GeneRegionTrack, DataTrack,
-HighlightTrack, and OverlayTrack into a single multi-panel figure with
-direction indicators, per-region highlight colors, and fractional
+Combines IdeogramTrack, GenomeAxisTrack, AnnotationTrack, GeneRegionTrack,
+DataTrack, HighlightTrack, and OverlayTrack into a single multi-panel figure
+with direction indicators, per-region highlight colors, and fractional
 region extension.
 
 Run:  python examples/scripts/genome_tracks_comprehensive.py
@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from geneview.genometracks import (
     GenomeAxisTrack, AnnotationTrack, GeneRegionTrack, DataTrack,
-    HighlightTrack, OverlayTrack, GenomicInterval, plot_tracks,
+    HighlightTrack, OverlayTrack, IdeogramTrack, GenomicInterval, plot_tracks,
     read_bed, read_gff, read_bedgraph,
 )
 
@@ -39,6 +39,21 @@ region = GenomicInterval("chr7", 26_490_000, 26_720_000)
 # Create tracks
 # ---------------------------------------------------------------------------
 gtrack = GenomeAxisTrack(little_ticks=True, add53=True)
+
+# IdeogramTrack with synthetic cytoband data for chr7
+bands_chr7 = pd.DataFrame({
+    "chrom": ["chr7"] * 10,
+    "chromStart": [0, 7100000, 19000000, 27400000, 40800000,
+                   58800000, 62900000, 83200000, 103400000, 127500000],
+    "chromEnd": [7100000, 19000000, 27400000, 40800000, 58800000,
+                 62900000, 83200000, 103400000, 127500000, 159138663],
+    "name": ["p22.3", "p21.3", "p21.1", "p15.3", "p14.3",
+             "acen", "p13.1", "p12.1", "q11.23", "q21.11"],
+    "gieStain": ["gneg", "gpos75", "gpos25", "gneg", "gpos75",
+                 "acen", "gneg", "gneg", "gpos50", "gpos100"],
+})
+ideo = IdeogramTrack(bands_chr7, chromosome="chr7")
+
 atrack_cpg = AnnotationTrack(cpg_data, name="CpG Islands")
 atrack_ann = AnnotationTrack(ann_data, name="Regulatory",
                              shape="ellipse",
@@ -66,11 +81,11 @@ ht = HighlightTrack(
 # Plot everything
 # ---------------------------------------------------------------------------
 axes = plot_tracks(
-    [gtrack, ht],
+    [ideo, gtrack, ht],
     region=region,
-    sizes=[0.2, 0.8, 0.8, 1.5, 1.5],  # relative heights (gtrack is auto)
+    sizes=[0.4, 0.2, 0.8, 0.8, 1.5, 1.5],  # relative heights
     title="Comprehensive Genome Tracks",
-    figsize=(16, 10),
+    figsize=(16, 12),
     extend_left=0.05,
     extend_right=0.05,
 )

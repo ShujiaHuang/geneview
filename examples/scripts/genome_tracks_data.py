@@ -57,7 +57,8 @@ heat_data = pd.DataFrame({
     "sample_C": rng.randn(n).cumsum() / 3 - 1,
     "sample_D": rng.randn(n).cumsum() / 3 + 1,
 })
-dtrack_heat = DataTrack(heat_data, type="heatmap", name="Heatmap")
+dtrack_heat = DataTrack(heat_data, type="heatmap", name="Heatmap",
+                        show_sample_names=True, separator=2)
 axes_heat = plot_tracks(
     [gtrack, dtrack_heat], region=region,
     title="DataTrack: heatmap (4 samples)", figsize=(12, 5),

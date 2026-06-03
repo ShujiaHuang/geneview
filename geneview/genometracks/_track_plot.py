@@ -20,6 +20,7 @@ from matplotlib.patches import FancyBboxPatch
 from ._base import Track, GenomicInterval
 from ._highlight import HighlightTrack
 from ._genome_axis import GenomeAxisTrack
+from ._ideogram import IdeogramTrack
 
 
 def plot_tracks(
@@ -332,10 +333,11 @@ def _plot_full_layout(
         # Share x-axis between tracks (except the last one shows labels)
         is_last = (i == n_tracks - 1)
         is_genome_axis = isinstance(track, GenomeAxisTrack)
+        is_ideogram = isinstance(track, IdeogramTrack)
 
-        if not is_last and not is_genome_axis:
+        if not is_last and not is_genome_axis and not is_ideogram:
             ax_data.set_xticklabels([])
-        elif is_last and not is_genome_axis:
+        elif is_last and not is_genome_axis and not is_ideogram:
             # Show x-axis with genomic position labels
             span = region.end - region.start
             from ._base import _genomic_position_formatter

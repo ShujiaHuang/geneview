@@ -10,15 +10,16 @@ The genome tracks module in geneview provides a powerful system for visualizing 
 2. [Basic Features](#basic-features)
 3. [Display Parameters](#display-parameters)
 4. [GenomeAxisTrack](#genomeaxistrack)
-5. [AnnotationTrack](#annotationtrack)
-6. [GeneRegionTrack](#generegiontrack)
-7. [DataTrack](#datatrack)
-8. [HighlightTrack](#highlighttrack)
-9. [OverlayTrack](#overlaytrack)
-10. [File I/O](#file-io)
-11. [Advanced: plot_tracks()](#advanced-plot_tracks)
-12. [Display Parameters Reference](#display-parameters-reference)
-13. [Complete Example](#complete-example)
+5. [IdeogramTrack](#ideogramtrack)
+6. [AnnotationTrack](#annotationtrack)
+7. [GeneRegionTrack](#generegiontrack)
+8. [DataTrack](#datatrack)
+9. [HighlightTrack](#highlighttrack)
+10. [OverlayTrack](#overlaytrack)
+11. [File I/O](#file-io)
+12. [Advanced: plot_tracks()](#advanced-plot_tracks)
+13. [Display Parameters Reference](#display-parameters-reference)
+14. [Complete Example](#complete-example)
 
 ---
 
@@ -30,6 +31,7 @@ The fundamental concept is similar to genome browsers: individual types of genom
 
 ```
 GenomeAxisTrack  ─── coordinate ruler
+IdeogramTrack    ─── chromosome ideogram (cytobands)
 AnnotationTrack  ─── generic ranges (boxes/arrows)
 GeneRegionTrack  ─── gene models (exons/UTRs/introns)
 DataTrack        ─── numeric data (line/histogram/heatmap)
@@ -42,6 +44,7 @@ OverlayTrack     ─── overlay multiple tracks on same axes
 ```
 Track (abstract base)
   ├── GenomeAxisTrack
+  ├── IdeogramTrack (chromosome schematic)
   └── RangeTrack (has a DataFrame)
         ├── StackedTrack (overlapping features stacked)
         │     ├── AnnotationTrack
@@ -276,6 +279,143 @@ axes = plot_tracks([gtrack], region=GenomicInterval("chr7", 2000000, 2200000))
 
 ---
 
+## IdeogramTrack
+
+Displays a chromosome ideogram with cytogenetic bands (cytobands), centromere, and optional region highlighting. Ported from Gviz's IdeogramTrack.
+
+### Constructor
+
+```python
+IdeogramTrack(
+    bands,                  # DataFrame with cytoband data or file path
+    chromosome=None,        # Chromosome to display (e.g., "chr7")
+    show_id=True,           # Show chromosome name
+    show_band_id=False,     # Show band labels (p11.1, q21, etc.)
+    centromere_shape="triangle",  # "triangle" or "circle"
+    outline=False,          # Draw outline around ideogram
+    name=None,              # Track name (auto-generated if None)
+    height=0.5,             # Relative height (compact)
+    display_params=None,
+)
+```
+
+### Basic Usage
+
+```python
+import pandas as pd
+from geneview.genometracks import IdeogramTrack, GenomicInterval, plot_tracks
+
+# Cytoband data: chrom, start, end, band name, stain type
+bands = pd.DataFrame({
+    "chrom": ["chr7"] * 5,
+    "chromStart": [0, 2000000, 5000000, 8000000, 10000000],
+    "chromEnd": [2000000, 5000000, 8000000, 10000000, 12000000],
+    "name": ["p25", "p21", "p11", "q11", "q21"],
+    "gieStain": ["gneg", "gpos25", "acen", "acen", "gpos50"],
+})
+
+itrack = IdeogramTrack(bands, chromosome="chr7")
+region = GenomicInterval("chr7", 3000000, 9000000)
+axes = plot_tracks([itrack], region=region)
+```
+
+### Cytoband Data Format
+
+The `bands` DataFrame must have these columns:
+- `chrom`: Chromosome name (e.g., "chr7")
+- `chromStart`: Start position
+- `chromEnd`: End position
+- `name`: Band name (e.g., "p21.1", "q31.2")
+- `gieStain`: Stain type (determines color)
+
+Supported `gieStain` values and their colors:
+
+| Stain | Color | Description |
+|-------|-------|-------------|
+| `gneg` | White | Negative (light) band |
+| `gpos25` | Light gray | 25% positive |
+| `gpos33` | Light gray | 33% positive |
+| `gpos50` | Medium gray | 50% positive |
+| `gpos66` | Dark gray | 66% positive |
+| `gpos75` | Dark gray | 75% positive |
+| `gpos100` | Black | 100% positive (darkest) |
+| `acen` | Red | Centromere region |
+| `stalk` | Blue-gray | Acrocentric stalk |
+| `gvar` | Light gray | Variable region |
+
+### Centromere Shapes
+
+```python
+# Triangle centromere (default, pinched waist)
+itrack = IdeogramTrack(bands, chromosome="chr7", centromere_shape="triangle")
+
+# Circle centromere
+itrack = IdeogramTrack(bands, chromosome="chr7", centromere_shape="circle")
+```
+
+### Band Labels
+
+```python
+# Show band names (p21, q31, etc.)
+itrack = IdeogramTrack(bands, chromosome="chr7", show_band_id=True)
+```
+
+### Region Highlighting
+
+When plotted with a `region`, the IdeogramTrack automatically draws a highlight box showing the current view:
+
+```python
+# The current region is highlighted with a pink box
+region = GenomicInterval("chr7", 5000000, 8000000)
+axes = plot_tracks([itrack], region=region)
+```
+
+The highlight box colors can be customized:
+
+```python
+itrack = IdeogramTrack(bands, chromosome="chr7", display_params={
+    "col": "blue",        # Highlight box border
+    "fill": "#FFFFCC",    # Highlight box fill
+})
+```
+
+### Loading from File
+
+```python
+# Load cytoband data from a tab-separated file
+itrack = IdeogramTrack("cytobands.txt", chromosome="chr7")
+```
+
+### Display Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `col` | `"red"` | Highlight box border color |
+| `fill` | `"#FFE3E6"` | Highlight box fill color (pink) |
+| `lwd` | 1.0 | Highlight box line width |
+| `fontsize` | 10 | Band label font size |
+| `fontcolor` | `"#808080"` | Band label color |
+| `show_title` | False | Hide title panel by default |
+
+### Integration with Other Tracks
+
+The IdeogramTrack shows the full chromosome while other tracks zoom into a region. The current region is highlighted on the ideogram:
+
+```python
+# IdeogramTrack shows full chromosome
+itrack = IdeogramTrack(bands, chromosome="chr7")
+
+# Other tracks show the zoomed region
+gtrack = GenomeAxisTrack()
+atrack = AnnotationTrack(data, name="Features")
+
+# All tracks plotted together
+region = GenomicInterval("chr7", 5000000, 8000000)
+axes = plot_tracks([itrack, gtrack, atrack], region=region)
+```
+
+---
+
 ## AnnotationTrack
 
 Displays genomic ranges as shapes (boxes, ellipses, arrows) on a track. Supports grouping, strand direction, feature coloring, and stacking.
@@ -497,6 +637,8 @@ DataTrack(
     window=None,       # Windowing: int, "auto", or "fixed"
     window_size=None,  # Bin size for window="fixed"
     aggregation="mean", # Aggregation: "mean", "median", "sum", "min", "max"
+    show_sample_names=False,  # Show sample names on heatmap (Gviz default: FALSE)
+    separator=0,       # Separator line width between heatmap rows (0=none)
     legend=False,      # Show legend for groups
     name="Data",
     height=1.5,
@@ -569,7 +711,7 @@ dtrack = DataTrack(data, type="gradient", name="Gradient")
 
 ### Heatmap (Multi-sample)
 
-The heatmap type works best with multiple value columns:
+The heatmap type works best with multiple value columns. It uses a sequential blue gradient (matching Gviz's `colorRampPalette(brewer.pal(9, "Blues"))`):
 
 ```python
 data = pd.DataFrame({
@@ -580,8 +722,21 @@ data = pd.DataFrame({
     "sample_B": np.random.randn(50).cumsum() / 3 + 2,
     "sample_C": np.random.randn(50).cumsum() / 3 - 1,
 })
+
+# Basic heatmap
 dtrack = DataTrack(data, type="heatmap", name="Heatmap")
+
+# With sample names and row separators (matching Gviz style)
+dtrack = DataTrack(
+    data,
+    type="heatmap",
+    name="Heatmap",
+    show_sample_names=True,  # Show sample names on y-axis
+    separator=2,             # Add white lines between rows
+)
 ```
+
+The heatmap uses a **sequential blue gradient** (white to dark blue) by default, matching Gviz's default color scheme. The gradient ranges from white (low values) to dark blue `#08306B` (high values).
 
 ### Custom Y-Axis Limits
 
@@ -988,11 +1143,22 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 | `fontsize` | 9 | Label font size |
 | `lwd` | 2 | Axis line width |
 
+### IdeogramTrack
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `col` | `"red"` | Highlight box border color |
+| `fill` | `"#FFE3E6"` | Highlight box fill color (pink) |
+| `lwd` | 1.0 | Highlight box line width |
+| `fontsize` | 10 | Band label font size |
+| `fontcolor` | `"#808080"` | Band label color |
+| `show_title` | False | Hide title panel by default |
+
 ### AnnotationTrack
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `col` | `"orange"` | Border color |
+| `col` | `"transparent"` | Border color (edges match fill, Gviz default) |
 | `fill` | `"orange"` | Fill color |
 | `col_border` | `"#333333"` | Feature border color (uses `col` value) |
 | `fontsize` | 10 | Label font size |
@@ -1021,8 +1187,12 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 | `fill` | `"#808080"` | Fill color |
 | `baseline` | 0 | Baseline y-position |
 | `ncolor` | 100 | Gradient color count |
+| `show_sample_names` | False | Show sample names on heatmap y-axis (Gviz default: FALSE) |
+| `separator` | 0 | Separator line width between heatmap rows (0=none) |
 | `grid` | False | Draw horizontal grid lines |
 | `col_grid` | `"#DDDDDD"` | Grid line color |
+
+**Note:** The heatmap type uses a sequential blue gradient (white to dark blue `#08306B`), matching Gviz's `colorRampPalette(brewer.pal(9, "Blues"))`.
 
 ### Common (All Tracks)
 

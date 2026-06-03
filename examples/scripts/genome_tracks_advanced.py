@@ -1,7 +1,8 @@
-"""Advanced genome tracks features -- OverlayTrack, direction indicators, etc.
+"""Advanced genome tracks features -- OverlayTrack, IdeogramTrack, direction indicators, etc.
 
 Showcases newly added features:
 - OverlayTrack: overlay multiple DataTracks on the same axes
+- IdeogramTrack: chromosome ideogram with cytoband coloring (Gviz-style)
 - GenomeAxisTrack direction indicators (add53/add35)
 - AnnotationTrack fixedArrow and smallArrow shapes
 - AnnotationTrack group_annotation with connecting lines
@@ -19,7 +20,7 @@ import matplotlib.pyplot as plt
 
 from geneview.genometracks import (
     GenomeAxisTrack, AnnotationTrack, GeneRegionTrack, DataTrack,
-    OverlayTrack, HighlightTrack, GenomicInterval, plot_tracks,
+    OverlayTrack, HighlightTrack, IdeogramTrack, GenomicInterval, plot_tracks,
     read_bed, read_gff, read_bedgraph,
 )
 
@@ -162,6 +163,67 @@ fig5b = axes5b[0].figure
 fig5b.savefig(os.path.join(OUT_DIR, "genome_tracks_reverse_strand.png"),
               dpi=150, bbox_inches="tight")
 print(f"[INFO] Saved genome_tracks_reverse_strand.png")
+
+# ---------------------------------------------------------------------------
+# 6. IdeogramTrack — chromosome ideogram (Gviz-style)
+# ---------------------------------------------------------------------------
+# Create cytoband data for chr7 (synthetic data mimicking UCSC format)
+bands_chr7 = pd.DataFrame({
+    "chrom": ["chr7"] * 18,
+    "chromStart": [
+        0, 7100000, 11500000, 19000000, 24900000, 27400000,
+        31600000, 35800000, 40800000, 45600000,
+        58800000, 61000000, 62900000, 72700000, 83200000,
+        92100000, 103400000, 127500000,
+    ],
+    "chromEnd": [
+        7100000, 11500000, 19000000, 24900000, 27400000, 31600000,
+        35800000, 40800000, 45600000, 58800000,
+        61000000, 62900000, 72700000, 83200000, 92100000,
+        103400000, 127500000, 159138663,
+    ],
+    "name": [
+        "p22.3", "p22.2", "p22.1", "p21.3", "p21.2", "p21.1",
+        "p15.3", "p15.2", "p15.1", "p14.3",
+        "p14.1", "p13.3", "p13.1", "p12.3", "p12.1",
+        "q11.21", "q11.23", "q21.11",
+    ],
+    "gieStain": [
+        "gneg", "gpos50", "gneg", "gpos75", "gneg", "gpos25",
+        "gneg", "gpos50", "gneg", "gpos75",
+        "acen", "acen", "gneg", "gpos75", "gneg",
+        "gpos50", "gneg", "gpos100",
+    ],
+})
+
+ideo = IdeogramTrack(bands_chr7, chromosome="chr7", show_band_id=True)
+axes6 = plot_tracks(
+    [ideo, gtrack, atrack, dtrack],
+    region=region,
+    title="IdeogramTrack + Annotation + Coverage",
+    figsize=(14, 6),
+)
+fig6 = axes6[0].figure
+fig6.savefig(os.path.join(OUT_DIR, "genome_tracks_ideogram.png"),
+             dpi=150, bbox_inches="tight")
+print(f"[INFO] Saved genome_tracks_ideogram.png")
+
+# Ideogram with circle centromere
+ideo_circle = IdeogramTrack(
+    bands_chr7, chromosome="chr7",
+    centromere_shape="circle", show_band_id=True,
+    name="chr7",
+)
+axes6b = plot_tracks(
+    [ideo_circle, gtrack],
+    region=region,
+    title="IdeogramTrack (circle centromere)",
+    figsize=(14, 3),
+)
+fig6b = axes6b[0].figure
+fig6b.savefig(os.path.join(OUT_DIR, "genome_tracks_ideogram_circle.png"),
+              dpi=150, bbox_inches="tight")
+print(f"[INFO] Saved genome_tracks_ideogram_circle.png")
 
 plt.show()
 print("[INFO] All advanced example figures saved.")

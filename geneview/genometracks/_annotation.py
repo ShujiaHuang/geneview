@@ -108,6 +108,7 @@ class AnnotationTrack(StackedTrack):
 
         dp = {
             "fill": "lightblue",  # Gviz AnnotationTrack default
+            "col": "transparent",  # Gviz: AnnotationTrack col = "transparent"
         }
         if display_params:
             dp.update(display_params)
@@ -216,7 +217,10 @@ class AnnotationTrack(StackedTrack):
             else:
                 color = self.get_param("fill", "lightblue")
 
-            edge_color = self.get_param("col", "#333333")  # Bug 4 fix: use 'col' not 'col_border'
+            edge_color = self.get_param("col", "transparent")  # Gviz: col = "transparent"
+            # Matplotlib doesn't understand "transparent", convert to "none"
+            if edge_color == "transparent":
+                edge_color = "none"
             lwd = self.get_param("lwd", 0.5)
             alpha = self.get_param("alpha", 1.0)
 

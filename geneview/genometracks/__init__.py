@@ -14,6 +14,8 @@ GeneRegionTrack
     Gene models with exons, UTRs, and introns.
 DataTrack
     Numeric data visualization (BigWig, bedGraph).
+IdeogramTrack
+    Chromosome ideogram with cytoband coloring.
 HighlightTrack
     Cross-track region highlighting.
 OverlayTrack
@@ -56,6 +58,7 @@ from ._gene_region import GeneRegionTrack
 from ._data_track import DataTrack
 from ._highlight import HighlightTrack
 from ._overlay import OverlayTrack
+from ._ideogram import IdeogramTrack
 from ._track_plot import plot_tracks
 from ._io import (
     read_bed,
@@ -72,6 +75,7 @@ __all__ = [
     "AnnotationTrack",
     "GeneRegionTrack",
     "DataTrack",
+    "IdeogramTrack",
     "HighlightTrack",
     "OverlayTrack",
     # Core

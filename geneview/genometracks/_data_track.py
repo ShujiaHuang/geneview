@@ -36,8 +36,8 @@ _AGG_FUNCS = {
 }
 
 # Default color palettes
-_HEATMAP_CMAP = "RdYlBu_r"
-_GRADIENT_COLORS = ("white", "#3C5488")
+_HEATMAP_CMAP = "Blues"  # Gviz: colorRampPalette(brewer.pal(9, "Blues"))
+_GRADIENT_COLORS = ("white", "#08306B")  # Gviz: brewer.pal(9, "Blues")[c(1,9)]
 
 
 class DataTrack(NumericTrack):
@@ -71,7 +71,9 @@ class DataTrack(NumericTrack):
     ncolor : int, optional
         Number of gradient levels. Default is 100.
     show_sample_names : bool, optional
-        For heatmap type, show sample names on the y-axis. Default is True.
+        For heatmap type, show sample names on the y-axis. Default is False (Gviz default).
+    separator : int, optional
+        Spacing in pixels between heatmap rows. Default is 0.
     transformation : callable, optional
         Function applied to value arrays before plotting (e.g. np.log2).
     window : int or str, optional
@@ -119,7 +121,8 @@ class DataTrack(NumericTrack):
         fill: str = "#808080",           # Gviz: gray for histogram
         gradient: Tuple[str, str] = ("#F7FBFF", "#08306B"),  # Gviz gradient
         ncolor: int = 100,
-        show_sample_names: bool = True,
+        show_sample_names: bool = False,  # Gviz default: FALSE
+        separator: int = 0,
         transformation: Optional[Any] = None,
         window: Optional[Union[int, str]] = None,
         window_size: Optional[int] = None,
@@ -159,6 +162,7 @@ class DataTrack(NumericTrack):
         self.gradient_colors = gradient
         self.ncolor = ncolor
         self.show_sample_names = show_sample_names
+        self.separator = separator
         self.transformation = transformation
         self.window = window
         self.window_size = window_size
@@ -386,7 +390,12 @@ class DataTrack(NumericTrack):
                     alpha=min(1.0, alpha + 0.3), zorder=4)
 
     def _draw_heatmap(self, ax, data, region):
-        """Draw data as a heatmap."""
+        """Draw data as a heatmap.
+
+        Matches Gviz: uses a sequential Blues gradient by default,
+        draws individual colored cells per sample/position, and supports
+        a separator parameter for spacing between rows.
+        """
         cmap_name = self.get_param("heatmap_cmap", _HEATMAP_CMAP)
         cmap = plt.get_cmap(cmap_name)
 
@@ -397,7 +406,7 @@ class DataTrack(NumericTrack):
         # Build 2D array (samples x positions)
         matrix = np.array([vals for _, vals in value_arrays])
 
-        # Normalize to 0-1 for colormap
+        # Normalize to 0-1 for colormap (Gviz: .z2icol approach)
         vmin = np.nanmin(matrix)
         vmax = np.nanmax(matrix)
         if vmin == vmax:
@@ -406,7 +415,7 @@ class DataTrack(NumericTrack):
         n_samples = matrix.shape[0]
         n_positions = matrix.shape[1]
 
-        # Draw as image
+        # Draw as image with sequential Blues colormap
         starts = data["start"].values
         ends = data["end"].values
         extent = [starts[0], ends[-1], 0, n_samples]
@@ -414,7 +423,14 @@ class DataTrack(NumericTrack):
         ax.imshow(matrix, aspect="auto", cmap=cmap, vmin=vmin, vmax=vmax,
                   extent=extent, origin="lower", interpolation="nearest", zorder=3)
 
-        # Show sample names on y-axis if requested
+        # Draw separator lines between rows if requested
+        if self.separator > 0 and n_samples > 1:
+            sep_color = self.get_param("background_panel", "white")
+            for row_idx in range(1, n_samples):
+                ax.axhline(y=row_idx, color=sep_color,
+                           linewidth=self.separator * 0.5, zorder=4)
+
+        # Show sample names on y-axis if requested (Gviz default: FALSE)
         if self.show_sample_names and n_samples > 1:
             sample_names = [name for name, _ in value_arrays]
             ax.set_yticks(np.arange(n_samples) + 0.5)
@@ -423,7 +439,10 @@ class DataTrack(NumericTrack):
             ax.set_yticks([])
 
     def _draw_gradient(self, ax, data, region):
-        """Draw collapsed average as a color gradient."""
+        """Draw collapsed average as a color gradient.
+
+        Matches Gviz: uses colorRampPalette(brewer.pal(9, 'Blues')).
+        """
         colors = self.gradient_colors
         cmap = LinearSegmentedColormap.from_list("gradient", colors, N=self.ncolor)
 

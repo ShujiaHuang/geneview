@@ -35,6 +35,7 @@ from geneview.genometracks._gene_region import GeneRegionTrack
 from geneview.genometracks._data_track import DataTrack
 from geneview.genometracks._highlight import HighlightTrack
 from geneview.genometracks._io import read_bed, read_gff, read_bedgraph, read_auto
+from geneview.genometracks._ideogram import IdeogramTrack
 
 
 # =============================================================================
@@ -843,3 +844,127 @@ class TestPlotTracksNewFeatures:
                            figsize=(8, 6))
         assert len(axes) == 3
         plt.close("all")
+
+
+# =============================================================================
+# IdeogramTrack tests
+# =============================================================================
+
+def _make_bands(chrom="chr7"):
+    """Helper to create synthetic cytoband data."""
+    return pd.DataFrame({
+        "chrom": [chrom] * 8,
+        "chromStart": [0, 10000000, 25000000, 40000000,
+                       50000000, 52000000, 60000000, 80000000],
+        "chromEnd":   [10000000, 25000000, 40000000, 50000000,
+                       52000000, 60000000, 80000000, 100000000],
+        "name": ["p22", "p21", "p15", "p14", "acen", "acen", "q11", "q21"],
+        "gieStain": ["gneg", "gpos50", "gneg", "gpos75",
+                     "acen", "acen", "gneg", "gpos100"],
+    })
+
+
+class TestIdeogramTrack:
+
+    def test_basic_creation(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7")
+        assert ideo.chromosome == "chr7"
+        assert len(ideo._chr_bands) == 8
+
+    def test_default_display_params(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7")
+        assert ideo.get_param("background_title") == "transparent"
+        assert ideo.get_param("show_title") is False
+        assert ideo.get_param("col") == "red"
+        assert ideo.get_param("fill") == "#FFE3E6"
+
+    def test_get_region(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7")
+        region = ideo.get_region()
+        assert region is not None
+        assert region.chrom == "chr7"
+        assert region.start == 0
+        assert region.end == 100000000
+
+    def test_draw_basic(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7")
+        fig, ax = plt.subplots(figsize=(12, 2))
+        region = GenomicInterval("chr7", 20000000, 70000000)
+        ideo.draw(ax, region)
+        plt.close("all")
+
+    def test_draw_with_centromere_triangle(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7",
+                             centromere_shape="triangle")
+        fig, ax = plt.subplots(figsize=(12, 2))
+        region = GenomicInterval("chr7", 0, 100000000)
+        ideo.draw(ax, region)
+        plt.close("all")
+
+    def test_draw_with_centromere_circle(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7",
+                             centromere_shape="circle")
+        fig, ax = plt.subplots(figsize=(12, 2))
+        region = GenomicInterval("chr7", 0, 100000000)
+        ideo.draw(ax, region)
+        plt.close("all")
+
+    def test_show_band_id(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7", show_band_id=True)
+        fig, ax = plt.subplots(figsize=(12, 2))
+        region = GenomicInterval("chr7", 0, 100000000)
+        ideo.draw(ax, region)
+        plt.close("all")
+
+    def test_no_bands(self):
+        ideo = IdeogramTrack(bands=None)
+        fig, ax = plt.subplots(figsize=(12, 2))
+        region = GenomicInterval("chr7", 0, 100000000)
+        ideo.draw(ax, region)
+        plt.close("all")
+
+    def test_plot_tracks_integration(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7")
+        gtrack = GenomeAxisTrack()
+        ann_data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [25000000, 55000000],
+            "end": [35000000, 65000000],
+            "strand": ["+", "-"],
+            "name": ["feat1", "feat2"],
+        })
+        ann = AnnotationTrack(ann_data)
+        region = GenomicInterval("chr7", 20000000, 70000000)
+        axes = plot_tracks([ideo, gtrack, ann], region=region, figsize=(12, 5))
+        assert len(axes) == 3
+        plt.close("all")
+
+    def test_name_defaults_to_chromosome(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7")
+        assert ideo.name == "chr7"
+
+    def test_custom_name(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chr7", name="My Ideogram")
+        assert ideo.name == "My Ideogram"
+
+    def test_file_input(self, tmp_path):
+        bands = _make_bands()
+        fpath = tmp_path / "bands.tsv"
+        bands.to_csv(fpath, sep="\t", index=False)
+        ideo = IdeogramTrack(str(fpath), chromosome="chr7")
+        assert len(ideo._chr_bands) == 8
+
+    def test_missing_chromosome(self):
+        bands = _make_bands()
+        ideo = IdeogramTrack(bands, chromosome="chrX")
+        assert len(ideo._chr_bands) == 0
