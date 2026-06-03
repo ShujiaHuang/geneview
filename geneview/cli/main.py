@@ -64,11 +64,13 @@ def main(argv=None):
     from . import qq
     from . import venn
     from . import admixture
+    from . import tracks
 
     manhattan.register(subparsers)
     qq.register(subparsers)
     venn.register(subparsers)
     admixture.register(subparsers)
+    tracks.register(subparsers)
 
     args = parser.parse_args(argv)
 

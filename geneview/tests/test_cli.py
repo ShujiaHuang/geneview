@@ -39,6 +39,11 @@ _VENN_FILES = [
 _ADMIXTURE_DIR = os.path.join(_TEST_DATA_DIR, "admixture_example")
 _ADMIXTURE_Q = os.path.join(_ADMIXTURE_DIR, "synthetic.Q")
 _ADMIXTURE_POP = os.path.join(_ADMIXTURE_DIR, "synthetic_pop.txt")
+_TRACKS_DIR = os.path.join(_TEST_DATA_DIR, "tracks_example")
+_TRACKS_BED = os.path.join(_TRACKS_DIR, "annotations.bed")
+_TRACKS_BEDGRAPH = os.path.join(_TRACKS_DIR, "coverage.bedgraph")
+_TRACKS_GTF = os.path.join(_TRACKS_DIR, "gene_models.gtf")
+_TRACKS_HIGHLIGHT = os.path.join(_TRACKS_DIR, "highlights.bed")
 
 
 @pytest.fixture
@@ -697,3 +702,242 @@ class TestAdmixtureCLI:
             "--figsize", "16", "3",
         ])
         assert rc == 0
+
+
+# ===========================================================================
+# Tests for the tracks subcommand
+# ===========================================================================
+class TestTracksCLI:
+    """Tests for the ``geneview tracks`` CLI subcommand."""
+
+    @pytest.fixture(autouse=True)
+    def _check_data(self):
+        """Skip if test data is not available."""
+        if not os.path.isfile(_TRACKS_BED):
+            pytest.skip("Test tracks data not found in %s" % _TRACKS_DIR)
+
+    def test_basic_axis_only(self, tmp_output_dir):
+        """Should create a plot with just the genome axis."""
+        out = os.path.join(tmp_output_dir, "tracks_axis.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_with_annotation(self, tmp_output_dir):
+        """Should create a plot with an annotation track."""
+        out = os.path.join(tmp_output_dir, "tracks_anno.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-a", _TRACKS_BED,
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_with_data_track(self, tmp_output_dir):
+        """Should create a plot with a data track."""
+        out = os.path.join(tmp_output_dir, "tracks_data.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-d", _TRACKS_BEDGRAPH,
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_with_gene_region(self, tmp_output_dir):
+        """Should create a plot with a gene region track."""
+        out = os.path.join(tmp_output_dir, "tracks_gene.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-g", _TRACKS_GTF,
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_with_highlight(self, tmp_output_dir):
+        """Should create a plot with highlight regions."""
+        out = os.path.join(tmp_output_dir, "tracks_hl.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-a", _TRACKS_BED,
+            "-d", _TRACKS_BEDGRAPH,
+            "--highlight", _TRACKS_HIGHLIGHT,
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_custom_data_type(self, tmp_output_dir):
+        """Should accept --data-type line."""
+        out = os.path.join(tmp_output_dir, "tracks_line.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-d", _TRACKS_BEDGRAPH,
+            "--data-type", "line",
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_region_with_m_suffix(self, tmp_output_dir):
+        """Should parse region with M/m suffix."""
+        out = os.path.join(tmp_output_dir, "tracks_m.png")
+        rc = main([
+            "tracks", "--region", "chr7:26M-27M",
+            "-d", _TRACKS_BEDGRAPH,
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_no_axis_flag(self, tmp_output_dir):
+        """Should disable genome axis with --no-axis."""
+        out = os.path.join(tmp_output_dir, "tracks_noaxis.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "--no-axis",
+            "-a", _TRACKS_BED,
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_annotation_shape(self, tmp_output_dir):
+        """Should accept --annotation-shape box."""
+        out = os.path.join(tmp_output_dir, "tracks_box.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-a", _TRACKS_BED,
+            "--annotation-shape", "box",
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_custom_figsize(self, tmp_output_dir):
+        """Should accept custom figure size."""
+        out = os.path.join(tmp_output_dir, "tracks.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-d", _TRACKS_BEDGRAPH,
+            "-o", out,
+            "--figsize", "16", "5",
+        ])
+        assert rc == 0
+
+    def test_invalid_region(self, tmp_output_dir):
+        """Should return error for malformed region string."""
+        out = os.path.join(tmp_output_dir, "tracks.png")
+        rc = main([
+            "tracks", "--region", "invalid_region",
+            "-o", out,
+        ])
+        assert rc == 1
+
+    def test_invalid_region_reversed(self, tmp_output_dir):
+        """Should return error when start >= end."""
+        out = os.path.join(tmp_output_dir, "tracks.png")
+        rc = main([
+            "tracks", "--region", "chr7:60000000-20000000",
+            "-o", out,
+        ])
+        assert rc == 1
+
+    def test_missing_region_flag(self):
+        """Should fail when --region is not provided."""
+        with pytest.raises(SystemExit):
+            main(["tracks", "-a", _TRACKS_BED])
+
+    def test_default_output_name(self, tmp_output_dir):
+        """Should default to genome_tracks.png when -o is not given."""
+        original_dir = os.getcwd()
+        os.chdir(tmp_output_dir)
+        try:
+            rc = main([
+                "tracks", "--region", "chr7:26490000-26720000",
+                "-a", _TRACKS_BED,
+            ])
+            assert rc == 0
+            assert os.path.isfile(os.path.join(tmp_output_dir, "genome_tracks.png"))
+        finally:
+            os.chdir(original_dir)
+
+    def test_nonexistent_annotation_file(self, tmp_output_dir):
+        """Should return error for non-existent annotation file."""
+        out = os.path.join(tmp_output_dir, "tracks.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-a", "nonexistent.bed",
+            "-o", out,
+        ])
+        assert rc == 1
+
+    def test_multiple_tracks(self, tmp_output_dir):
+        """Should handle multiple track types together."""
+        out = os.path.join(tmp_output_dir, "tracks_multi.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-a", _TRACKS_BED,
+            "-g", _TRACKS_GTF,
+            "-d", _TRACKS_BEDGRAPH,
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_collapse_transcripts(self, tmp_output_dir):
+        """Should accept --collapse-transcripts meta."""
+        out = os.path.join(tmp_output_dir, "tracks_meta.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-g", _TRACKS_GTF,
+            "--collapse-transcripts", "meta",
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_highlight_custom_colors(self, tmp_output_dir):
+        """Should accept custom highlight fill and alpha."""
+        out = os.path.join(tmp_output_dir, "tracks_hlcustom.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-d", _TRACKS_BEDGRAPH,
+            "--highlight", _TRACKS_HIGHLIGHT,
+            "--highlight-fill", "#FFE3E6",
+            "--highlight-alpha", "0.5",
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_data_color(self, tmp_output_dir):
+        """Should accept --data-color."""
+        out = os.path.join(tmp_output_dir, "tracks_dcolor.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-d", _TRACKS_BEDGRAPH,
+            "--data-color", "red",
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_track_names(self, tmp_output_dir):
+        """Should accept custom track names."""
+        out = os.path.join(tmp_output_dir, "tracks_names.png")
+        rc = main([
+            "tracks", "--region", "chr7:26490000-26720000",
+            "-a", _TRACKS_BED,
+            "-d", _TRACKS_BEDGRAPH,
+            "--annotation-name", "CpG",
+            "--data-name", "Signal",
+            "-o", out,
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)

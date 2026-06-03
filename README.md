@@ -70,6 +70,7 @@ subcommands:
   qq           Create a Q-Q plot from GWAS association results.
   venn         Create a Venn diagram from 2-6 input files.
   admixture    Create an Admixture plot from ADMIXTURE .Q output.
+  tracks       Create a genome track plot from BED, GFF, or bedGraph files.
 ```
 
 Use `geneview <subcommand> --help` for detailed options of each command.
@@ -153,6 +154,29 @@ geneview admixture -i output.5.Q -p population.txt \
     --group-order POP1 POP2 POP3 POP4 POP5 \
     --set-xticklabel-top \
     -o admixture_K5.png
+```
+
+#### Genome tracks
+
+Create a genome browser-style track plot from BED, GFF, and bedGraph files:
+
+```bash
+geneview tracks --region chr7:26490000-26720000 \
+    --ideogram \
+    -a cpg_islands.bed \
+    -g gene_models.gtf \
+    -d coverage.bedgraph \
+    -o genome_tracks.png
+```
+
+Customize data track appearance and add highlight regions:
+
+```bash
+geneview tracks --region chr7:26M-27M \
+    -d signal.bedgraph --data-type line --data-color blue \
+    -a features.bed --annotation-shape box \
+    --highlight regions.bed --highlight-fill yellow \
+    -o custom_tracks.png
 ```
 
 ---
@@ -428,8 +452,8 @@ ax = gv.venn(table)
 ![venn.png](./examples/figures/venn3.png)
 
 #### Manual adjustment of petal labels
-If necessary, the labels on the petals (i.e., various intersections in the 
-Venn diagram) can be adjusted manually.
+
+If necessary, the labels on the petals (i.e., various intersections in the Venn diagram) can be adjusted manually.
 
 For this, `generate_petal_labels()` can be called first to get the 
 `petal_labels` dictionary, which can be modified.
@@ -449,6 +473,7 @@ petal_labels = gv.generate_petal_labels(dataset_dict.values(), fmt="{logic}\n({p
 ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_petal_color=True)
 
 ```
+
 ![venn4.png](./examples/figures/venn4.png)
 
 - [More tutorials about venn](./docs/tutorial/venn.ipynb)
