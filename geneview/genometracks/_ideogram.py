@@ -17,6 +17,7 @@ from matplotlib.patches import FancyBboxPatch, Polygon
 from matplotlib.path import Path
 
 from ._base import Track, GenomicInterval
+from ..utils._dataset import load_dataset
 
 
 # Cytoband colors (Gviz: biovizBase CYTOBAND palette / circos)
@@ -32,6 +33,12 @@ _CYTOBAND_COLORS = {
     "acen": "#D92F27",
     "stalk": "#647FA4",
     "gvar": "#DCDCDC",
+}
+
+# Default karyotype dataset names in geneview-data repo
+_KARYOTYPE_DATASETS = {
+    "hg38": "karyotype_human_hg38.txt",
+    "hg19": "karyotype_human_hg19.txt",
 }
 
 
@@ -51,12 +58,16 @@ class IdeogramTrack(Track):
 
     Parameters
     ----------
-    bands : pd.DataFrame or str
+    bands : pd.DataFrame or str, optional
         Cytoband data with columns: chrom, chromStart, chromEnd, name, gieStain.
         If a string, interpreted as a file path (tab-separated).
-        Can also be loaded via ``geneview.utils.load_dataset("karyotype_human_hg19.txt")``.
+        If None (default), automatically loads the human karyotype from the
+        geneview-data repository based on ``genome_build``.
     chromosome : str, optional
         Chromosome to display. If None, uses the first chromosome in the data.
+    genome_build : str
+        Genome build for default cytoband data: ``"hg38"`` or ``"hg19"``.
+        Only used when ``bands=None``. Default is ``"hg38"``.
     show_id : bool
         Whether to show the chromosome name label. Default is True.
     show_band_id : bool
@@ -74,8 +85,19 @@ class IdeogramTrack(Track):
 
     Examples
     --------
-    >>> import pandas as pd
+    Auto-load human karyotype (hg38) — no data needed:
+
     >>> from geneview.genometracks import IdeogramTrack, plot_tracks, GenomicInterval
+    >>> track = IdeogramTrack(chromosome="chr7")
+    >>> plot_tracks([track], region=GenomicInterval("chr7", 20000000, 60000000))
+
+    Use hg19 build:
+
+    >>> track = IdeogramTrack(chromosome="chr7", genome_build="hg19")
+
+    Or provide custom cytoband data:
+
+    >>> import pandas as pd
     >>> bands = pd.DataFrame({
     ...     "chrom": ["chr7"] * 5,
     ...     "chromStart": [0, 20000000, 40000000, 58000000, 60000000],
@@ -84,13 +106,13 @@ class IdeogramTrack(Track):
     ...     "gieStain": ["gneg", "gpos25", "gneg", "gpos50", "acen"],
     ... })
     >>> track = IdeogramTrack(bands, chromosome="chr7")
-    >>> plot_tracks([track], region=GenomicInterval("chr7", 20000000, 60000000))
     """
 
     def __init__(
         self,
         bands: Union[pd.DataFrame, str, None] = None,
         chromosome: Optional[str] = None,
+        genome_build: str = "hg38",
         show_id: bool = True,
         show_band_id: bool = False,
         centromere_shape: str = "triangle",
@@ -114,8 +136,19 @@ class IdeogramTrack(Track):
 
         super().__init__(name=name or "Ideogram", height=height, display_params=dp)
 
+        # Auto-load from geneview-data when bands is not provided
+        if bands is None:
+            dataset_name = _KARYOTYPE_DATASETS.get(genome_build)
+            if dataset_name is None:
+                raise ValueError(
+                    f"Unknown genome_build '{genome_build}'. "
+                    f"Supported: {list(_KARYOTYPE_DATASETS.keys())}"
+                )
+            bands = load_dataset(dataset_name)
+
         self._band_table = self._load_bands(bands)
         self.chromosome = chromosome
+        self.genome_build = genome_build
         self.show_id = show_id
         self.show_band_id = show_band_id
         self.centromere_shape = centromere_shape
@@ -152,8 +185,18 @@ class IdeogramTrack(Track):
             return None
 
         if isinstance(bands, str):
-            bands = pd.read_table(bands, header=0,
-                                  names=["chrom", "chromStart", "chromEnd", "name", "gieStain"])
+            # Read tab-separated file.
+            # UCSC/Gviz karyotype files use '#chrom' as the first header line;
+            # plain TSV files use 'chrom'.  Peek at the first character to decide.
+            with open(bands) as fh:
+                first_char = fh.read(1)
+            if first_char == "#":
+                bands = pd.read_table(
+                    bands, comment="#", header=None,
+                    names=["chrom", "chromStart", "chromEnd", "name", "gieStain"],
+                )
+            else:
+                bands = pd.read_table(bands)
 
         if not isinstance(bands, pd.DataFrame):
             raise TypeError(f"Expected DataFrame or file path, got {type(bands)}")

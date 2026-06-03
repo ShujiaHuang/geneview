@@ -923,12 +923,28 @@ class TestIdeogramTrack:
         ideo.draw(ax, region)
         plt.close("all")
 
-    def test_no_bands(self):
-        ideo = IdeogramTrack(bands=None)
+    def test_no_bands_auto_load(self):
+        """When bands=None, auto-load hg38 karyotype from geneview-data."""
+        ideo = IdeogramTrack(chromosome="chr7")
+        assert ideo.chromosome == "chr7"
+        assert ideo.genome_build == "hg38"
+        assert len(ideo._chr_bands) > 0
         fig, ax = plt.subplots(figsize=(12, 2))
         region = GenomicInterval("chr7", 0, 100000000)
         ideo.draw(ax, region)
         plt.close("all")
+
+    def test_auto_load_hg19(self):
+        """Auto-load hg19 karyotype from geneview-data."""
+        ideo = IdeogramTrack(chromosome="chr7", genome_build="hg19")
+        assert ideo.genome_build == "hg19"
+        assert len(ideo._chr_bands) > 0
+
+    def test_invalid_genome_build(self):
+        """Invalid genome_build should raise ValueError."""
+        import pytest
+        with pytest.raises(ValueError, match="Unknown genome_build"):
+            IdeogramTrack(chromosome="chr7", genome_build="hg99")
 
     def test_plot_tracks_integration(self):
         bands = _make_bands()
