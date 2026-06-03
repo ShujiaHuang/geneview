@@ -307,28 +307,43 @@ def is_valid_dataset_dict(data):
 
 
 def is_already_venn_dataset(petal_labels, dataset_labels):
-    if not isinstance(dataset_labels, list):
+    if dataset_labels is not None and not isinstance(dataset_labels, list):
         return False
 
     if not (hasattr(petal_labels, "keys") and hasattr(petal_labels, "values")):
         return False
 
-    n_sets = len(dataset_labels)
-    petal_labels_set = set(_generate_logics(n_sets))
-    valid = True
-    for logic in petal_labels.keys():
-        if not isinstance(petal_labels[logic], str):
-            valid = False
-        if len(logic) != n_sets:
-            valid = False
-        if not (set(logic) <= {"0", "1"}):
-            valid = False
-        if logic not in petal_labels_set:
-            valid = False
-        if not valid:
-            break
+    # Infer n_sets from the petal_labels keys if dataset_labels is None
+    if dataset_labels is None:
+        keys = list(petal_labels.keys())
+        if not keys:
+            return False
+        n_sets = len(keys[0])
+        # Validate that all keys have the same length and consist of 0s and 1s
+        for logic in keys:
+            if len(logic) != n_sets:
+                return False
+            if not (set(logic) <= {"0", "1"}):
+                return False
+    else:
+        n_sets = len(dataset_labels)
+        petal_labels_set = set(_generate_logics(n_sets))
+        valid = True
+        for logic in petal_labels.keys():
+            if not isinstance(petal_labels[logic], str):
+                valid = False
+            if len(logic) != n_sets:
+                valid = False
+            if not (set(logic) <= {"0", "1"}):
+                valid = False
+            if logic not in petal_labels_set:
+                valid = False
+            if not valid:
+                break
 
-    return valid
+        return valid
+
+    return True
 
 
 def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
@@ -543,6 +558,11 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
     >>> ax = venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_petal_color=True)
     """
     if is_already_venn_dataset(data, names):
+        if names is None:
+            # Infer default names from the binary keys of pre-computed petal labels
+            n_sets = len(next(iter(data.keys())))
+            names = ["set %d" % (i + 1) for i in range(n_sets)]
+
         return vennx(data=data,
                      names=names,
                      palette=palette,

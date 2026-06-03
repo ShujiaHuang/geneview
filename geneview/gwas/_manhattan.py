@@ -257,7 +257,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
 
             if (snp is not None) and (sign_marker_p is not None) and (p_value <= sign_marker_p):
                 snp_id = group_data[snp].iloc[i]
-                sign_snp_sites.append([last_xpos + site, y_value, snp_id])  # x_pos, y_value, text
+                sign_snp_sites.append([last_xpos + site, y_value, snp_id, seqid])  # x_pos, y_value, text, chrom
 
         # ``xs_by_id`` is for setting up positions and ticks. Ticks should
         # be placed in the middle of a chromosome. The a new pos column is 
@@ -337,24 +337,29 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
 
 def _find_top_snp(sign_snp_data, ld_block_size, is_get_biggest=True):
     """
-    :param sign_snp_data:  A 2D array: [[xpos1, yvalue1, text1], [xpos2, yvalue2, text2], ...]
+    :param sign_snp_data:  A 2D array: [[xpos1, yvalue1, text1, chrom1], [xpos2, yvalue2, text2, chrom2], ...]
     """
     top_snp = []
     tmp_cube = []
-    for i, (_x, _y, text) in enumerate(sign_snp_data):
+    for i, item in enumerate(sign_snp_data):
+        _x, _y, text = item[0], item[1], item[2]
+        _chrom = item[3] if len(item) > 3 else None
+
         if i == 0:
             tmp_cube.append([_x, _y, text])
+            current_chrom = _chrom
             continue
 
-        if _x > tmp_cube[-1][0] + ld_block_size:
+        if _chrom != current_chrom or _x > tmp_cube[-1][0] + ld_block_size:
             # Sorted by y_value in increase/decrease order and only get the first value [0], which is the TopSNP.
             top_snp.append(sorted(tmp_cube, key=(lambda x: x[1]), reverse=is_get_biggest)[0])
             tmp_cube = []
+            current_chrom = _chrom
 
         tmp_cube.append([_x, _y, text])
 
     if tmp_cube:  # deal the last one
-        top_snp.append(sorted(tmp_cube, key=(lambda x: x[1]), reverse=True)[0])
+        top_snp.append(sorted(tmp_cube, key=(lambda x: x[1]), reverse=is_get_biggest)[0])
 
     return top_snp
 
@@ -362,7 +367,8 @@ def _find_top_snp(sign_snp_data, ld_block_size, is_get_biggest=True):
 def _sign_snp_regions(sign_snp_data, ld_block_size):
     """Create region according to the coordinate of sign_snp_data."""
     regions = []
-    for i, (_x, _y, _t) in enumerate(sign_snp_data):
+    for i, item in enumerate(sign_snp_data):
+        _x = item[0]
         if i == 0:
             regions.append([_x - ld_block_size, _x])
             continue

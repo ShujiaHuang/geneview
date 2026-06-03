@@ -64,7 +64,7 @@ def rng():
 def wide_df(rng):
 
     columns = list("abc")
-    index = pd.Int64Index(np.arange(10, 50, 2), name="wide_index")
+    index = pd.Index(np.arange(10, 50, 2), name="wide_index")
     values = rng.normal(size=(len(index), len(columns)))
     return pd.DataFrame(values, index=index, columns=columns)
 
@@ -78,7 +78,7 @@ def wide_array(wide_df):
 @pytest.fixture
 def flat_series(rng):
 
-    index = pd.Int64Index(np.arange(10, 30), name="t")
+    index = pd.Index(np.arange(10, 30), name="t")
     return pd.Series(rng.normal(size=20), index, name="s")
 
 
@@ -97,7 +97,7 @@ def flat_list(flat_series):
 @pytest.fixture(params=["series", "array", "list"])
 def flat_data(rng, request):
 
-    index = pd.Int64Index(np.arange(10, 30), name="t")
+    index = pd.Index(np.arange(10, 30), name="t")
     series = pd.Series(rng.normal(size=20), index, name="s")
     if request.param == "series":
         data = series
@@ -156,8 +156,8 @@ def long_df(rng):
         a=rng.choice(list("abc"), n),
         b=rng.choice(list("mnop"), n),
         c=rng.choice([0, 1], n, [.3, .7]),
-        d=rng.choice(np.arange("2004-07-30", "2007-07-30", dtype="datetime64[Y]"), n),
-        t=rng.choice(np.arange("2004-07-30", "2004-07-31", dtype="datetime64[m]"), n),
+        d=rng.choice(np.arange(np.datetime64("2004"), np.datetime64("2007"), dtype="datetime64[Y]"), n),
+        t=rng.choice(pd.date_range("2004-07-30", periods=60, freq="min").to_numpy(), n),
         s=rng.choice([2, 4, 8], n),
         f=rng.choice([0.2, 0.3], n),
     ))

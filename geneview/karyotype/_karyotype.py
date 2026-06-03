@@ -13,6 +13,18 @@ from matplotlib.patches import Rectangle
 from ..palette import circos  # ``circos`` is a color dict
 
 
+def _chrom_sort_key(chrom):
+    """Sort chromosomes in natural biological order (chr1, chr2, ..., chr10, chrX, etc.)."""
+    name = str(chrom)
+    # Strip common prefixes for numeric extraction
+    stripped = name.replace("chr", "").replace("Chr", "").replace("CHR", "")
+    try:
+        return (0, int(stripped), name)
+    except ValueError:
+        # Non-numeric chromosomes (X, Y, MT, etc.) sort after numeric ones
+        return (1, 0, stripped)
+
+
 def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B", **kwargs):
     """ Create karyotype plot.
 
@@ -72,7 +84,7 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
         data = DataFrame(data, columns=["chrom", "start", "end", "name", "gie_stain"])
 
     yaxis = []
-    for i, (chrom, kc_df) in enumerate(sorted(data.groupby("chrom"), key=lambda x: x[0])):
+    for i, (chrom, kc_df) in enumerate(sorted(data.groupby("chrom"), key=lambda x: _chrom_sort_key(x[0]))):
 
         if CHR is not None and chrom != CHR:
             continue

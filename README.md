@@ -11,8 +11,13 @@ stack, including support for `numpy` and `pandas` data structures. And now it is
 
 Some of the features that geneview offers are:
 
+- **Manhattan plot** — GWAS association results with significance thresholds, top-SNP annotation, and chromosome zoom.
+- **Q-Q plot** — Quantile-quantile plots for P-value distributions with genomic inflation factor (λ).
+- **Admixture plot** — Population structure visualization from ADMIXTURE output (.Q files) with hierarchical clustering.
+- **Venn diagram** — Set intersection diagrams for 2–6 datasets with customizable petal labels and colors.
+- **Karyotype plot** — Cytogenetic band visualization with G-banding color schemes.
+- **Color palettes** — Curated color schemes (XKCD RGB, Circos, matplotlib colormaps) optimized for genomics figures.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
-- Functions for visualizing general genomics plots.
 
 
 ## Installation
@@ -24,6 +29,14 @@ pip install geneview
 ```
 
 This command will install `geneview` and all the dependencies.
+
+### Install from source
+
+```bash
+git clone https://github.com/ShujiaHuang/geneview.git
+cd geneview
+pip install .
+```
 
 ## Quick start
 
@@ -259,7 +272,7 @@ pop_group_1kg = ["KHV", "CDX", "CHS", "CHB", "JPT", "BEB", "STU", "ITU", "GIH", 
                  "MSL", "YRI", "ESN", "LWK"]
 
 f, ax = plt.subplots(1, 1, figsize=(14, 2), facecolor="w", constrained_layout=True, dpi=300)
-gv.popgen.admixtureplot(data=admixture_output_fn, 
+gv.admixtureplot(data=admixture_output_fn, 
                         population_info=population_group_fn,
                         edgewidth=2.0,
                         group_order=pop_group_1kg,
@@ -321,23 +334,36 @@ ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_peta
 
 - [More tutorials about venn](./docs/tutorial/venn.ipynb)
 
+### Karyotype plot
+
+**Karyotype** plots display cytogenetic bands with standard G-banding stain colors.
+
+```python
+import matplotlib.pyplot as plt
+import geneview as gv
+
+k_fn = gv.load_dataset("karyotype_human_hg19.txt")
+fig, ax = plt.subplots(figsize=(20, 5))
+_ = gv.karyoplot(k_fn, ax=ax)
+plt.show()
+```
+
 ## Dependencies
 
-**Geneview** only supports Python 3 and no longer supports Python 2.
+**Geneview** supports Python 3.7+ and requires the following packages:
 
-Installation requires [numpy](http://www.numpy.org/), 
-[scipy](http://www.scipy.org/), 
-[pandas](http://pandas.pydata.org/), and 
-[matplotlib](http://matplotlib.org/). 
-Some functions will use 
-[statsmodels](http://statsmodels.sourceforge.net/).
+- [numpy](http://www.numpy.org/)
+- [scipy](http://www.scipy.org/)
+- [pandas](http://pandas.pydata.org/)
+- [matplotlib](http://matplotlib.org/)
+- [seaborn](https://seaborn.pydata.org/)
 
+## Citation
 
-We need the data structures: `DataFrame` and `Series` in **pandas**. 
-It's easy and worth to learn, click 
-[here](http://pda.readthedocs.org/en/latest/chp5.html) to see more detail 
-tutorial for these two data type.
+If you use **geneview** in your research, please cite:
+
+> Huang, S. geneview: A python package for visualizing genomics data. https://github.com/ShujiaHuang/geneview
 
 ## License
 
-Released under a GPL-3.0 license
+Released under a [GPL-3.0 license](./LICENSE).

@@ -358,7 +358,8 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor="r", alpha=0.8, **kwargs):
 
     if ablinecolor:
         # plot the y=x line by expected: uniform distribution data
-        ax.plot([x.min(), ax.get_xlim()[1]], [x.min(), ax.get_xlim()[1]],
+        xlim_max = ax.get_xlim()[1]
+        ax.plot([x.min(), xlim_max], [x.min(), xlim_max],
                 color=ablinecolor, linestyle="-")
 
     return ax
