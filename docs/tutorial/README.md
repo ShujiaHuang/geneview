@@ -52,8 +52,6 @@ $ jupyter notebook
 
 Then navigate to any `.ipynb` file above and select the **Python3(geneview)** kernel to get started.
 
-> **Note:** The `genome_tracks.ipynb` notebook does not yet exist as a Jupyter file. Use the [genome tracks example scripts](../../examples/scripts/) and the [Genome Tracks Guide](../genome_tracks_guide.md) in the meantime.
-
 ### Dataset
 
 The tutorials use example datasets hosted in [geneview-data](https://github.com/ShujiaHuang/geneview-data).
