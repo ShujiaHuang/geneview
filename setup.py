@@ -49,6 +49,11 @@ if __name__ == "__main__":
               "seaborn",
           ],
           packages=find_packages(),
+          entry_points={
+              "console_scripts": [
+                  "geneview=geneview.cli.main:main",
+              ],
+          },
           classifiers=[
              "Intended Audience :: Science/Research",
              "Programming Language :: Python :: 3.7",
