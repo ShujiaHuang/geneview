@@ -94,6 +94,21 @@ DEFAULT_STYLE = PlotStyle(
     # -- Colour palette ------------------------------------------------------
     color_palette=_DEFAULT_PALETTE,
 
+    # -- Genome tracks -------------------------------------------------------
+    # Default style uses comfortable sizes and the historical Gviz-like
+    # title panel (lightgray background, white bold text).
+    tracks_title_bg="#D3D3D3",
+    tracks_title_color="white",
+    tracks_title_fontsize=10.0,
+    tracks_title_border="none",
+    tracks_axis_color="#A9A9A9",
+    tracks_axis_linewidth=0.8,
+    tracks_tick_fontsize=7.0,
+    tracks_feature_fontsize=10.0,
+    tracks_linewidth=1.0,
+    tracks_figsize_width=12.0,
+    tracks_height_per_track=1.2,
+
     # -- Export --------------------------------------------------------------
     # TrueType embedding (type 42) is required by almost all journals so
     # that text remains editable in Illustrator / Inkscape.

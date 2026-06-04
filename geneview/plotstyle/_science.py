@@ -94,6 +94,20 @@ SCIENCE_STYLE = PlotStyle(
     # -- Colour palette ------------------------------------------------------
     color_palette=_OKABE_ITO_PALETTE,
 
+    # -- Genome tracks -------------------------------------------------------
+    # Science: clean, high-contrast. Compact figure width.
+    tracks_title_bg="white",
+    tracks_title_color="#333333",
+    tracks_title_fontsize=8.0,
+    tracks_title_border="lightgray",
+    tracks_axis_color="#666666",
+    tracks_axis_linewidth=0.4,
+    tracks_tick_fontsize=6.0,
+    tracks_feature_fontsize=7.0,
+    tracks_linewidth=0.5,
+    tracks_figsize_width=5.0,   # Science double-column ≈ 127 mm
+    tracks_height_per_track=0.9,
+
     # -- Export --------------------------------------------------------------
     pdf_fonttype=42,
     ps_fonttype=42,

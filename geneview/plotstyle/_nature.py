@@ -98,6 +98,21 @@ NATURE_STYLE = PlotStyle(
     # -- Colour palette ------------------------------------------------------
     color_palette=_WONG_PALETTE,
 
+    # -- Genome tracks -------------------------------------------------------
+    # Nature: compact, minimal. White title panels with dark text.
+    # Smaller fonts per the 5–7 pt rule.
+    tracks_title_bg="white",
+    tracks_title_color="#333333",
+    tracks_title_fontsize=7.0,
+    tracks_title_border="lightgray",
+    tracks_axis_color="#666666",
+    tracks_axis_linewidth=0.4,
+    tracks_tick_fontsize=5.5,
+    tracks_feature_fontsize=6.0,
+    tracks_linewidth=0.4,
+    tracks_figsize_width=7.2,   # Nature double-column ≈ 183 mm
+    tracks_height_per_track=0.8,
+
     # -- Export --------------------------------------------------------------
     # TrueType embedding (type 42) – required so text stays editable.
     pdf_fonttype=42,

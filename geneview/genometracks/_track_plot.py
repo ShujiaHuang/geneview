@@ -23,6 +23,23 @@ from ._genome_axis import GenomeAxisTrack
 from ._ideogram import IdeogramTrack
 
 
+def _apply_style_to_tracks(tracks, style):
+    """Apply plotstyle track-parameter overrides to a list of tracks.
+
+    Each track's display parameters are updated with the style's
+    ``to_track_params()`` overrides, but only for keys the track has
+    not already customised (i.e. the style is a *floor*, not a ceiling).
+    """
+    if style is None:
+        return
+    overrides = style.to_track_params()
+    for track in tracks:
+        for key, value in overrides.items():
+            # Only override if the track is still using its class default
+            # (i.e. the user did not explicitly set this param).
+            track.set_param(key, value)
+
+
 def plot_tracks(
     track_list: Union[Track, List[Track]],
     region: Optional[GenomicInterval] = None,
@@ -38,6 +55,7 @@ def plot_tracks(
     chromosome: Optional[str] = None,
     show_title: bool = True,
     reverse_strand: bool = False,
+    style: Optional[str] = None,
     **kwargs,
 ) -> List:
     """Plot one or more genome tracks in a vertically stacked layout.
@@ -79,6 +97,12 @@ def plot_tracks(
         Font size for the main title. Default is 14.
     chromosome : str, optional
         Force a specific chromosome for all tracks.
+    style : str, optional
+        Name of a registered plot style (e.g. ``"nature"``, ``"science"``,
+        ``"cell"``).  When provided, the style's font sizes, colours, figure
+        dimensions, and track-panel settings are applied to all tracks and
+        the overall layout.  ``None`` (default) uses the currently active
+        matplotlib rcParams.
     **kwargs
         Additional display parameters applied to all tracks.
 
@@ -122,6 +146,12 @@ def plot_tracks(
     if main is not None and title is None:
         title = main
 
+    # Resolve the style (if requested)
+    from ..plotstyle import use_style as _use_style, get_style as _get_style
+    resolved_style = None
+    if style is not None:
+        resolved_style = _get_style(style)
+
     # Expand HighlightTrack objects
     expanded_tracks, highlights = _expand_tracks(track_list)
 
@@ -131,6 +161,9 @@ def plot_tracks(
     # Build per-highlight target-panel mapping (Bug 1 fix)
     for hl in highlights:
         hl._target_ids = set(id(t) for t in hl.track_list)
+
+    # Apply style-level track parameter overrides (before user kwargs)
+    _apply_style_to_tracks(expanded_tracks, resolved_style)
 
     # Apply global display parameters to all tracks
     if kwargs:
@@ -177,6 +210,7 @@ def plot_tracks(
         expanded_tracks, highlights, region, norm_sizes,
         title_width, title, figsize, fontsize_main,
         show_title=show_title,
+        style=resolved_style,
     )
     if reverse_strand:
         for a in axes_list:
@@ -263,6 +297,7 @@ def _plot_full_layout(
     figsize: Optional[Tuple[float, float]],
     fontsize_main: float,
     show_title: bool = True,
+    style=None,
 ) -> List:
     """Plot tracks with full layout: title panels + data panels."""
     n_tracks = len(tracks)
@@ -272,8 +307,13 @@ def _plot_full_layout(
 
     # Compute figure size
     if figsize is None:
-        width = 12
-        height_per_track = 1.2
+        # Use style-specific dimensions when available
+        if style is not None:
+            width = style.tracks_figsize_width
+            height_per_track = style.tracks_height_per_track
+        else:
+            width = 12
+            height_per_track = 1.2
         base_height = 1.0  # For margins/title
         height = base_height + sum(s * height_per_track for s in sizes)
         figsize = (width, height)
@@ -343,6 +383,9 @@ def _plot_full_layout(
         is_genome_axis = isinstance(track, GenomeAxisTrack)
         is_ideogram = isinstance(track, IdeogramTrack)
 
+        # Use style-specific tick font size when available
+        tick_fs = style.tracks_tick_fontsize if style is not None else 7
+
         if not is_last and not is_genome_axis and not is_ideogram:
             ax_data.set_xticklabels([])
         elif is_last and not is_genome_axis and not is_ideogram:
@@ -350,10 +393,14 @@ def _plot_full_layout(
             span = region.end - region.start
             from ._base import _genomic_position_formatter
             ax_data.xaxis.set_major_formatter(_genomic_position_formatter(span))
-            ax_data.tick_params(axis="x", labelsize=7)
+            ax_data.tick_params(axis="x", labelsize=tick_fs)
             ax_data.spines["bottom"].set_visible(True)
-            ax_data.spines["bottom"].set_color("darkgray")
-            ax_data.spines["bottom"].set_linewidth(0.8)
+            ax_data.spines["bottom"].set_color(
+                style.tracks_axis_color if style is not None else "darkgray"
+            )
+            ax_data.spines["bottom"].set_linewidth(
+                style.tracks_axis_linewidth if style is not None else 0.8
+            )
         else:
             ax_data.set_xticklabels([])
 
@@ -413,6 +460,9 @@ def _draw_title_panel(ax, track: Track, region: GenomicInterval) -> None:
 
     # Border — Gviz default is transparent (no visible border)
     border_color = track.get_param("col_border_title", "transparent")
+    # Matplotlib doesn't understand "transparent"; convert to "none"
+    if border_color == "transparent":
+        border_color = "none"
     for spine in ax.spines.values():
         spine.set_visible(True)
         spine.set_color(border_color)

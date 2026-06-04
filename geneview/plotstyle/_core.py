@@ -146,6 +146,19 @@ class PlotStyle:
     savefig_dpi: int = 300
     savefig_bbox: str = "tight"
 
+    # -- Genome tracks -------------------------------------------------------
+    tracks_title_bg: str = "#D3D3D3"
+    tracks_title_color: str = "white"
+    tracks_title_fontsize: float = 10.0
+    tracks_title_border: str = "none"
+    tracks_axis_color: str = "#A9A9A9"
+    tracks_axis_linewidth: float = 0.5
+    tracks_tick_fontsize: float = 7.0
+    tracks_feature_fontsize: float = 8.0
+    tracks_linewidth: float = 1.0
+    tracks_figsize_width: float = 12.0
+    tracks_height_per_track: float = 1.2
+
     # -- Escape hatch --------------------------------------------------------
     rc_params: Dict = field(default_factory=dict)
 
@@ -214,6 +227,29 @@ class PlotStyle:
         ax.spines["right"].set_visible(self.axes_spines_right)
         ax.spines["bottom"].set_visible(self.axes_spines_bottom)
         ax.spines["left"].set_visible(self.axes_spines_left)
+
+    def to_track_params(self) -> Dict:
+        """Return a dict of display parameter overrides for genome tracks.
+
+        These overrides cascade the style's visual identity (fonts, colours,
+        sizes) into the genome-tracks display-parameter system so that track
+        content matches the active journal style.
+        """
+        params: Dict = {
+            # Title panels
+            "background_title": self.tracks_title_bg,
+            "col_title": self.tracks_title_color,
+            "fontsize_title": self.tracks_title_fontsize,
+            "col_border_title": self.tracks_title_border,
+            # Axis / spine colours
+            "col_axis": self.tracks_axis_color,
+            # Font sizes
+            "fontsize": self.tracks_feature_fontsize,
+            "fontcolor": self.tracks_axis_color,
+            # Line widths
+            "lwd": self.tracks_linewidth,
+        }
+        return params
 
 
 # ---------------------------------------------------------------------------

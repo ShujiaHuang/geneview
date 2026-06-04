@@ -95,6 +95,20 @@ CELL_STYLE = PlotStyle(
     # -- Colour palette ------------------------------------------------------
     color_palette=_CELL_PALETTE,
 
+    # -- Genome tracks -------------------------------------------------------
+    # Cell: clean, accessible. Moderate sizing between Nature and default.
+    tracks_title_bg="white",
+    tracks_title_color="#333333",
+    tracks_title_fontsize=7.0,
+    tracks_title_border="lightgray",
+    tracks_axis_color="#666666",
+    tracks_axis_linewidth=0.4,
+    tracks_tick_fontsize=6.0,
+    tracks_feature_fontsize=7.0,
+    tracks_linewidth=0.5,
+    tracks_figsize_width=6.85,  # Cell double-column ≈ 174 mm
+    tracks_height_per_track=0.9,
+
     # -- Export --------------------------------------------------------------
     pdf_fonttype=42,
     ps_fonttype=42,
