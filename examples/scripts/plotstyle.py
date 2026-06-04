@@ -34,7 +34,7 @@ df = gv.utils.load_dataset("gwas")
 for style_name in ["geneview", "nature", "science", "cell"]:
     fig, ax = plt.subplots(figsize=(10, 3.5), facecolor="w", edgecolor="k")
     ax = gv.manhattanplot(
-        data=df[["#CHROM", "POS", "P"]],
+        data=df,
         marker=".",
         sign_marker_p=1e-6,
         sign_marker_color="r",
@@ -105,7 +105,7 @@ for style_name in ["geneview", "nature", "science", "cell"]:
 apply_style("nature")
 print("\nGlobal style set to 'nature'.")
 fig, ax = plt.subplots(figsize=(10, 3.5), facecolor="w", edgecolor="k")
-ax = gv.manhattanplot(data=df[["#CHROM", "POS", "P"]], marker=".", ax=ax)
+ax = gv.manhattanplot(data=df, marker=".", ax=ax)
 fig.tight_layout()
 fig.savefig("examples/figures/manhattan_nature_global.png",
             dpi=300, bbox_inches="tight")
