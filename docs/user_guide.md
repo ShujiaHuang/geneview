@@ -6,17 +6,32 @@
 
 ## Table of Contents
 
-1. [Installation](#installation)
-2. [Quick Start](#quick-start)
-3. [GWAS Plots](#gwas-plots)
-4. [Venn Diagrams](#venn-diagrams)
-5. [Population Structure (ADMIXTURE)](#population-structure-admixture)
-6. [Karyotype Plots](#karyotype-plots)
-7. [Color Palettes](#color-palettes)
-8. [Genome Tracks](#genome-tracks)
-9. [Command-Line Interface (CLI)](#command-line-interface-cli)
-10. [Utilities](#utilities)
-11. [Saving Figures](#saving-figures)
+- [geneview User Guide](#geneview-user-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+  - [GWAS Plots](#gwas-plots)
+    - [Manhattan Plot](#manhattan-plot)
+    - [Q-Q Plot](#q-q-plot)
+    - [Q-Q Normal Plot](#q-q-normal-plot)
+  - [Venn Diagrams](#venn-diagrams)
+  - [Population Structure (ADMIXTURE)](#population-structure-admixture)
+  - [Karyotype Plots](#karyotype-plots)
+  - [Color Palettes](#color-palettes)
+  - [Genome Tracks](#genome-tracks)
+    - [Overview](#overview)
+    - [Quick Example](#quick-example)
+  - [Command-Line Interface (CLI)](#command-line-interface-cli)
+  - [Utilities](#utilities)
+    - [Loading Built-in Datasets](#loading-built-in-datasets)
+    - [Text Adjustment](#text-adjustment)
+    - [Numeric Check](#numeric-check)
+  - [Saving Figures](#saving-figures)
+  - [API Reference](#api-reference)
+    - [Top-level Functions](#top-level-functions)
+    - [Track Classes](#track-classes)
+    - [File I/O](#file-io)
+  - [Examples](#examples)
 
 ---
 
@@ -25,7 +40,7 @@
 ```bash
 pip install geneview
 
-# With optional genome tracks dependencies (for BigWig, BAM support):
+# With optional genome tracks dependencies (for BigWig, BAM, and CRAM support):
 pip install geneview[genometracks]
 ```
 
@@ -274,6 +289,7 @@ from geneview.genometracks import (
 | `GeneRegionTrack` | Gene models (exons, UTRs, introns) |
 | `DataTrack` | Numeric data (line, histogram, heatmap, etc.) |
 | `HighlightTrack` | Cross-track highlight regions |
+| `OverlayTrack` | Overlay multiple tracks on the same panel |
 
 ### Quick Example
 
@@ -330,9 +346,26 @@ geneview venn --input list1.txt list2.txt list3.txt --output venn.png
 
 # Admixture plot
 geneview admixture --input output.Q --pop-file pop.info --output admixture.png
+
+# Genome tracks from BED, GFF, and bedGraph files
+geneview tracks --region chr7:26490000-26720000 \
+    --ideogram \
+    -a cpg_islands.bed \
+    -g gene_models.gtf \
+    -d coverage.bedgraph \
+    -o genome_tracks.png
 ```
 
 Run `geneview --help` for a full list of subcommands and options.
+
+```text
+subcommands:
+  manhattan    Create a Manhattan plot from GWAS association results.
+  qq           Create a Q-Q plot from GWAS association results.
+  venn         Create a Venn diagram from 2-6 input files.
+  admixture    Create an Admixture plot from ADMIXTURE .Q output.
+  tracks       Create a genome track plot from BED, GFF, or bedGraph files.
+```
 
 ---
 
@@ -429,7 +462,20 @@ fig.savefig("tracks.png", dpi=300, bbox_inches="tight")
 | `GeneRegionTrack` | Gene model tracks |
 | `DataTrack` | Numeric data tracks |
 | `HighlightTrack` | Cross-track highlights |
+| `OverlayTrack` | Overlay multiple tracks |
 | `GenomicInterval` | Genomic region dataclass |
+
+### File I/O
+
+| Function | Description |
+|----------|-------------|
+| `read_bed` | Read BED files |
+| `read_gff` | Read GFF/GTF files |
+| `read_bedgraph` | Read bedGraph files |
+| `read_bigwig` | Read BigWig files (requires pyBigWig) |
+| `read_bam_coverage` | Compute coverage from BAM files (requires pysam) |
+| `read_cram_coverage` | Compute coverage from CRAM files (requires pysam + reference FASTA) |
+| `read_auto` | Auto-detect format from file extension |
 
 ---
 
@@ -449,6 +495,7 @@ Full example scripts are available in the [`examples/scripts/`](../examples/scri
 | `genome_tracks_data.py` | Data track plot types |
 | `genome_tracks_highlight.py` | Highlight regions |
 | `genome_tracks_comprehensive.py` | Full showcase |
+| `genome_tracks_bam_cram.py` | BAM/CRAM coverage as DataTrack |
 
 Run any example:
 

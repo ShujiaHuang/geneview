@@ -1017,10 +1017,38 @@ df = read_bigwig("signal.bw", region=GenomicInterval("chr7", 26500000, 26800000)
 Requires `pysam`:
 
 ```python
-from geneview.genometracks import read_bam_coverage
+from geneview.genometracks import read_bam_coverage, GenomicInterval
 
 df = read_bam_coverage("alignments.bam",
                         region=GenomicInterval("chr7", 26500000, 26800000))
+```
+
+### CRAM Coverage (optional)
+
+CRAM is the reference-based compressed counterpart of BAM. Requires `pysam` and typically a reference FASTA file (indexed with `samtools faidx`):
+
+```python
+from geneview.genometracks import read_cram_coverage, GenomicInterval
+
+region = GenomicInterval("chr7", 26500000, 26800000)
+df = read_cram_coverage("alignments.cram", region=region, reference="hg38.fa")
+```
+
+The `reference` parameter can be omitted if the reference path is embedded in the CRAM header and accessible on the local filesystem.
+
+You can also feed BAM or CRAM coverage directly into a DataTrack:
+
+```python
+from geneview.genometracks import DataTrack, read_bam_coverage, read_cram_coverage, plot_tracks
+
+region = GenomicInterval("chr7", 26500000, 26800000)
+bam_cov = read_bam_coverage("sample.bam", region=region)
+cram_cov = read_cram_coverage("sample.cram", region=region, reference="hg38.fa")
+
+bam_track = DataTrack(bam_cov, type="histogram", name="BAM Coverage")
+cram_track = DataTrack(cram_cov, type="histogram", name="CRAM Coverage")
+
+axes = plot_tracks([bam_track, cram_track], region=region)
 ```
 
 ### Auto-detect Format
@@ -1032,6 +1060,9 @@ from geneview.genometracks import read_auto
 df = read_auto("features.bed")    # calls read_bed
 df = read_auto("annotations.gtf") # calls read_gff
 df = read_auto("signal.bedgraph") # calls read_bedgraph
+df = read_auto("signal.bw")       # calls read_bigwig
+df = read_auto("alignments.bam")  # calls read_bam_coverage
+df = read_auto("alignments.cram") # calls read_cram_coverage
 ```
 
 ### Using File Paths with Track Constructors

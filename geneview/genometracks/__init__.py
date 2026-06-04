@@ -30,7 +30,7 @@ GenomicInterval
 
 File I/O
 --------
-read_bed, read_gff, read_bedgraph, read_bigwig, read_bam_coverage
+read_bed, read_gff, read_bedgraph, read_bigwig, read_bam_coverage, read_cram_coverage
     Readers for common genomic file formats.
 
 Examples
@@ -66,6 +66,7 @@ from ._io import (
     read_bedgraph,
     read_bigwig,
     read_bam_coverage,
+    read_cram_coverage,
     read_auto,
 )
 
@@ -92,5 +93,6 @@ __all__ = [
     "read_bedgraph",
     "read_bigwig",
     "read_bam_coverage",
+    "read_cram_coverage",
     "read_auto",
 ]

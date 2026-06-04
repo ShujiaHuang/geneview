@@ -268,15 +268,92 @@ def read_bam_coverage(
     pd.DataFrame
         DataFrame with columns: chrom, start, end, value (coverage depth).
     """
+    return _read_alignment_coverage(filepath, region=region, bins=bins, mode="rb")
+
+
+def read_cram_coverage(
+    filepath: str,
+    region: Optional[GenomicInterval] = None,
+    bins: int = 1000,
+    reference: Optional[str] = None,
+) -> pd.DataFrame:
+    """Compute coverage from a CRAM file.
+
+    Requires the optional ``pysam`` package. CRAM files are reference-based
+    compressed alignments; a reference FASTA is typically needed to decode
+    them. If the reference path is embedded in the CRAM header and
+    accessible on the local filesystem, ``reference`` can be omitted.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the CRAM file (must be indexed with ``samtools index``).
+    region : GenomicInterval, optional
+        Genomic region to compute coverage for.
+    bins : int
+        Number of bins for summarizing coverage.
+    reference : str, optional
+        Path to the reference FASTA file (must be indexed with ``samtools faidx``).
+        Required unless the reference is already accessible via the CRAM header.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns: chrom, start, end, value (coverage depth).
+
+    Examples
+    --------
+    >>> from geneview.genometracks import read_cram_coverage, GenomicInterval
+    >>> region = GenomicInterval("chr7", 2000000, 2050000)
+    >>> df = read_cram_coverage("sample.cram", region=region,
+    ...                         reference="hg38.fa")  # doctest: +SKIP
+    """
+    return _read_alignment_coverage(
+        filepath, region=region, bins=bins, mode="rc", reference=reference,
+    )
+
+
+def _read_alignment_coverage(
+    filepath: str,
+    region: Optional[GenomicInterval] = None,
+    bins: int = 1000,
+    mode: str = "rb",
+    reference: Optional[str] = None,
+) -> pd.DataFrame:
+    """Shared implementation for BAM and CRAM coverage computation.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the BAM/CRAM file.
+    region : GenomicInterval, optional
+        Genomic region to compute coverage for.
+    bins : int
+        Number of bins for summarizing coverage.
+    mode : str
+        pysam open mode: ``"rb"`` for BAM, ``"rc"`` for CRAM.
+    reference : str, optional
+        Path to the reference FASTA (required for CRAM).
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns: chrom, start, end, value (coverage depth).
+    """
     try:
         import pysam
     except ImportError:
+        fmt = "CRAM" if mode == "rc" else "BAM"
         raise ImportError(
-            "The 'pysam' package is required to read BAM files. "
+            f"The 'pysam' package is required to read {fmt} files. "
             "Install it with: pip install pysam"
         )
 
-    bam = pysam.AlignmentFile(filepath, "rb")
+    open_kwargs = {}
+    if reference is not None:
+        open_kwargs["reference_filename"] = reference
+
+    alignment = pysam.AlignmentFile(filepath, mode, **open_kwargs)
     try:
         if region is not None:
             chrom = region.chrom
@@ -284,16 +361,16 @@ def read_bam_coverage(
             end = region.end
         else:
             # Use first reference
-            chrom = bam.references[0]
+            chrom = alignment.references[0]
             start = 0
-            end = bam.get_reference_length(chrom)
+            end = alignment.get_reference_length(chrom)
 
         # Use pysam count to get coverage
         bin_size = max(1, (end - start) // bins)
         records = []
         for pos in range(start, end, bin_size):
             bin_end = min(pos + bin_size, end)
-            count = bam.count(chrom, pos, bin_end)
+            count = alignment.count(chrom, pos, bin_end)
             coverage = count / max(1, bin_end - pos)
             records.append({
                 "chrom": chrom,
@@ -303,7 +380,7 @@ def read_bam_coverage(
             })
         return pd.DataFrame(records)
     finally:
-        bam.close()
+        alignment.close()
 
 
 def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
@@ -315,6 +392,7 @@ def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
         - .bedgraph, .bdg -> read_bedgraph
         - .bw, .bigwig -> read_bigwig
         - .bam -> read_bam_coverage
+        - .cram -> read_cram_coverage
 
     Parameters
     ----------
@@ -350,6 +428,8 @@ def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
         return read_bigwig(filepath)
     elif ext == ".bam":
         return read_bam_coverage(filepath)
+    elif ext == ".cram":
+        return read_cram_coverage(filepath)
     else:
         # Try as tab-separated with header
         try:
@@ -362,5 +442,5 @@ def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
 
         raise ValueError(
             f"Cannot determine file format for '{filepath}'. "
-            f"Supported extensions: .bed, .gff, .gff3, .gtf, .bedgraph, .bdg, .bw, .bigwig, .bam"
+            f"Supported extensions: .bed, .gff, .gff3, .gtf, .bedgraph, .bdg, .bw, .bigwig, .bam, .cram"
         )

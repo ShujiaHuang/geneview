@@ -54,6 +54,29 @@ geneview admixture \
     --edgewidth 2.0 \
     --set-xticklabel-top
 
+# --- Genome tracks (basic) ---
+echo "=== Creating Genome tracks (basic) ==="
+geneview tracks \
+    --region chr7:26490000-26720000 \
+    --ideogram \
+    -a "$DATA_DIR/genome_tracks/cpg_islands.bed" \
+    -g "$DATA_DIR/genome_tracks/gene_models.gtf" \
+    -d "$DATA_DIR/genome_tracks/coverage.bedgraph" \
+    -o "$OUT_DIR/tracks_basic.png" \
+    --figsize 14 8
+
+# --- Genome tracks (with highlights and custom appearance) ---
+echo "=== Creating Genome tracks (with highlights) ==="
+geneview tracks \
+    --region chr7:26M-27M \
+    --ideogram \
+    -a "$DATA_DIR/genome_tracks/annotations.bed" --annotation-shape ellipse \
+    -g "$DATA_DIR/genome_tracks/gene_models.gtf" --collapse-transcripts longest \
+    -d "$DATA_DIR/genome_tracks/coverage.bedgraph" --data-type line --data-color blue \
+    --highlight "$DATA_DIR/genome_tracks/annotations.bed" --highlight-fill yellow \
+    -o "$OUT_DIR/tracks_custom.png" \
+    --figsize 14 10
+
 echo ""
 echo "=== All figures saved to $OUT_DIR/ ==="
 ls -la "$OUT_DIR/"

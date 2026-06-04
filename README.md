@@ -36,7 +36,7 @@ pip install geneview
 
 This command will install `geneview` and all the dependencies.
 
-For genome tracks with BigWig and BAM support:
+For genome tracks with BigWig, BAM, and CRAM support:
 
 ```bash
 pip install geneview[genometracks]
@@ -337,8 +337,8 @@ _ = gv.manhattanplot(data=df,
                                "arrowprops": dict(arrowstyle="-", color="k", alpha=0.6)},
                      ax=ax)
 ```
-![manhattan.png](./examples/figures/manhattan.png)
 
+![manhattan.png](./examples/figures/manhattan.png)
 
 #### QQ plot with default parameters
 
@@ -383,6 +383,7 @@ _ = gv.qqplot(data=df["P"],
 - [More tutorials about GWAS](./docs/tutorial/gwas_plot.ipynb)
 
 ### Admixture plot
+
 Generate **Admixture** plot from the raw admixture output result:
 
 #### simple example for admixtureplot
@@ -398,6 +399,7 @@ admixtureplot(data=load_dataset("admixture_output.Q"),
               ylabel_kws={"rotation": 45, "ha": "right"},
               ax=ax)
 ```
+
 ![admixtureplot](./examples/figures/admixture.png)
 
 or
@@ -427,7 +429,6 @@ gv.admixtureplot(data=admixture_output_fn,
 ![admixtureplot](./examples/figures/admixture.png)
 
 - [The format of input files and more details about admixtureplot](./docs/tutorial/admixture.ipynb)
-
 
 ### Venn plots
 
@@ -549,6 +550,31 @@ plt.show()
 - [Genome tracks tutorial notebook](./docs/tutorial/genome_tracks.ipynb)
 - [More example scripts](./examples/scripts/)
 
+#### BAM / CRAM coverage
+
+Compute alignment coverage from BAM or CRAM files and visualize as a DataTrack:
+
+```python
+from geneview.genometracks import (
+    GenomeAxisTrack, DataTrack, GenomicInterval, plot_tracks,
+    read_bam_coverage, read_cram_coverage,
+)
+import matplotlib.pyplot as plt
+
+region = GenomicInterval("chr7", 26_500_000, 26_800_000)
+
+# BAM (must be indexed with samtools index)
+bam_cov = read_bam_coverage("sample.bam", region=region)
+bam_track = DataTrack(bam_cov, type="histogram", name="BAM Coverage")
+
+# CRAM (reference FASTA usually required)
+cram_cov = read_cram_coverage("sample.cram", region=region, reference="hg38.fa")
+cram_track = DataTrack(cram_cov, type="histogram", name="CRAM Coverage")
+
+axes = plot_tracks([GenomeAxisTrack(), bam_track, cram_track], region=region, figsize=(14, 6))
+plt.show()
+```
+
 ### Karyotype plot
 
 **Karyotype** plots display cytogenetic bands with standard G-banding stain colors.
@@ -582,7 +608,7 @@ Comprehensive documentation is available:
 - [matplotlib](http://matplotlib.org/)
 - [seaborn](https://seaborn.pydata.org/)
 
-Optional dependencies for genome tracks (BigWig, BAM support):
+Optional dependencies for genome tracks (BigWig, BAM, CRAM support):
 
 ```bash
 pip install geneview[genometracks]  # installs pyranges, pyBigWig, pysam
