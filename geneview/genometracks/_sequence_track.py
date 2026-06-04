@@ -91,11 +91,12 @@ class SequenceTrack(Track):
         name: str = "Sequence",
         height: float = 0.5,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         dp = {"fontsize": 8}
         if display_params:
             dp.update(display_params)
-        super().__init__(name=name, height=height, display_params=dp)
+        super().__init__(name=name, height=height, display_params=dp, **kwargs)
 
         self._sequence = sequence
         self._fasta_path = fasta_path

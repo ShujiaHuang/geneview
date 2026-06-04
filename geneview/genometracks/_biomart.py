@@ -74,9 +74,10 @@ class BiomartGeneRegionTrack(GeneRegionTrack):
         name: str = "BiomartGeneRegion",
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         super().__init__(data=None, name=name, height=height,
-                         display_params=display_params)
+                         display_params=display_params, **kwargs)
         self.genome = genome
         self.chromosome = chromosome
         self._start = start

@@ -57,6 +57,7 @@ class OverlayTrack(Track):
         name: Optional[str] = None,
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         self.track_list = track_list or []
         # Use first track's name if not specified
@@ -65,7 +66,8 @@ class OverlayTrack(Track):
         elif name is None:
             name = "Overlay"
 
-        super().__init__(name=name, height=height, display_params=display_params)
+        super().__init__(name=name, height=height, display_params=display_params,
+                         **kwargs)
 
     def draw(self, ax, region: GenomicInterval) -> None:
         """Draw all contained tracks on the same axes.

@@ -77,6 +77,7 @@ class HighlightTrack(RangeTrack):
         in_background: bool = True,
         name: str = "HighlightTrack",
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         dp = {
             "fill": fill,
@@ -95,7 +96,7 @@ class HighlightTrack(RangeTrack):
 
         super().__init__(
             data=regions, name=name, height=1.0,
-            display_params=dp,
+            display_params=dp, **kwargs,
         )
 
         self.track_list = track_list or []
@@ -168,7 +169,8 @@ class HighlightTrack(RangeTrack):
             rect = mpatches.Rectangle(
                 (x_start, ylim[0]), width, ylim[1] - ylim[0],
                 facecolor=row_fill, edgecolor=row_col,
-                linewidth=0.5, alpha=alpha, zorder=1,
+                linewidth=0.5, alpha=alpha,
+                zorder=1 if self.in_background else 10,
             )
             ax.add_patch(rect)
 

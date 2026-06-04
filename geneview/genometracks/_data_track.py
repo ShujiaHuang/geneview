@@ -135,6 +135,7 @@ class DataTrack(NumericTrack):
         name: str = "Data",
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         # Support composite types (list of types)
         if isinstance(type, (list, tuple)):
@@ -158,6 +159,14 @@ class DataTrack(NumericTrack):
             "fill": fill,
             "col_histogram": "#808080",    # Gviz: gray histogram bars
             "fill_histogram": None,        # uses general fill if None
+            "col_mountain": None,           # Gviz: separate mountain line color
+            "fill_mountain": None,          # Gviz: separate mountain fill
+            "lwd_mountain": None,           # Gviz: mountain line width
+            "lty_mountain": "solid",        # Gviz: mountain line type
+            "col_baseline": "#888888",      # Gviz: baseline color
+            "alpha_confint": 0.3,           # Gviz: confidence interval alpha
+            "col_boxplot_frame": "lightgray",  # Gviz: boxplot frame color
+            "cex_legend": 1.0,              # Gviz: legend font size factor
             "fontsize": 8,
             "fontcolor": "#555555",
             "col_axis": "#A9A9A9",         # Gviz: darkgray
@@ -168,7 +177,7 @@ class DataTrack(NumericTrack):
 
         super().__init__(
             data=data, value_columns=value_columns, name=name,
-            height=height, display_params=dp,
+            height=height, display_params=dp, **kwargs,
         )
 
         self.plot_type = type_str
@@ -389,8 +398,8 @@ class DataTrack(NumericTrack):
                        alpha=bar_alpha, zorder=3)
 
             # Draw baseline
-            ax.axhline(y=self.baseline, color="#888888", linewidth=0.5,
-                       linestyle="--", zorder=2)
+            ax.axhline(y=self.baseline, color=self.get_param("col_baseline", "#888888"),
+                       linewidth=0.5, linestyle="--", zorder=2)
 
     def _draw_polygon(self, ax, data, region, _precomputed=None):
         """Draw data as filled polygon (area plot)."""
@@ -452,6 +461,9 @@ class DataTrack(NumericTrack):
         # Draw separator lines between rows if requested
         if self.separator > 0 and n_samples > 1:
             sep_color = self.get_param("background_panel", "white")
+            # Matplotlib doesn't understand "transparent"; use "white" as fallback
+            if sep_color == "transparent":
+                sep_color = "white"
             for row_idx in range(1, n_samples):
                 ax.axhline(y=row_idx, color=sep_color,
                            linewidth=self.separator * 0.5, zorder=4)
@@ -514,14 +526,14 @@ class DataTrack(NumericTrack):
 
     def _draw_mountain(self, ax, data, region, _precomputed=None):
         """Draw smoothed mountain plot (area above baseline)."""
-        fill = self.get_param("fill", "#808080")
-        col = self.get_param("col", "#0080FF")
+        fill = self.get_param("fill_mountain", self.get_param("fill", "#808080"))
+        col = self.get_param("col_mountain", self.get_param("col", "#0080FF"))
         if isinstance(col, list):
             colors = col
         else:
             colors = [col] * len(self.value_columns)
         alpha = self.get_param("alpha", 0.5)
-        lwd = self.get_param("lwd", 1.0)
+        lwd = self.get_param("lwd_mountain", self.get_param("lwd", 1.0))
         midpoints = self._get_midpoints(data)
 
         value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
@@ -543,8 +555,9 @@ class DataTrack(NumericTrack):
             ax.plot(midpoints, baseline_vals, color=color, linewidth=lwd,
                     alpha=min(1.0, alpha + 0.3), zorder=4)
 
-            ax.axhline(y=self.baseline, color="#888888", linewidth=0.5,
-                       linestyle="--", zorder=2)
+            ax.axhline(y=self.baseline,
+                       color=self.get_param("col_baseline", "#888888"),
+                       linewidth=0.5, linestyle="--", zorder=2)
 
     def _draw_boxplot(self, ax, data, region):
         """Draw data as boxplots at each genomic position."""
@@ -645,7 +658,7 @@ class DataTrack(NumericTrack):
             color = col[0]
         else:
             color = col
-        alpha = self.get_param("alpha", 0.3)
+        alpha = self.get_param("alpha_confint", self.get_param("alpha", 0.3))
         midpoints = self._get_midpoints(data)
 
         value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
@@ -727,8 +740,9 @@ class DataTrack(NumericTrack):
         ax.fill_between(midpoints, baseline, baseline + neg_vals,
                         color=neg_color, alpha=alpha, zorder=3)
 
-        ax.axhline(y=baseline, color="#888888", linewidth=0.5,
-                   linestyle="--", zorder=2)
+        ax.axhline(y=baseline,
+                   color=self.get_param("col_baseline", "#888888"),
+                   linewidth=0.5, linestyle="--", zorder=2)
 
     def _draw_grid_type(self, ax, data, region, _precomputed=None):
         """Draw horizontal grid lines as a standalone plot type (Gviz type 'g')."""
@@ -767,3 +781,23 @@ class DataTrack(NumericTrack):
             ax.plot(midpoints, y_pred, color=color, linewidth=lwd,
                     linestyle="--", alpha=alpha, zorder=5,
                     label=f"{col_name} regression")
+
+
+# Register class-specific display parameter overrides
+from ._base import _CLASS_DISPLAY_PARAM_OVERRIDES
+_CLASS_DISPLAY_PARAM_OVERRIDES["DataTrack"] = {
+    "col_histogram": "#808080",
+    "fill_histogram": None,
+    "col_mountain": None,
+    "fill_mountain": None,
+    "lwd_mountain": None,
+    "lty_mountain": "solid",
+    "col_baseline": "#888888",
+    "alpha_confint": 0.3,
+    "col_boxplot_frame": "lightgray",
+    "cex_legend": 1.0,
+    "fontsize": 8,
+    "fontcolor": "#555555",
+    "col_axis": "#A9A9A9",
+    "lwd": 1.5,
+}

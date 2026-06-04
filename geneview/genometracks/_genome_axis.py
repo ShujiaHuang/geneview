@@ -86,7 +86,10 @@ class GenomeAxisTrack(Track):
         little_ticks: bool = False,
         add53: bool = False,
         add35: bool = False,
+        exponent: Optional[int] = None,
+        ticks_at: Optional[List[float]] = None,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         dp = {
             "background_title": "transparent",
@@ -102,7 +105,7 @@ class GenomeAxisTrack(Track):
         if display_params:
             dp.update(display_params)
 
-        super().__init__(name=name, height=height, display_params=dp)
+        super().__init__(name=name, height=height, display_params=dp, **kwargs)
 
         self._ranges = ranges
         self.scale = scale
@@ -110,6 +113,8 @@ class GenomeAxisTrack(Track):
         self.little_ticks = little_ticks
         self.add53 = add53
         self.add35 = add35
+        self.exponent = exponent
+        self.ticks_at = ticks_at
 
     def get_region(self) -> Optional[GenomicInterval]:
         """GenomeAxisTrack doesn't define its own region."""
@@ -158,9 +163,17 @@ class GenomeAxisTrack(Track):
                 ax.axvspan(s, e, alpha=0.4, color=rfill, zorder=1)
 
         # Calculate tick positions
-        tick_interval = _choose_tick_interval(span)
-        first_tick = np.ceil(region.start / tick_interval) * tick_interval
-        ticks = np.arange(first_tick, region.end, tick_interval)
+        if self.ticks_at is not None:
+            # Use explicit tick positions (Gviz: ticksAt)
+            ticks = np.array([
+                t for t in self.ticks_at
+                if region.start <= t <= region.end
+            ])
+            tick_interval = (ticks[1] - ticks[0]) if len(ticks) > 1 else span
+        else:
+            tick_interval = _choose_tick_interval(span)
+            first_tick = np.ceil(region.start / tick_interval) * tick_interval
+            ticks = np.arange(first_tick, region.end, tick_interval)
 
         # Draw ticks and labels
         tick_height = 0.15
@@ -180,7 +193,8 @@ class GenomeAxisTrack(Track):
             else:  # below
                 above = False
 
-            label = _format_genomic_position(tick_pos, span)
+            label = _format_genomic_position(tick_pos, span,
+                                              exponent=self.exponent)
             y_label = y_center + tick_height + 0.05 if above else y_center - tick_height - 0.05
             va = "bottom" if above else "top"
 
@@ -313,3 +327,18 @@ class GenomeAxisTrack(Track):
         ax.set_xlim(region.start, region.end)
         ax.set_ylim(0, 1)
         ax.axis("off")
+
+
+# Register class-specific display parameter overrides
+from ._base import _CLASS_DISPLAY_PARAM_OVERRIDES
+_CLASS_DISPLAY_PARAM_OVERRIDES["GenomeAxisTrack"] = {
+    "background_title": "transparent",
+    "col_border_title": "transparent",
+    "show_title": False,
+    "col": "darkgray",
+    "col_range": "cornsilk4",
+    "fill_range": "cornsilk3",
+    "lwd": 2,
+    "fontsize": 9,
+    "fontcolor": "#808080",
+}

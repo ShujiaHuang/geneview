@@ -86,33 +86,133 @@ class GenomicInterval:
 # Default display parameter values mirroring Gviz's GdObject prototype
 _DEFAULT_DISPLAY_PARAMS: Dict[str, Any] = {
     "alpha": 1.0,
-    "background_panel": "white",
-    "background_title": "#D3D3D3",      # Gviz: lightgray
-    "col": "#0080FF",                    # Gviz: DEFAULT_SYMBOL_COL
-    "fill": "lightgray",                 # Gviz: DEFAULT_FILL_COL
-    "col_axis": "#A9A9A9",               # Gviz: darkgray
-    "col_border": "transparent",          # Gviz: transparent by default
-    "col_grid": "#808080",               # Gviz: medium gray
-    "col_title": "white",                # Gviz: white text on gray
-    "col_border_title": "white",          # Gviz: white border on title
+    "alpha_title": None,
+    "background_panel": "transparent",    # Gviz: "transparent"
+    "background_title": "#D3D3D3",        # Gviz: "lightgray"
+    "background_legend": "transparent",   # Gviz: transparent
+    "col": "#0080FF",                      # Gviz: DEFAULT_SYMBOL_COL
+    "col_axis": "white",                   # Gviz: "white"
+    "col_border": "transparent",           # Gviz: transparent
+    "col_border_title": "white",           # Gviz: white border on title
+    "col_frame": "lightgray",              # Gviz: "lightgray"
+    "col_grid": "#808080",                 # Gviz: medium gray
+    "col_line": None,                      # Gviz: separate line color
+    "col_symbol": None,                    # Gviz: separate symbol color
+    "col_title": "white",                  # Gviz: white text on gray
+    "fill": "lightgray",                   # Gviz: DEFAULT_FILL_COL
+    "fontcolor": "black",                  # Gviz: "black"
     "fontface": "normal",
     "fontface_title": "bold",
-    "fontsize": 10,
-    "fontsize_title": 10,
+    "fontsize": 12,                        # Gviz: 12
+    "fontsize_title": 12,                  # Gviz: 12
     "frame": False,
     "grid": False,
+    "h": -1,                               # Gviz: grid horizontal param
+    "lineheight": 1,                       # Gviz: line height
+    "lty": "solid",                        # Gviz: "solid"
+    "lty_grid": "solid",                   # Gviz: grid line type
     "lwd": 1.0,
-    "lty": "-",
-    "show_title": True,
-    "reverse_strand": False,
-    "rotation_title": 90,                # Gviz: rotated 90 degrees
+    "lwd_border_title": 1,                # Gviz: 1
+    "lwd_grid": 1,                         # Gviz: grid line width
+    "lwd_title": 1,                        # Gviz: 1
     "cex": 1.0,
-    "min_width": 1,     # minimum feature width in pixels
-    "min_height": 3,    # minimum feature height in pixels
-    "min_distance": 1,  # minimum distance between features for collapsing
+    "cex_axis": None,                      # Gviz: cex for axis labels
+    "cex_title": None,                     # Gviz: cex for title
+    "min_width": 1,                        # minimum feature width in pixels
+    "min_height": 3,                       # minimum feature height in pixels
+    "min_distance": 1,                     # minimum distance for collapsing
+    "reverse_strand": False,
+    "rotation": 0,                         # Gviz: text rotation
+    "rotation_title": 90,                  # Gviz: rotated 90 degrees
+    "show_axis": True,                     # Gviz: TRUE
+    "show_title": True,
+    "v": -1,                               # Gviz: grid vertical param
     "collapse": True,
-    "stack_height": 0.75,  # Gviz: use 75% of available row height
+    "stack_height": 0.75,                  # Gviz: 75% of available row height
 }
+
+# Alias table mapping Gviz-style dot-notation names to snake_case canonical names
+_DP_ALIASES: Dict[str, str] = {
+    "background.panel": "background_panel",
+    "background.title": "background_title",
+    "background.legend": "background_legend",
+    "col.axis": "col_axis",
+    "col.border": "col_border",
+    "col.border.title": "col_border_title",
+    "col.frame": "col_frame",
+    "col.grid": "col_grid",
+    "col.line": "col_line",
+    "col.symbol": "col_symbol",
+    "col.title": "col_title",
+    "fontface.title": "fontface_title",
+    "fontsize.title": "fontsize_title",
+    "fontcolor.title": "fontcolor_title",
+    "alpha.title": "alpha_title",
+    "lwd.border.title": "lwd_border_title",
+    "lwd.title": "lwd_title",
+    "lwd.grid": "lwd_grid",
+    "lty.grid": "lty_grid",
+    "rotation.title": "rotation_title",
+    "show.title": "show_title",
+    "show.axis": "show_axis",
+    "min.width": "min_width",
+    "min.height": "min_height",
+    "min.distance": "min_distance",
+    "reverse.strand": "reverse_strand",
+    "stack.height": "stack_height",
+    "cex.axis": "cex_axis",
+    "cex.title": "cex_title",
+    "col.group": "col_group",
+    "lineheight": "lineheight",
+}
+
+
+def _resolve_alias(key: str) -> str:
+    """Resolve a display parameter alias to its canonical name."""
+    return _DP_ALIASES.get(key, key)
+
+
+# Registry of class-specific display parameter overrides (populated by subclasses)
+_CLASS_DISPLAY_PARAM_OVERRIDES: Dict[str, Dict[str, Any]] = {}
+
+
+def available_display_params(track_class_or_name=None) -> Dict[str, Any]:
+    """Return the default display parameters for a track class.
+
+    Similar to Gviz's ``availableDisplayPars()`` function. When called
+    without arguments, returns the base defaults shared by all tracks.
+    When given a track class or class name, returns the merged defaults
+    (base + class-specific overrides).
+
+    Parameters
+    ----------
+    track_class_or_name : type or str, optional
+        A Track subclass or its name (e.g. ``"GenomeAxisTrack"``).
+        If ``None``, returns the base default display parameters.
+
+    Returns
+    -------
+    dict
+        Dictionary of default display parameter names and values.
+
+    Examples
+    --------
+    >>> from geneview.genometracks import available_display_params
+    >>> base_params = available_display_params()
+    >>> axis_params = available_display_params("GenomeAxisTrack")
+    """
+    result = dict(_DEFAULT_DISPLAY_PARAMS)
+    if track_class_or_name is None:
+        return result
+    if isinstance(track_class_or_name, str):
+        name = track_class_or_name
+    elif isinstance(track_class_or_name, type):
+        name = track_class_or_name.__name__
+    else:
+        name = type(track_class_or_name).__name__
+    if name in _CLASS_DISPLAY_PARAM_OVERRIDES:
+        result.update(_CLASS_DISPLAY_PARAM_OVERRIDES[name])
+    return result
 
 
 class Track(ABC):
@@ -136,24 +236,34 @@ class Track(ABC):
         name: str = "Track",
         height: float = 1.0,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         self.name = name
         self.height = height
         self._dp = dict(_DEFAULT_DISPLAY_PARAMS)
         if display_params:
-            self._dp.update(display_params)
+            for k, v in display_params.items():
+                self._dp[_resolve_alias(k)] = v
+        # All remaining kwargs become display parameters (Gviz convention)
+        for k, v in kwargs.items():
+            self._dp[_resolve_alias(k)] = v
 
     def get_param(self, key: str, default: Any = None) -> Any:
-        """Get a display parameter value."""
-        return self._dp.get(key, default)
+        """Get a display parameter value (supports Gviz-style aliases)."""
+        return self._dp.get(_resolve_alias(key), default)
 
     def set_param(self, key: str, value: Any) -> None:
-        """Set a display parameter value."""
-        self._dp[key] = value
+        """Set a display parameter value (supports Gviz-style aliases)."""
+        self._dp[_resolve_alias(key)] = value
 
     def set_params(self, params: Dict[str, Any]) -> None:
         """Set multiple display parameters at once."""
-        self._dp.update(params)
+        for k, v in params.items():
+            self._dp[_resolve_alias(k)] = v
+
+    def display_params(self) -> Dict[str, Any]:
+        """Return a copy of all current display parameters."""
+        return dict(self._dp)
 
     @abstractmethod
     def draw(self, ax, region: GenomicInterval) -> None:
@@ -187,7 +297,12 @@ class Track(ABC):
             )
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(name='{self.name}', height={self.height})"
+        non_default = ", ".join(
+            f"{k}={v!r}" for k, v in self._dp.items()
+            if k in _DEFAULT_DISPLAY_PARAMS and v != _DEFAULT_DISPLAY_PARAMS[k]
+        )
+        extra = f", {non_default}" if non_default else ""
+        return f"{self.__class__.__name__}(name='{self.name}', height={self.height}{extra})"
 
 
 class RangeTrack(Track):
@@ -213,8 +328,10 @@ class RangeTrack(Track):
         name: str = "RangeTrack",
         height: float = 1.0,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
-        super().__init__(name=name, height=height, display_params=display_params)
+        super().__init__(name=name, height=height, display_params=display_params,
+                         **kwargs)
         self._data = self._validate_data(data)
 
     def _validate_data(self, data) -> Optional[pd.DataFrame]:
@@ -297,18 +414,22 @@ class StackedTrack(RangeTrack):
         data: Union[pd.DataFrame, str, None] = None,
         stacking: str = "squish",
         stack_height: float = 0.75,
+        reverse_stacking: bool = False,
         name: str = "StackedTrack",
         height: float = 1.0,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         if stacking not in self.STACKING_MODES:
             raise ValueError(
                 f"Invalid stacking mode '{stacking}'. "
                 f"Must be one of {self.STACKING_MODES}."
             )
-        super().__init__(data=data, name=name, height=height, display_params=display_params)
+        super().__init__(data=data, name=name, height=height,
+                         display_params=display_params, **kwargs)
         self.stacking = stacking
         self.stack_height = stack_height
+        self.reverse_stacking = reverse_stacking
         self._stacks: Optional[np.ndarray] = None
 
     def compute_stacks(self, data: pd.DataFrame) -> np.ndarray:
@@ -349,8 +470,10 @@ class NumericTrack(RangeTrack):
         name: str = "NumericTrack",
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
-        super().__init__(data=data, name=name, height=height, display_params=display_params)
+        super().__init__(data=data, name=name, height=height,
+                         display_params=display_params, **kwargs)
         self._value_columns = value_columns
         if self._data is not None and self._value_columns is None:
             self._value_columns = self._detect_value_columns()
@@ -406,8 +529,24 @@ def _genomic_position_formatter(span: int):
     return FuncFormatter(_fmt)
 
 
-def _format_genomic_position(value: float, span: int) -> str:
-    """Format a single genomic position value."""
+def _format_genomic_position(value: float, span: int,
+                              exponent: Optional[int] = None) -> str:
+    """Format a single genomic position value.
+
+    Parameters
+    ----------
+    value : float
+        Position in base pairs.
+    span : int
+        Genomic span used to determine auto-formatting.
+    exponent : int, optional
+        Force a specific exponent for the label (e.g. 6=Mb, 3=kb).
+        If None, auto-determined from span.
+    """
+    if exponent is not None:
+        divisor = 10 ** exponent
+        suffix = {3: "kb", 6: "Mb", 9: "Gb"}.get(exponent, f"e{exponent}")
+        return f"{value / divisor:.1f}{suffix}"
     if span >= 1e9:
         return f"{value / 1e9:.1f}Gb"
     elif span >= 1e6:

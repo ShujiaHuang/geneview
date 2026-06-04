@@ -144,16 +144,21 @@ axes = plot_tracks([gtrack, atrack], extend_left=0.1, extend_right=0.1)
 
 ## Display Parameters
 
-Every track has a `display_params` dictionary controlling its appearance. Parameters can be set at construction time or modified later.
+Every track has a `display_params` dictionary controlling its appearance. Parameters can be set at construction time or modified later. Following the Gviz convention, all extra keyword arguments passed to a track constructor are automatically treated as display parameters.
 
 ### Setting Parameters at Construction
 
 ```python
+# Using display_params dict
 atrack = AnnotationTrack(data, name="Features", display_params={
     "fill": "lightblue",
     "col": "#333333",
     "fontsize": 9,
 })
+
+# Using keyword arguments (Gviz-style, recommended)
+atrack = AnnotationTrack(data, name="Features",
+    fill="lightblue", col="#333333", fontsize=9)
 ```
 
 ### Getting and Setting Parameters
@@ -167,6 +172,24 @@ atrack.set_param("fill", "#DC0000")
 
 # Set multiple parameters at once
 atrack.set_params({"fill": "#DC0000", "col": "white"})
+
+# Get all display parameters
+all_params = atrack.display_params()
+```
+
+### Alias System
+
+Display parameters support both snake_case (Python) and dot-notation (Gviz-style) names:
+
+```python
+# These are equivalent:
+atrack.set_param("col_title", "white")
+atrack.set_param("col.title", "white")
+
+# Query available defaults for any track class:
+from geneview.genometracks import available_display_params
+base_params = available_display_params()
+axis_params = available_display_params("GenomeAxisTrack")
 ```
 
 ### Common Display Parameters (All Tracks)
@@ -174,18 +197,24 @@ atrack.set_params({"fill": "#DC0000", "col": "white"})
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `alpha` | 1.0 | Opacity of plot elements |
-| `background_panel` | `"white"` | Background color of data panel |
+| `background_panel` | `"transparent"` | Background color of data panel |
 | `background_title` | `"#D3D3D3"` | Background color of title panel |
 | `col` | `"#0080FF"` | Line/border color |
 | `fill` | `"lightgray"` | Fill color |
 | `col_border` | `"transparent"` | Border color |
-| `fontsize` | 10 | Base font size |
-| `fontsize_title` | 10 | Title font size |
+| `fontcolor` | `"black"` | Text color |
+| `fontsize` | 12 | Base font size |
+| `fontsize_title` | 12 | Title font size |
 | `lwd` | 1.0 | Line width |
+| `lty` | `"solid"` | Line type |
 | `show_title` | True | Show the title panel |
+| `show_axis` | True | Show axis elements |
+| `cex` | 1.0 | Font expansion factor |
 | `min_width` | 1 | Minimum feature width in pixels |
 | `min_distance` | 1 | Minimum distance for stacking |
 | `collapse` | True | Collapse overlapping features |
+| `rotation` | 0 | Text rotation in degrees |
+| `rotation_title` | 90 | Title text rotation |
 
 ---
 
@@ -205,7 +234,10 @@ GenomeAxisTrack(
     little_ticks=False,    # Add minor tick marks
     add53=False,           # Draw 5'->3' direction arrow
     add35=False,           # Draw 3'->5' direction arrow
+    exponent=None,         # Force label exponent (3=kb, 6=Mb, 9=Gb)
+    ticks_at=None,         # Explicit tick positions (list of bp)
     display_params=None,
+    **kwargs,              # Additional display parameters
 )
 ```
 
@@ -1680,7 +1712,10 @@ plot_tracks(
     add=False,           # Plot into existing axes (no new figure)
     ylim=None,           # Global y-axis limits for DataTrack panels
     scheme=None,         # Apply named color scheme ("default", "genes", "transcripts")
-    **kwargs,            # Additional kwargs
+    panel_only=False,    # Data panels only, no title/new figure (implies add=True)
+    margin=6,            # Pixel margin around the plot
+    inner_margin=3,      # Inner margin between title and data panels (px)
+    **kwargs,            # Additional display parameters for all tracks
 )
 # Returns: list of matplotlib Axes
 ```
@@ -1779,6 +1814,28 @@ Apply a named color scheme to all annotation and gene tracks:
 axes = plot_tracks([grtrack, atrack], region=region, scheme="genes")
 ```
 
+### Panel-Only Mode (Embedding)
+
+Draw only the data panels without title panels or creating a new figure. Useful for embedding tracks in larger matplotlib layouts:
+
+```python
+fig, axes = plt.subplots(2, 1, figsize=(12, 6))
+plot_tracks([gtrack], region=region, panel_only=True, ax=axes[0])
+plot_tracks([dtrack], region=region, panel_only=True, ax=axes[1])
+```
+
+### Margin Controls
+
+Control spacing around and between panels:
+
+```python
+# Adjust margins (in pixels, Gviz-compatible)
+axes = plot_tracks([gtrack, atrack], region=region,
+    margin=10,          # outer margin
+    inner_margin=5,     # space between title and data panels
+)
+```
+
 ---
 
 ## Display Parameters Reference
@@ -1810,7 +1867,7 @@ axes = plot_tracks([grtrack, atrack], region=region, scheme="genes")
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `col` | `"transparent"` | Border color (edges match fill, Gviz default) |
-| `fill` | `"orange"` | Fill color |
+| `fill` | `"lightblue"` | Fill color |
 | `col_border` | `"#333333"` | Feature border color (uses `col` value) |
 | `fontsize` | 10 | Label font size |
 | `lwd` | 1.0 | Border line width |
@@ -1824,7 +1881,7 @@ axes = plot_tracks([grtrack, atrack], region=region, scheme="genes")
 |-----------|---------|-------------|
 | `col` | `"orange"` | Exon border color |
 | `fill` | `"orange"` | CDS exon fill color |
-| `fill_utr` | `"#8DB4E2"` | UTR fill color |
+| `fill_utr` | `"#FFD699"` | UTR fill color |
 | `col_intron` | `"#888888"` | Intron line color |
 | `fontsize` | 8 | Label font size |
 | `fontcolor` | `"#333333"` | Label text color |
@@ -1836,6 +1893,12 @@ axes = plot_tracks([grtrack, atrack], region=region, scheme="genes")
 |-----------|---------|-------------|
 | `col` | `"#0080FF"` | Line color |
 | `fill` | `"#808080"` | Fill color |
+| `col_histogram` | `"#808080"` | Histogram bar color |
+| `col_mountain` | None (uses `col`) | Mountain plot line color |
+| `fill_mountain` | None (uses `fill`) | Mountain plot fill color |
+| `col_baseline` | `"#888888"` | Baseline line color |
+| `alpha_confint` | 0.3 | Confidence interval transparency |
+| `cex_legend` | 1.0 | Legend font size factor |
 | `baseline` | 0 | Baseline y-position |
 | `ncolor` | 100 | Gradient color count |
 | `show_sample_names` | False | Show sample names on heatmap y-axis (Gviz default: FALSE) |
@@ -1850,15 +1913,18 @@ axes = plot_tracks([grtrack, atrack], region=region, scheme="genes")
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `alpha` | 1.0 | Opacity |
-| `background_panel` | `"white"` | Data panel background |
+| `background_panel` | `"transparent"` | Data panel background |
 | `background_title` | `"#D3D3D3"` | Title panel background |
 | `show_title` | True | Show title panel |
-| `fontsize_title` | 10 | Title font size |
+| `fontsize_title` | 12 | Title font size |
 | `fontface_title` | `"bold"` | Title font weight |
-| `col_title` | `"#333333"` | Title text color |
+| `col_title` | `"white"` | Title text color |
 | `grid` | False | Show grid lines |
-| `col_grid` | `"#DDDDDD"` | Grid line color |
+| `col_grid` | `"#808080"` | Grid line color |
 | `frame` | False | Draw frame around panel |
+| `fontcolor` | `"black"` | Text color |
+| `fontsize` | 12 | Base font size |
+| `lty` | `"solid"` | Line type |
 
 ---
 

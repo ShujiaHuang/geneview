@@ -120,6 +120,7 @@ class IdeogramTrack(Track):
         name: Optional[str] = None,
         height: float = 0.5,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         dp = {
             "background_title": "transparent",
@@ -134,7 +135,8 @@ class IdeogramTrack(Track):
         if display_params:
             dp.update(display_params)
 
-        super().__init__(name=name or "Ideogram", height=height, display_params=dp)
+        super().__init__(name=name or "Ideogram", height=height, display_params=dp,
+                         **kwargs)
 
         # Auto-load from geneview-data when bands is not provided
         if bands is None:

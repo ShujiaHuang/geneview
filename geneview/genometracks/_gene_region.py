@@ -118,6 +118,7 @@ class GeneRegionTrack(StackedTrack):
         name: str = "GeneRegion",
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         dp = {
             "col": "orange",              # Gviz: orange exon border
@@ -133,7 +134,7 @@ class GeneRegionTrack(StackedTrack):
 
         super().__init__(
             data=data, stacking=stacking, name=name, height=height,
-            display_params=dp,
+            display_params=dp, **kwargs,
         )
 
         self.collapse_transcripts = collapse_transcripts
@@ -207,6 +208,10 @@ class GeneRegionTrack(StackedTrack):
 
         row_height = 0.85 / total_rows
         y_positions = np.linspace(1.0 - row_height / 2, row_height / 2, total_rows)
+
+        # Support reverse stacking order
+        if self.reverse_stacking:
+            y_positions = y_positions[::-1]
 
         ax.set_xlim(region.start, region.end)
         ax.set_ylim(-0.05, 1.05)
@@ -601,3 +606,16 @@ class GeneRegionTrack(StackedTrack):
                 ha="center", va="top", fontsize=fontsize,
                 color=fontcolor, fontstyle="italic",
                 clip_on=True, zorder=5)
+
+
+# Register class-specific display parameter overrides
+from ._base import _CLASS_DISPLAY_PARAM_OVERRIDES
+_CLASS_DISPLAY_PARAM_OVERRIDES["GeneRegionTrack"] = {
+    "col": "orange",
+    "fill": "orange",
+    "fill_utr": "#FFD699",
+    "col_intron": "#808080",
+    "lwd": 0.8,
+    "fontsize": 8,
+    "fontcolor": "#333333",
+}

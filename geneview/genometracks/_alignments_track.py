@@ -126,11 +126,13 @@ class AlignmentsTrack(StackedTrack):
         name: str = "Alignments",
         height: float = 2.0,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         dp = {"fontsize": 7}
         if display_params:
             dp.update(display_params)
-        super().__init__(data=None, name=name, height=height, display_params=dp)
+        super().__init__(data=None, name=name, height=height, display_params=dp,
+                         **kwargs)
 
         self.filepath = filepath
         self.is_paired = is_paired

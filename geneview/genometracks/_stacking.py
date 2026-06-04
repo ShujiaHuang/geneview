@@ -122,6 +122,7 @@ def get_stack_heights(
     stacks: np.ndarray,
     mode: str = "squish",
     stack_height_frac: float = 0.75,
+    reverse_stacking: bool = False,
 ) -> dict:
     """Compute the vertical position and height for each stack row.
 
@@ -133,6 +134,9 @@ def get_stack_heights(
         Stacking mode.
     stack_height_frac : float
         Fraction of available height each row occupies.
+    reverse_stacking : bool
+        If True, reverse the y-order of stack rows so that the first row
+        is at the bottom instead of the top. Default is False.
 
     Returns
     -------
@@ -159,6 +163,9 @@ def get_stack_heights(
         row_height / 2,
         total_rows,
     )
+
+    if reverse_stacking:
+        y_positions = y_positions[::-1]
 
     return {
         "y_positions": y_positions,

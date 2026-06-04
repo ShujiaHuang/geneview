@@ -106,6 +106,7 @@ class AnnotationTrack(StackedTrack):
         name: str = "Annotation",
         height: float = 1.0,
         display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         if shape not in self.SHAPES:
             raise ValueError(f"Shape must be one of {self.SHAPES}, got '{shape}'.")
@@ -119,7 +120,7 @@ class AnnotationTrack(StackedTrack):
 
         super().__init__(
             data=data, stacking=stacking, name=name, height=height,
-            display_params=dp,
+            display_params=dp, **kwargs,
         )
 
         self._feature_colors = dict(_DEFAULT_FEATURE_COLORS)
@@ -169,7 +170,10 @@ class AnnotationTrack(StackedTrack):
 
         # Compute stacking
         stacks = self.compute_stacks(sub)
-        stack_info = get_stack_heights(stacks, mode=self.stacking, stack_height_frac=self.stack_height)
+        stack_info = get_stack_heights(
+            stacks, mode=self.stacking, stack_height_frac=self.stack_height,
+            reverse_stacking=self.reverse_stacking,
+        )
 
         total_rows = stack_info["total_rows"]
         row_height = stack_info["row_height"]
@@ -706,3 +710,11 @@ class DetailsAnnotationTrack(AnnotationTrack):
             linewidth=0.3, alpha=0.7, zorder=3,
         )
         ax.add_patch(rect)
+
+
+# Register class-specific display parameter overrides
+from ._base import _CLASS_DISPLAY_PARAM_OVERRIDES
+_CLASS_DISPLAY_PARAM_OVERRIDES["AnnotationTrack"] = {
+    "fill": "lightblue",
+    "col": "transparent",
+}

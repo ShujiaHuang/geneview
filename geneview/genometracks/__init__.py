@@ -51,6 +51,7 @@ from ._base import (
     RangeTrack,
     StackedTrack,
     NumericTrack,
+    available_display_params,
 )
 from ._genome_axis import GenomeAxisTrack
 from ._annotation import AnnotationTrack, DetailsAnnotationTrack
@@ -96,6 +97,7 @@ __all__ = [
     # Core
     "plot_tracks",
     "GenomicInterval",
+    "available_display_params",
     # Base classes (for advanced usage)
     "Track",
     "RangeTrack",

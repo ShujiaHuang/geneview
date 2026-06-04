@@ -60,6 +60,9 @@ def plot_tracks(
     add: bool = False,
     ylim: Optional[Tuple[float, float]] = None,
     scheme: Optional[str] = None,
+    panel_only: bool = False,
+    margin: float = 6,
+    inner_margin: float = 3,
     **kwargs,
 ) -> List:
     """Plot one or more genome tracks in a vertically stacked layout.
@@ -118,6 +121,16 @@ def plot_tracks(
     scheme : str, optional
         Name of a color scheme to apply to GeneRegionTrack and
         AnnotationTrack objects (e.g. ``"genes"``, ``"transcripts"``).
+    panel_only : bool
+        If True, draw only the data panels without title panels and
+        without creating a new figure. Useful for embedding tracks in
+        larger matplotlib layouts. Implies ``add=True``. Default is False.
+    margin : float
+        Pixel margin around the entire plot. Translated to
+        ``subplots_adjust`` values. Default is 6 (Gviz-compatible).
+    inner_margin : float
+        Inner margin between title and data panels in pixels.
+        Controls ``wspace`` in the GridSpec. Default is 3.
     **kwargs
         Additional display parameters applied to all tracks.
 
@@ -235,7 +248,7 @@ def plot_tracks(
     norm_sizes = [s / total_size for s in sizes]
 
     # Simple mode: plotting into a provided axes or add mode
-    if ax is not None or add:
+    if ax is not None or add or panel_only:
         if ax is None:
             ax = plt.gca()
         axes_list = _plot_single_ax(expanded_tracks, highlights, ax, region)
@@ -250,6 +263,8 @@ def plot_tracks(
         title_width, title, figsize, fontsize_main,
         show_title=show_title,
         style=resolved_style,
+        margin=margin,
+        inner_margin=inner_margin,
     )
     if reverse_strand:
         for a in axes_list:
@@ -337,6 +352,8 @@ def _plot_full_layout(
     fontsize_main: float,
     show_title: bool = True,
     style=None,
+    margin: float = 6,
+    inner_margin: float = 3,
 ) -> List:
     """Plot tracks with full layout: title panels + data panels."""
     n_tracks = len(tracks)
@@ -374,7 +391,7 @@ def _plot_full_layout(
         width_ratios=width_ratios,
         height_ratios=([0.3] if has_title else []) + list(sizes),
         hspace=0.05,
-        wspace=0.02 if show_title else 0,
+        wspace=max(0, inner_margin / 100.0) if show_title else 0,
     )
 
     axes_list = []
@@ -443,10 +460,16 @@ def _plot_full_layout(
         else:
             ax_data.set_xticklabels([])
 
+    # Convert pixel margin to figure fraction
+    dpi = fig.dpi
+    margin_frac_h = margin / (figsize[1] * dpi)
+    margin_frac_w = margin / (figsize[0] * dpi)
+
     plt.subplots_adjust(
-        left=0.01, right=0.99,
-        top=0.97 if not has_title else 0.94,
-        bottom=0.03,
+        left=max(0.01, margin_frac_w),
+        right=min(0.99, 1.0 - margin_frac_w),
+        top=min(0.97 if not has_title else 0.94, 1.0 - margin_frac_h),
+        bottom=max(0.03, margin_frac_h),
     )
 
     return axes_list
