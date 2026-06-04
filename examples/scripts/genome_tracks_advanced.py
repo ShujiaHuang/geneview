@@ -1,6 +1,6 @@
 """Advanced genome tracks features -- OverlayTrack, IdeogramTrack, direction indicators, etc.
 
-Showcases newly added features:
+Showcases features including:
 - OverlayTrack: overlay multiple DataTracks on the same axes
 - IdeogramTrack: chromosome ideogram with cytoband coloring (Gviz-style)
 - GenomeAxisTrack direction indicators (add53/add35)
@@ -8,6 +8,9 @@ Showcases newly added features:
 - AnnotationTrack group_annotation with connecting lines
 - plot_tracks show_title=False and reverse_strand=True
 - Fractional extend_left/extend_right
+- GenomeAxisTrack exponent and ticks_at for axis label control
+- HighlightTrack in_background for z-order control
+- Constructor kwargs as display parameters (Gviz convention)
 
 Run:  python examples/scripts/genome_tracks_advanced.py
 """
@@ -56,9 +59,9 @@ overlay_data_b = pd.DataFrame({
 })
 
 dtrack_a = DataTrack(overlay_data_a, type="line", name="Sample A",
-                     display_params={"col": "#0080FF", "alpha": 0.9})
+                     col="#0080FF", alpha=0.9)
 dtrack_b = DataTrack(overlay_data_b, type="line", name="Sample B",
-                     display_params={"col": "#DC0000", "alpha": 0.7})
+                     col="#DC0000", alpha=0.7)
 
 otrack = OverlayTrack([dtrack_a, dtrack_b], name="Overlay A vs B")
 
@@ -224,6 +227,62 @@ fig6b = axes6b[0].figure
 fig6b.savefig(os.path.join(OUT_DIR, "genome_tracks_ideogram_circle.png"),
               dpi=150, bbox_inches="tight")
 print(f"[INFO] Saved genome_tracks_ideogram_circle.png")
+
+# ---------------------------------------------------------------------------
+# 7. GenomeAxisTrack with explicit ticks_at and forced exponent
+# ---------------------------------------------------------------------------
+tick_positions = [26_500_000, 26_550_000, 26_600_000, 26_650_000, 26_700_000]
+gtrack_exp = GenomeAxisTrack(exponent=6, name="Forced Mb")
+gtrack_ticks = GenomeAxisTrack(ticks_at=tick_positions, name="Custom Ticks")
+
+axes7 = plot_tracks(
+    [GenomeAxisTrack(name="Default"), gtrack_exp, gtrack_ticks],
+    region=region,
+    title="GenomeAxisTrack: exponent and ticks_at",
+    figsize=(14, 5),
+)
+fig7 = axes7[0].figure
+fig7.savefig(os.path.join(OUT_DIR, "genome_tracks_axis_enhanced.png"),
+             dpi=150, bbox_inches="tight")
+print(f"[INFO] Saved genome_tracks_axis_enhanced.png")
+
+# ---------------------------------------------------------------------------
+# 8. HighlightTrack with in_background z-order control
+# ---------------------------------------------------------------------------
+hl_regions = pd.DataFrame({
+    "chrom": ["chr7", "chr7"],
+    "start": [26_520_000, 26_620_000],
+    "end":   [26_560_000, 26_660_000],
+})
+
+atrack_hl = AnnotationTrack(cpg_data, name="CpG Islands")
+htrack_bg = HighlightTrack(
+    [atrack_hl], regions=hl_regions,
+    fill="yellow", alpha=0.3, in_background=True, name="Background",
+)
+htrack_fg = HighlightTrack(
+    [AnnotationTrack(cpg_data, name="CpG Islands")],
+    regions=hl_regions,
+    fill="yellow", alpha=0.3, in_background=False, name="Foreground",
+)
+
+axes8a = plot_tracks(
+    [GenomeAxisTrack(), htrack_bg], region=region,
+    title="HighlightTrack: in_background=True (behind)", figsize=(14, 4),
+)
+fig8a = axes8a[0].figure
+fig8a.savefig(os.path.join(OUT_DIR, "genome_tracks_highlight_background.png"),
+              dpi=150, bbox_inches="tight")
+print(f"[INFO] Saved genome_tracks_highlight_background.png")
+
+axes8b = plot_tracks(
+    [GenomeAxisTrack(), htrack_fg], region=region,
+    title="HighlightTrack: in_background=False (foreground)", figsize=(14, 4),
+)
+fig8b = axes8b[0].figure
+fig8b.savefig(os.path.join(OUT_DIR, "genome_tracks_highlight_foreground.png"),
+              dpi=150, bbox_inches="tight")
+print(f"[INFO] Saved genome_tracks_highlight_foreground.png")
 
 plt.show()
 print("[INFO] All advanced example figures saved.")

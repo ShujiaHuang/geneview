@@ -21,6 +21,9 @@
   - [Genome Tracks](#genome-tracks)
     - [Overview](#overview)
     - [Quick Example](#quick-example)
+    - [Display Parameters (Gviz-Compatible API)](#display-parameters-gviz-compatible-api)
+    - [Enhanced GenomeAxisTrack](#enhanced-genomeaxistrack)
+    - [Embedding Tracks in Existing Figures](#embedding-tracks-in-existing-figures)
   - [Plot Styles](#plot-styles)
     - [Available Styles](#available-styles)
     - [Applying a Style Globally](#applying-a-style-globally)
@@ -286,11 +289,12 @@ The genome tracks module provides Gviz-style track browser visualizations in Pyt
 from geneview.genometracks import (
     GenomeAxisTrack, AnnotationTrack, GeneRegionTrack,
     DataTrack, HighlightTrack, GenomicInterval, plot_tracks,
+    available_display_params,
 )
 ```
 
 | Track Type | Purpose |
-|------------|---------|
+|------------|--------|
 | `GenomeAxisTrack` | Genomic coordinate ruler with auto-formatted labels |
 | `IdeogramTrack` | Chromosome ideogram with cytobands (auto-loads from geneview-data) |
 | `AnnotationTrack` | Generic genomic ranges (boxes, ellipses, arrows) |
@@ -331,6 +335,61 @@ fig.savefig("genome_tracks.png", dpi=300, bbox_inches="tight")
 plt.show()
 ```
 
+### Display Parameters (Gviz-Compatible API)
+
+All track constructors accept display parameters as keyword arguments, mirroring Gviz's `DisplayPars` system. You can also use Gviz-style dot-notation aliases:
+
+```python
+from geneview.genometracks import available_display_params
+
+# Query default display parameters
+base_params = available_display_params()
+axis_params = available_display_params("GenomeAxisTrack")
+
+# Constructor kwargs as display params (Gviz convention)
+atrack = AnnotationTrack(data, name="Styled",
+                         col="darkgreen", fill="lightgreen",
+                         fontsize=14, alpha=0.8)
+
+# Dot-notation aliases (Gviz "col.title" → Python col_title)
+atrack2 = AnnotationTrack(data, name="Alias",
+                          **{"col.title": "navy", "background.panel": "#FFF8DC"})
+# Equivalent to:
+atrack2 = AnnotationTrack(data, name="Alias",
+                          col_title="navy", background_panel="#FFF8DC")
+
+# Modify display params after creation
+atrack.set_param("col", "red")
+atrack.set_params({"alpha": 0.5, "fontsize": 16})
+print(atrack.get_param("col"))  # 'red'
+```
+
+### Enhanced GenomeAxisTrack
+
+The axis track supports explicit tick positions and forced label units:
+
+```python
+# Force labels in Mb (exponent=6) instead of auto-detected kb
+gtrack_mb = GenomeAxisTrack(exponent=6)
+
+# Place ticks at explicit positions
+gtrack_custom = GenomeAxisTrack(
+    ticks_at=[26_500_000, 26_550_000, 26_600_000, 26_650_000]
+)
+```
+
+### Embedding Tracks in Existing Figures
+
+Use `panel_only=True` to render tracks into pre-existing matplotlib axes (e.g. GridSpec layouts):
+
+```python
+fig, axes = plt.subplots(2, 1, figsize=(14, 6))
+plot_tracks([gtrack, data_track], region=region, panel_only=True, ax=axes[0])
+plot_tracks([gtrack, annotation], region=region, panel_only=True, ax=axes[1])
+```
+
+Additional margin controls (`margin`, `inner_margin`) mirror Gviz's pixel-based spacing.
+
 For a comprehensive guide with all track types, display parameters, file I/O, and advanced usage, see the [Genome Tracks Guide](./genome_tracks_guide.md).
 
 ---
@@ -342,7 +401,7 @@ geneview ships with a built-in style system that lets you produce figures compli
 ### Available Styles
 
 | Style name | Description | Key properties |
-|------------|-------------|----------------|
+| :------------: | :-------------: | :----------------: |
 | `"geneview"` | Default style — clean, readable genomics figures for exploration and general publication. | Arial / Lucida Sans; 10–12 pt text; top/right spines hidden; 300 dpi; legacy geneview colour palette. |
 | `"nature"` | Nature Research Figure Guide compliant. | Arial / Helvetica; 5–7 pt text; no gridlines; Wong colour-blind-safe palette; 450 dpi raster export. |
 | `"science"` | AAAS *Science* guidelines. | Arial / Helvetica; 6–10 pt text; Okabe–Ito palette; 600 dpi line-art export. |
