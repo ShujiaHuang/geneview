@@ -4,8 +4,10 @@ GeneRegionTrack - A track for displaying gene models.
 Displays gene structures with multiple drawing styles:
 
 **UCSC style** (default):
+- Backbone line from transcript start to end
 - Coding exons (CDS) as thick solid blocks
 - UTRs as thinner blocks (~half CDS height)
+- Stepped polygons for CDS/UTR transitions within an exon block
 - Introns as thin horizontal connecting lines with directional chevron arrows
 - Gene labels positioned to the LEFT of the transcript
 
@@ -17,6 +19,7 @@ Displays gene structures with multiple drawing styles:
 **tssarrow style**:
 - Vertical line + arrow at the transcription start site (TSS)
 - Half-height exon boxes with L-shaped intron connections
+- Configurable arrow length via ``arrow_length`` display param
 
 **exonarrows style**:
 - Full-height exon boxes with directional arrows drawn inside
@@ -118,7 +121,7 @@ class GeneRegionTrack(StackedTrack):
         Additional display parameters. Supports pyGenomeTracks-style params:
         ``color_utr``, ``color_backbone``, ``color_arrow``, ``height_utr``,
         ``height_intron``, ``arrow_interval``, ``arrowhead_fraction``,
-        ``arrowhead_included``.
+        ``arrowhead_included``, ``arrow_length``.
 
     Examples
     --------
@@ -175,6 +178,7 @@ class GeneRegionTrack(StackedTrack):
             "arrow_interval": 2,             # distance between arrows (in units of arrow size)
             "arrowhead_fraction": 0.004,     # arrowhead size as fraction of region span
             "arrowhead_included": False,     # whether arrow tip is at interval boundary
+            "arrow_length": None,            # tssarrow: explicit arrow length in bp (None=auto)
         }
         if display_params:
             dp.update(display_params)
@@ -655,73 +659,140 @@ class GeneRegionTrack(StackedTrack):
                                lwd, alpha, strand):
         """Draw transcript in UCSC Genome Browser style.
 
+        - Backbone line from transcript start to end (pyGenomeTracks)
         - CDS: thick solid blocks (no edge stroke by default)
         - UTR: thinner blocks (~half CDS height)
+        - Stepped polygons for CDS/UTR transitions within an exon block
         - Introns: thin horizontal connecting lines with directional chevron arrows
-        Drawing order: thin first, then thick on top.
         """
         thick_frac = 0.7   # CDS
         thin_frac = 0.35   # UTR
 
-        # --- Step 1: Draw intron connecting lines with directional chevron arrows ---
-        if len(grp) > 1:
-            exon_starts = grp["start"].values
-            exon_ends = grp["end"].values
-            for i in range(len(grp) - 1):
-                intron_start = exon_ends[i]
-                intron_end = exon_starts[i + 1]
-                x_intron_start = max(intron_start, region.start)
-                x_intron_end = min(intron_end, region.end)
-                if x_intron_end <= x_intron_start:
-                    continue
-                ax.plot([x_intron_start, x_intron_end],
-                        [y_center, y_center],
-                        color=intron_color, linewidth=min(lwd, 0.8),
-                        alpha=alpha, zorder=2, solid_capstyle='butt')
-                if strand in ("+", "-"):
-                    self._draw_intron_arrows(
-                        ax, x_intron_start, x_intron_end, y_center,
-                        row_height, strand, intron_color, lwd, alpha, region,
+        positions = self._split_to_blocks(grp)
+        if not positions:
+            return
+
+        # --- Step 1: Draw backbone line from transcript start to end ---
+        tx_start = int(grp["start"].min())
+        tx_end = int(grp["end"].max())
+        color_backbone = self.get_param("color_backbone", None) or intron_color
+        bx_start = max(tx_start, region.start)
+        bx_end = min(tx_end, region.end)
+        if bx_end > bx_start:
+            ax.plot([bx_start, bx_end], [y_center, y_center],
+                    color=color_backbone, linewidth=max(0.5, lwd),
+                    alpha=alpha, zorder=1)
+
+        # --- Step 2: Draw blocks with stepped polygons for CDS/UTR transitions ---
+        last_block_end = None
+        for s, e, ft in positions:
+            x_s = max(s, region.start)
+            x_e = min(e, region.end)
+            if x_e <= x_s:
+                if last_block_end is None or e > last_block_end:
+                    last_block_end = e
+                continue
+
+            # Draw backbone line in gap between previous block and this one
+            if last_block_end is not None and last_block_end < s:
+                gap_s = max(last_block_end, region.start)
+                gap_e = min(s, region.end)
+                if gap_e > gap_s:
+                    ax.plot([gap_s, gap_e], [y_center, y_center],
+                            color=color_backbone, linewidth=max(0.5, lwd),
+                            alpha=alpha, zorder=1)
+                    if strand in ("+", "-"):
+                        self._draw_intron_arrows(
+                            ax, gap_s, gap_e, y_center,
+                            row_height, strand, intron_color, lwd, alpha, region,
+                        )
+
+            is_utr = (ft == "UTR")
+
+            if is_utr:
+                h = row_height * thin_frac
+                rect = mpatches.Rectangle(
+                    (x_s, y_center - h / 2), x_e - x_s, h,
+                    facecolor=effective_utr, edgecolor=edge_color,
+                    linewidth=0, alpha=alpha, zorder=3,
+                )
+                ax.add_patch(rect)
+            else:
+                # CDS: check for stepped polygon (CDS/UTR transition within this block)
+                next_cds_start = None
+                prev_cds_end = None
+                for ns, ne, nft in positions:
+                    if nft == "UTR" and ns == e:
+                        next_cds_start = ns
+                    if nft == "UTR" and ne == s:
+                        prev_cds_end = ne
+
+                y_thick_top = y_center + row_height * thick_frac / 2
+                y_thick_bot = y_center - row_height * thick_frac / 2
+                y_thin_top = y_center + row_height * thin_frac / 2
+                y_thin_bot = y_center - row_height * thin_frac / 2
+
+                if next_cds_start is not None and prev_cds_end is not None:
+                    # CDS in middle with UTR on both sides: stepped polygon
+                    vertices = [
+                        (x_s, y_thin_top), (x_s, y_thin_bot),
+                        (x_s, y_thick_bot), (x_s, y_thick_top),
+                        (x_e, y_thick_top), (x_e, y_thick_bot),
+                        (x_e, y_thin_bot), (x_e, y_thin_top),
+                    ]
+                    poly = mpatches.Polygon(
+                        vertices, closed=True, fill=True,
+                        facecolor=tx_color, edgecolor="none",
+                        linewidth=0, alpha=alpha, zorder=3,
                     )
+                    ax.add_patch(poly)
+                elif next_cds_start is not None:
+                    # CDS transitions to UTR at right end
+                    vertices = [
+                        (x_s, y_thick_top), (x_s, y_thick_bot),
+                        (x_e, y_thick_bot), (x_e, y_thin_bot),
+                        (x_e, y_thin_top), (x_e, y_thick_top),
+                    ]
+                    poly = mpatches.Polygon(
+                        vertices, closed=True, fill=True,
+                        facecolor=tx_color, edgecolor="none",
+                        linewidth=0, alpha=alpha, zorder=3,
+                    )
+                    ax.add_patch(poly)
+                elif prev_cds_end is not None:
+                    # UTR transitions to CDS at left end
+                    vertices = [
+                        (x_s, y_thin_top), (x_s, y_thick_top),
+                        (x_e, y_thick_top), (x_e, y_thick_bot),
+                        (x_e, y_thin_bot), (x_s, y_thin_bot),
+                    ]
+                    poly = mpatches.Polygon(
+                        vertices, closed=True, fill=True,
+                        facecolor=tx_color, edgecolor="none",
+                        linewidth=0, alpha=alpha, zorder=3,
+                    )
+                    ax.add_patch(poly)
+                else:
+                    # Pure CDS: simple thick rectangle
+                    rect = mpatches.Rectangle(
+                        (x_s, y_center - row_height * thick_frac / 2),
+                        x_e - x_s, row_height * thick_frac,
+                        facecolor=tx_color, edgecolor=edge_color,
+                        linewidth=0, alpha=alpha, zorder=3,
+                    )
+                    ax.add_patch(rect)
 
-        # --- Step 2: Draw thin features first (UTR/non-coding) ---
-        for _, row in grp.iterrows():
-            feat = str(row.get("feature", "exon"))
-            if not _is_thin_feature(feat):
-                continue
-            x_start = max(row["start"], region.start)
-            x_end = min(row["end"], region.end)
-            width = x_end - x_start
-            if width <= 0:
-                continue
-            h = row_height * thin_frac
-            rect = mpatches.Rectangle(
-                (x_start, y_center - h / 2), width, h,
-                facecolor=effective_utr, edgecolor=edge_color,
-                linewidth=0, alpha=alpha, zorder=3,
-            )
-            ax.add_patch(rect)
-            if self.exon_annotation:
-                self._draw_exon_label(ax, row, x_start, x_end, y_center, h, region)
+            last_block_end = e
 
-        # --- Step 3: Draw thick features on top (CDS/exon) ---
-        for _, row in grp.iterrows():
-            feat = str(row.get("feature", "exon"))
-            if _is_thin_feature(feat):
-                continue
-            x_start = max(row["start"], region.start)
-            x_end = min(row["end"], region.end)
-            width = x_end - x_start
-            if width <= 0:
-                continue
-            h = row_height * thick_frac
-            rect = mpatches.Rectangle(
-                (x_start, y_center - h / 2), width, h,
-                facecolor=tx_color, edgecolor=edge_color,
-                linewidth=0, alpha=alpha, zorder=3,
-            )
-            ax.add_patch(rect)
-            if self.exon_annotation:
+        # --- Step 3: Draw exon annotation labels (if configured) ---
+        if self.exon_annotation:
+            for _, row in grp.iterrows():
+                x_start = max(row["start"], region.start)
+                x_end = min(row["end"], region.end)
+                if x_end <= x_start:
+                    continue
+                feat = str(row.get("feature", "exon"))
+                h = row_height * (thin_frac if _is_thin_feature(feat) else thick_frac)
                 self._draw_exon_label(ax, row, x_start, x_end, y_center, h, region)
 
     # ------------------------------------------------------------------
@@ -927,7 +998,11 @@ class GeneRegionTrack(StackedTrack):
 
         # Draw TSS arrow + vertical line
         if strand in ("+", "-"):
-            arrow_length = 10 * small_relative
+            arrow_length_dp = self.get_param("arrow_length", None)
+            if arrow_length_dp is not None:
+                arrow_length = float(arrow_length_dp)
+            else:
+                arrow_length = 10 * small_relative
             y_arrow = y_center - row_height * thick_frac * 0.4
             head_width = row_height * thick_frac * 0.25
             head_length = small_relative * 3
@@ -998,7 +1073,6 @@ class GeneRegionTrack(StackedTrack):
         """Draw transcript with arrows inside exon boxes.
 
         ::
-
             ___________          ____________
             |          |________|            |
             | >  >  >  |________|  >  >  >   |
@@ -1321,4 +1395,5 @@ _CLASS_DISPLAY_PARAM_OVERRIDES["GeneRegionTrack"] = {
     "arrow_interval": 2,
     "arrowhead_fraction": 0.004,
     "arrowhead_included": False,
+    "arrow_length": None,
 }

@@ -800,20 +800,26 @@ The `style` parameter selects between four gene drawing modes (ported from pyGen
 
 | Style | Description |
 | :------: | :----------- |
-| `"UCSC"` | Default. Thick CDS blocks, thin UTR blocks, intron chevron arrows. |
+| `"UCSC"` | Default. Backbone line from transcript start to end. Thick CDS blocks, thin UTR blocks, stepped polygons for CDS/UTR transitions within an exon, intron chevron arrows. |
 | `"flybase"` | Backbone line from transcript start to end. Last exon drawn as a filled directional arrow polygon. UTR height configurable via `height_utr`. |
-| `"tssarrow"` | Vertical line + arrow at the transcription start site (TSS). Half-height exon boxes with L-shaped intron connections. |
+| `"tssarrow"` | Vertical line + arrow at the transcription start site (TSS). Half-height exon boxes with L-shaped intron connections. Arrow length configurable via `arrow_length`. |
 | `"exonarrows"` | Full-height exon boxes with directional chevron arrows drawn inside. Filled rectangle intron connectors between exons. |
 
 ```python
-# Default UCSC style (thick CDS, thin UTR, chevron intron arrows)
+# Default UCSC style (backbone line, thick CDS, thin UTR, stepped polygons, chevron intron arrows)
 grtrack = GeneRegionTrack(data, style="UCSC")
 
 # Flybase style (backbone line + arrow-tipped last exon)
 grtrack = GeneRegionTrack(data, style="flybase")
 
-# TSS arrow style (vertical line + arrow at TSS, half-height exons)
+# TSS arrow style (vertical line + arrow at TSS, half-height exons, configurable arrow_length)
 grtrack = GeneRegionTrack(data, style="tssarrow")
+
+# TSS arrow with explicit arrow length in base pairs
+grtrack = GeneRegionTrack(
+    data, style="tssarrow",
+    display_params={"arrow_length": 5000},
+)
 
 # Exon arrows style (full-height exons with arrows inside, filled intron connectors)
 grtrack = GeneRegionTrack(data, style="exonarrows")
@@ -841,10 +847,10 @@ grtrack = GeneRegionTrack(
     display_params={"height_intron": 0.3, "arrow_interval": 3, "color_arrow": "white"},
 )
 
-# TSS arrow with custom UTR colour
+# TSS arrow with custom UTR colour and explicit arrow length
 grtrack = GeneRegionTrack(
     data, style="tssarrow",
-    display_params={"color_utr": "#BBBBBB", "height_utr": 0.6},
+    display_params={"color_utr": "#BBBBBB", "height_utr": 0.6, "arrow_length": 3000},
 )
 ```
 
@@ -896,18 +902,19 @@ grtrack = GeneRegionTrack(data, show_id=None)
 | `fontcolor` | `"#333333"` | Label text color |
 | `lwd` | 0.8 | Line width |
 
-**Style-specific parameters** (flybase / tssarrow / exonarrows):
+**Style-specific parameters** (UCSC / flybase / tssarrow / exonarrows):
 
 | Parameter | Default | Description |
 | :-----------: | :---------: | :-------------: |
 | `color_utr` | `None` | Explicit UTR color (None = same as exon) |
-| `color_backbone` | `None` | Backbone line color for flybase (None = same as intron) |
+| `color_backbone` | `None` | Backbone line color for UCSC and flybase (None = same as intron) |
 | `color_arrow` | `None` | Arrow color inside exons for exonarrows (None = same as exon) |
 | `height_utr` | 1.0 | UTR height relative to CDS (1 = same height) |
 | `height_intron` | 0.5 | Intron connector height relative to CDS (exonarrows) |
 | `arrow_interval` | 2 | Spacing between arrows inside exons (exonarrows) |
 | `arrowhead_fraction` | 0.004 | Arrowhead size as fraction of region span (flybase) |
-| `arrowhead_included` | `False` | If `True`, arrow tip sits at interval boundary; otherwise extends beyond |
+| `arrowhead_included` | `False` | If `True`, arrow tip sits at interval boundary; otherwise extends beyond (flybase) |
+| `arrow_length` | `None` | TSS arrow length in bp (None = auto, 4% of region span) (tssarrow) |
 
 ### Exon Annotation Labels
 
