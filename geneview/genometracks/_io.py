@@ -13,10 +13,13 @@ All readers return pandas DataFrames with standardized column names.
 import os
 from typing import Optional, Union
 
+from collections import OrderedDict
+
 import pandas as pd
 import numpy as np
 
 from ._base import GenomicInterval
+from ._utils import match_chrom_format, reverse_comp
 
 
 # Standard BED column names
@@ -660,6 +663,138 @@ def read_2bit(
         return seq.upper()
     finally:
         tb.close()
+
+
+# ---------------------------------------------------------------------------
+# Genome Source abstractions
+# ---------------------------------------------------------------------------
+
+class GenomeSource:
+    """In-memory reference genome source.
+
+    Wraps an ordered mapping of ``{chrom: sequence}`` and provides
+    strand-aware sequence retrieval.
+
+    Parameters
+    ----------
+    names_to_contigs : dict or OrderedDict
+        Mapping of chromosome/contig names to their nucleotide sequences.
+
+    Examples
+    --------
+    >>> src = GenomeSource({"chr1": "ATCGATCG"})
+    >>> src.get_seq("chr1", 0, 4, "+")
+    'ATCG'
+    >>> src.get_seq("chr1", 0, 4, "-")
+    'CGAT'
+    """
+
+    def __init__(self, names_to_contigs):
+        self.names_to_contigs = OrderedDict(names_to_contigs)
+
+    def get_seq(self, chrom: str, start: int, end: int, strand: str = "+") -> str:
+        """Retrieve a sequence for the given genomic interval.
+
+        Parameters
+        ----------
+        chrom : str
+            Chromosome/contig name.
+        start : int
+            Start position (0-based, inclusive).
+        end : int
+            End position (exclusive).
+        strand : str
+            ``"+"`` for forward, ``"-"`` for reverse complement.
+
+        Returns
+        -------
+        str
+            Uppercase nucleotide sequence.
+        """
+        chrom = match_chrom_format(chrom, self.keys())
+        seq = self.names_to_contigs[chrom][start:end]
+        if strand == "-":
+            seq = reverse_comp(seq)
+        return seq.upper()
+
+    def keys(self):
+        """Return available chromosome/contig names."""
+        return list(self.names_to_contigs.keys())
+
+
+class FastaGenomeSource(GenomeSource):
+    """Reference genome source backed by an indexed FASTA file.
+
+    Wraps ``pysam.FastaFile`` with lazy initialisation and strand-aware
+    sequence retrieval.  The object is picklable (the file handle is
+    reopened on demand after unpickling).
+
+    Parameters
+    ----------
+    path : str
+        Path to an indexed FASTA file (``.fa`` / ``.fasta`` with
+        accompanying ``.fai`` index).
+
+    Examples
+    --------
+    >>> src = FastaGenomeSource("hg38.fa")          # doctest: +SKIP
+    >>> seq = src.get_seq("chr7", 200000, 200050)    # doctest: +SKIP
+    """
+
+    def __init__(self, path: str):
+        self.path = path
+        self._fasta = None
+        # Initialise parent with empty mapping; sequences come from file.
+        super().__init__({})
+
+    def get_seq(self, chrom: str, start: int, end: int, strand: str = "+") -> str:
+        """Retrieve a sequence from the FASTA file.
+
+        Parameters
+        ----------
+        chrom : str
+            Chromosome/contig name.
+        start : int
+            Start position (0-based, inclusive).
+        end : int
+            End position (exclusive).
+        strand : str
+            ``"+"`` for forward, ``"-"`` for reverse complement.
+
+        Returns
+        -------
+        str
+            Uppercase nucleotide sequence.
+        """
+        chrom = match_chrom_format(chrom, self.keys())
+        seq = self.fasta.fetch(chrom, start, end)
+        if strand == "-":
+            seq = reverse_comp(seq)
+        return seq.upper()
+
+    def keys(self):
+        """Return available chromosome/contig names from the FASTA index."""
+        return list(self.fasta.references)
+
+    @property
+    def fasta(self):
+        """Lazily opened ``pysam.FastaFile`` handle."""
+        if self._fasta is None:
+            try:
+                import pysam
+            except ImportError:
+                raise ImportError(
+                    "The 'pysam' package is required for FastaGenomeSource. "
+                    "Install it with: pip install pysam"
+                )
+            self._fasta = pysam.FastaFile(self.path)
+        return self._fasta
+
+    def __getstate__(self):
+        """Exclude the file handle when pickling."""
+        state = self.__dict__.copy()
+        state["_fasta"] = None
+        return state
 
 
 def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:

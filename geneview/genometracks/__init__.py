@@ -107,6 +107,8 @@ from ._io import (
     read_fasta,
     read_2bit,
     read_auto,
+    GenomeSource,
+    FastaGenomeSource,
 )
 from ._export import export_tracks, save_figure
 from ._schemes import apply_scheme
@@ -158,6 +160,8 @@ __all__ = [
     "read_fasta",
     "read_2bit",
     "read_auto",
+    "GenomeSource",
+    "FastaGenomeSource",
     # Export
     "export_tracks",
     "save_figure",
