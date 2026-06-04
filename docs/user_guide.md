@@ -21,6 +21,13 @@
   - [Genome Tracks](#genome-tracks)
     - [Overview](#overview)
     - [Quick Example](#quick-example)
+  - [Plot Styles](#plot-styles)
+    - [Available Styles](#available-styles)
+    - [Applying a Style Globally](#applying-a-style-globally)
+    - [Using a Style as a Context Manager](#using-a-style-as-a-context-manager)
+    - [Passing a Style to a Plot Function](#passing-a-style-to-a-plot-function)
+    - [Style Comparison Table](#style-comparison-table)
+    - [Creating a Custom Style](#creating-a-custom-style)
   - [Command-Line Interface (CLI)](#command-line-interface-cli)
   - [Utilities](#utilities)
     - [Loading Built-in Datasets](#loading-built-in-datasets)
@@ -327,6 +334,134 @@ For a comprehensive guide with all track types, display parameters, file I/O, an
 
 ---
 
+## Plot Styles
+
+geneview ships with a built-in style system that lets you produce figures compliant with the requirements of major scientific journals — **Nature**, **Science**, and **Cell** — with a single function call. Each style configures fonts, font sizes, figure dimensions, tick marks, spine visibility, colour palettes, and export settings (e.g. TrueType font embedding, DPI) so you do not have to set them manually.
+
+### Available Styles
+
+| Style name | Description | Key properties |
+|------------|-------------|----------------|
+| `"geneview"` | Default style — clean, readable genomics figures for exploration and general publication. | Arial / Lucida Sans; 10–12 pt text; top/right spines hidden; 300 dpi; legacy geneview colour palette. |
+| `"nature"` | Nature Research Figure Guide compliant. | Arial / Helvetica; 5–7 pt text; no gridlines; Wong colour-blind-safe palette; 450 dpi raster export. |
+| `"science"` | AAAS *Science* guidelines. | Arial / Helvetica; 6–10 pt text; Okabe–Ito palette; 600 dpi line-art export. |
+| `"cell"` | Cell Press illustration guidelines. | Arial / Helvetica; 6–8 pt text; accessible colour palette; 300 dpi. |
+
+List all registered styles at any time:
+
+```python
+from geneview.plotstyle import list_styles
+print(list_styles())
+# ['cell', 'geneview', 'nature', 'science']
+```
+
+### Applying a Style Globally
+
+Call `apply_style()` once at the top of your script; all subsequent plots will use that style:
+
+```python
+import geneview as gv
+from geneview.plotstyle import apply_style
+
+apply_style("nature")  # all plots from here on use Nature style
+
+df = gv.load_dataset("gwas")
+ax = gv.manhattanplot(data=df[["#CHROM", "POS", "P"]])
+```
+
+To revert to the default:
+
+```python
+apply_style("geneview")
+```
+
+### Using a Style as a Context Manager
+
+Use `use_style()` as a `with` block to apply a style temporarily. The previous style is automatically restored when the block exits:
+
+```python
+from geneview.plotstyle import use_style
+
+# Default geneview style is active here
+with use_style("science"):
+    ax = gv.qqplot(data=df["P"])       # drawn with Science style
+    plt.savefig("qq_science.pdf")
+
+# geneview default is restored here
+ax = gv.manhattanplot(data=df[["#CHROM", "POS", "P"]])
+```
+
+### Passing a Style to a Plot Function
+
+Every major plotting function accepts an optional `style=` parameter, so you can apply a style on a per-call basis without touching global settings:
+
+```python
+# Manhattan plot in Nature style
+ax = gv.manhattanplot(data=df, style="nature")
+
+# Q-Q plot in Science style
+ax = gv.qqplot(data=df["P"], style="science")
+
+# Q-Q normal plot in Cell style
+ax = gv.qqnorm(data=df["P"].values, style="cell")
+
+# Venn diagram in Nature style
+ax = gv.venn(data={"A": {1,2,3}, "B": {2,3,4}, "C": {3,4,5}}, style="nature")
+
+# Admixture plot in Cell style
+ax = gv.admixtureplot(data=admixture_dict, style="cell")
+```
+
+Pass `style=None` (the default) to use whatever style is currently active globally.
+
+### Style Comparison Table
+
+The table below summarises the key differences between the built-in styles:
+
+| Parameter | `geneview` | `nature` | `science` | `cell` |
+|-----------|:--------:|:------:|:--------:|:----:|
+| Font family | Arial, Lucida Sans, DejaVu Sans | Arial, Helvetica | Arial, Helvetica | Arial, Helvetica |
+| Title font size (pt) | 12 | 7 | 10 | 8 |
+| Label font size (pt) | 10 | 7 | 8 | 7 |
+| Tick font size (pt) | 10 | 5.5 | 6 | 6 |
+| Figure width (in) | 9.0 | 3.50 | 2.36 | 3.35 |
+| Top spine visible | No | No | No | No |
+| Right spine visible | No | No | No | No |
+| Grid lines | No | No | No | No |
+| Raster export DPI | 300 | 450 | 600 | 300 |
+| Colour palette | geneview legacy | Wong (8 colours) | Okabe–Ito (8 colours) | Cell accessible (8 colours) |
+| `pdf.fonttype` | 42 | 42 | 42 | 42 |
+
+### Creating a Custom Style
+
+You can define and register your own style:
+
+```python
+from geneview.plotstyle import PlotStyle, register_style, apply_style
+
+my_style = PlotStyle(
+    name="my_journal",
+    description="Custom style for my lab's journal",
+    font_size_title=9.0,
+    font_size_label=8.0,
+    font_size_tick=6.5,
+    figure_figsize=(4.0, 3.0),
+    axes_linewidth=0.5,
+    color_palette=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"],
+)
+
+register_style(my_style)
+apply_style("my_journal")
+```
+
+Once registered, a custom style appears in `list_styles()` and can be used anywhere:
+
+```python
+ax = gv.manhattanplot(data=df, style="my_journal")
+```
+
+---
+
 ## Command-Line Interface (CLI)
 
 geneview can also be used as a command-line tool:
@@ -451,6 +586,11 @@ fig.savefig("tracks.png", dpi=300, bbox_inches="tight")
 | `admixtureplot()` | `geneview.popgene` | ADMIXTURE bar plot |
 | `karyoplot()` | `geneview.karyotype` | Chromosome karyotype |
 | `plot_tracks()` | `geneview.genometracks` | Genome track browser |
+| `apply_style()` | `geneview.plotstyle` | Apply a plot style globally |
+| `use_style()` | `geneview.plotstyle` | Context manager for temporary style |
+| `list_styles()` | `geneview.plotstyle` | List all registered styles |
+| `get_style()` | `geneview.plotstyle` | Retrieve a PlotStyle by name |
+| `register_style()` | `geneview.plotstyle` | Register a custom PlotStyle |
 
 ### Track Classes
 
@@ -489,6 +629,7 @@ Full example scripts are available in the [`examples/scripts/`](../examples/scri
 | `qq.py` | Q-Q plot |
 | `venn.py` | Venn diagrams (2-6 sets) |
 | `admixture.py` | ADMIXTURE plot |
+| `plotstyle.py` | Plot styles (Nature, Science, Cell) |
 | `genome_tracks_basic.py` | Basic genome tracks |
 | `genome_tracks_advanced.py` | IdeogramTrack and advanced features |
 | `genome_tracks_gene_region.py` | Gene region tracks |

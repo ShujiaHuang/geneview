@@ -10,6 +10,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.patches import Ellipse, Polygon
 
 from ..palette import generate_colors_palette
+from ..plotstyle import use_style
 
 __all__ = ["venn", "generate_petal_labels"]
 
@@ -347,7 +348,7 @@ def is_already_venn_dataset(petal_labels, dataset_labels):
 
 
 def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
-          legend_use_petal_color=False, legend_loc=None, ax=None):
+          legend_use_petal_color=False, legend_loc=None, style=None, ax=None):
     """Generate venn diagram by input petal labels data.
 
     Parameters
@@ -381,6 +382,11 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
 
     legend_loc : string. optional
         Place a legend on the axes. String value is passed to matplotlib :rc:`legend.loc`.
+
+    style : str, PlotStyle, or None, optional
+        Plot style to apply. Can be a registered style name (e.g. "nature",
+        "science", "cell"), a PlotStyle object, or None (the default) to use
+        the currently active style.
 
     ax : matplotlib axis, optional
         Axis to plot on, otherwise create a default axis by plt.subplots() with figsize=(7, 7)
@@ -424,18 +430,19 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
     if not is_already_venn_dataset(data, names):
         raise TypeError("``data`` is not a dict or the value is not a string. ")
 
-    return _draw_venn(data=data,
-                      names=names,
-                      palette=palette,
-                      alpha=alpha,
-                      fontsize=fontsize,
-                      legend_use_petal_color=legend_use_petal_color,
-                      legend_loc=legend_loc,
-                      ax=ax)
+    with use_style(style):
+        return _draw_venn(data=data,
+                          names=names,
+                          palette=palette,
+                          alpha=alpha,
+                          fontsize=fontsize,
+                          legend_use_petal_color=legend_use_petal_color,
+                          legend_loc=legend_loc,
+                          ax=ax)
 
 
 def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=14,
-         legend_use_petal_color=False, legend_loc=None, ax=None):
+         legend_use_petal_color=False, legend_loc=None, style=None, ax=None):
     """Check input, generate petal labels, draw venn diagram.
 
     Parameters
@@ -465,6 +472,11 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
 
     legend_loc : string. optional
         Place a legend on the axes. String value is passed to matplotlib :rc:`legend.loc`.
+
+    style : str, PlotStyle, or None, optional
+        Plot style to apply. Can be a registered style name (e.g. "nature",
+        "science", "cell"), a PlotStyle object, or None (the default) to use
+        the currently active style.
 
     ax : matplotlib axis, optional
         Axis to plot on, otherwise create a default axis by plt.subplots() with figsize=(7, 7)
@@ -569,7 +581,7 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
                      alpha=alpha,
                      fontsize=fontsize,
                      legend_use_petal_color=legend_use_petal_color,
-                     legend_loc=legend_loc, ax=ax)
+                     legend_loc=legend_loc, style=style, ax=ax)
 
     elif not is_valid_dataset_dict(data):
         raise TypeError("Only dictionaries of sets are understood")
@@ -580,5 +592,4 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
                  alpha=alpha,
                  fontsize=fontsize,
                  legend_use_petal_color=legend_use_petal_color,
-                 legend_loc=legend_loc,
-                 ax=ax)
+                 legend_loc=legend_loc, style=style, ax=ax)

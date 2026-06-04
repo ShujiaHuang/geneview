@@ -22,6 +22,7 @@ Some of the features that geneview offers are:
 - **Venn diagram** — Set intersection diagrams for 2–6 datasets with customizable petal labels and colors.
 - **Karyotype plot** — Cytogenetic band visualization with G-banding color schemes.
 - **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack (line/histogram/heatmap), HighlightTrack, and OverlayTrack.
+- **Plot Styles** — Built-in journal-compliant styles (**Nature**, **Science**, **Cell**) that configure fonts, sizes, colours, and export settings in a single call.
 - **Color palettes** — Curated color schemes (XKCD RGB, Circos, matplotlib colormaps) optimized for genomics figures.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
 
@@ -340,6 +341,54 @@ _ = gv.manhattanplot(data=df,
 
 ![manhattan.png](./examples/figures/manhattan.png)
 
+#### Plot Styles for Journal Submission
+
+geneview includes built-in styles that produce figures compliant with the requirements of **Nature**, **Science**, and **Cell**. Each style configures fonts, sizes, colour palettes, figure dimensions, and export settings automatically.
+
+```python
+import geneview as gv
+
+# List available styles
+print(gv.list_styles())
+# ['cell', 'geneview', 'nature', 'science']
+
+# Apply a style to a single plot
+ax = gv.manhattanplot(data=df, style="nature")
+
+# Or use as a context manager
+with gv.use_style("science"):
+    ax = gv.qqplot(data=df["P"])
+    plt.savefig("qq_science.pdf")
+
+# Or set a style globally for all subsequent plots
+gv.apply_style("cell")
+```
+
+| Style | Description | Font size | Figure width | Palette |
+|-------|-------------|-----------|--------------|--------|
+| `geneview` | Default — readable, general-purpose | 10–12 pt | 9 in | geneview legacy |
+| `nature` | Nature Research Figure Guide | 5–7 pt | 3.5 in | Wong (colour-blind safe) |
+| `science` | AAAS *Science* guidelines | 6–10 pt | 2.36 in | Okabe–Ito |
+| `cell` | Cell Press guidelines | 6–8 pt | 3.35 in | Cell accessible |
+
+You can also define and register your own custom style:
+
+```python
+from geneview.plotstyle import PlotStyle, register_style
+
+my_style = PlotStyle(
+    name="my_journal",
+    font_size_title=9.0,
+    font_size_label=8.0,
+    figure_figsize=(4.0, 3.0),
+    color_palette=["#1f77b4", "#ff7f0e", "#2ca02c"],
+)
+register_style(my_style)
+ax = gv.manhattanplot(data=df, style="my_journal")
+```
+
+See the [Plot Styles tutorial](./docs/tutorial/plotstyle.ipynb) for a full walkthrough.
+
 #### QQ plot with default parameters
 
 The `qqplot()` function can be used to generate a Q-Q plot to visualize the 
@@ -548,6 +597,7 @@ plt.show()
 
 - [Complete genome tracks guide](./docs/genome_tracks_guide.md)
 - [Genome tracks tutorial notebook](./docs/tutorial/genome_tracks.ipynb)
+- [Plot styles tutorial](./docs/tutorial/plotstyle.ipynb)
 - [More example scripts](./examples/scripts/)
 
 #### BAM / CRAM coverage
@@ -594,8 +644,9 @@ plt.show()
 Comprehensive documentation is available:
 
 - [User Guide](./docs/user_guide.md) — Overview of all features with examples
+- [Plot Styles](./docs/user_guide.md#plot-styles) — Journal-compliant figure styles (Nature, Science, Cell)
 - [Genome Tracks Guide](./docs/genome_tracks_guide.md) — Detailed guide for the genome tracks module
-- [Tutorial Notebooks](./docs/tutorial/) — Jupyter notebooks for GWAS, Venn, Admixture, Palettes, and Genome Tracks
+- [Tutorial Notebooks](./docs/tutorial/) — Jupyter notebooks for GWAS, Venn, Admixture, Palettes, Genome Tracks, and Plot Styles
 - [API Reference](./docs/user_guide.md#api-reference) — Function and class reference
 
 ## Dependencies

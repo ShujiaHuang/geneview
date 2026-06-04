@@ -15,6 +15,7 @@ import numpy as np
 
 from matplotlib.pyplot import subplots
 from ..utils import adjust_text
+from ..plotstyle import use_style
 
 
 # learn something from "https://github.com/reneshbedre/bioinfokit/blob/38fb4966827337f00421119a69259b92bb67a7d0/bioinfokit/visuz.py"
@@ -24,7 +25,8 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
                   xtick_label_set=None, CHR=None, xticklabel_kws=None,
                   suggestiveline=1e-5, genomewideline=5e-8, sign_line_cols="#D62728,#2CA02C", hline_kws=None,
                   sign_marker_p=None, sign_marker_color="r",
-                  is_annotate_topsnp=False, text_kws=None, ld_block_size=50000, **kwargs):
+                  is_annotate_topsnp=False, text_kws=None, ld_block_size=50000,
+                  style=None, **kwargs):
     """Creates a manhattan plot from PLINK assoc output (or any data frame with chromosome, position, and p-value).
 
     Parameters
@@ -117,6 +119,11 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
 
     ld_block_size : integer, default is 50000, optional
         Set the size of LD block which for finding top SNP. And the top SNP's annotation represent the block.
+
+    style : str, PlotStyle, or None, optional
+        Plot style to apply. Can be a registered style name (e.g. "nature",
+        "science", "cell"), a PlotStyle object, or None (the default) to use
+        the currently active style.
 
     kwargs : key, value pairings, optional
         Other keyword arguments are passed to ``plt.scatter()`` or
@@ -220,6 +227,24 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
     if CHR is not None and xtick_label_set is not None:
         raise ValueError("[ERROR] ``CHR`` and ``xtick_label_set`` can't be set simultaneously.")
 
+    with use_style(style):
+        return _manhattanplot_impl(
+            data, chrom, pos, pv, snp, logp, ax, marker, color, alpha,
+            title, xlabel, ylabel, xtick_label_set, CHR, xticklabel_kws,
+            suggestiveline, genomewideline, sign_line_cols, hline_kws,
+            sign_marker_p, sign_marker_color, is_annotate_topsnp, text_kws,
+            ld_block_size, **kwargs
+        )
+
+
+def _manhattanplot_impl(
+    data, chrom, pos, pv, snp, logp, ax, marker, color, alpha,
+    title, xlabel, ylabel, xtick_label_set, CHR, xticklabel_kws,
+    suggestiveline, genomewideline, sign_line_cols, hline_kws,
+    sign_marker_p, sign_marker_color, is_annotate_topsnp, text_kws,
+    ld_block_size, **kwargs
+):
+    """Internal implementation of manhattanplot, called within a style context."""
     data[[chrom]] = data[[chrom]].astype(str)  # make sure all the chromosome id are character.
 
     # Draw the plot and return the Axes

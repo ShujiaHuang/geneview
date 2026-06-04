@@ -1,6 +1,4 @@
-__version__ = "0.3.0"
-
-import matplotlib
+__version__ = "0.6.0"
 
 from .palette import *
 from .utils import load_dataset, get_dataset_names
@@ -12,9 +10,10 @@ from .genometracks import (
     plot_tracks, GenomeAxisTrack, AnnotationTrack,
     GeneRegionTrack, DataTrack, HighlightTrack, GenomicInterval,
 )
+from .plotstyle import apply_style, use_style, list_styles, PlotStyle
 
-
-matplotlib.rcParams['ps.fonttype']     = 42
-matplotlib.rcParams['pdf.fonttype']    = 42
-matplotlib.rcParams['font.sans-serif'] = ["Arial","Lucida Sans","DejaVu Sans","Lucida Grande","Verdana"]
-matplotlib.rcParams['font.family']     = 'sans-serif'
+# Apply the default geneview style at import time.
+# This replaces the previous hardcoded rcParams block and sets up fonts,
+# colours, export settings, etc.  Users can switch to a journal-specific
+# style afterwards, e.g.  ``apply_style("nature")``.
+apply_style("geneview")

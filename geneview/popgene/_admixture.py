@@ -12,6 +12,7 @@ from matplotlib.pyplot import subplots
 
 from ..algorithm import hierarchical_cluster
 from ..palette import generate_colors_palette
+from ..plotstyle import use_style
 
 
 def _draw_admixtureplot(
@@ -179,6 +180,7 @@ def admixtureplot(
         ylabel_kws=None,
         hierarchical_kws=None,
         set_xticklabel_top=False,
+        style=None,
         ax=None
 ):
     """Plot admixture.
@@ -235,6 +237,11 @@ def admixtureplot(
 
         set_xticklabel_top : bool, optional
             Place the x-axis ticklabels at the top of the image. Default: False
+
+        style : str, PlotStyle, or None, optional
+            Plot style to apply. Can be a registered style name (e.g. "nature",
+            "science", "cell"), a PlotStyle object, or None (the default) to use
+            the currently active style.
 
         ax : matplotlib axis, optional
             Axis to plot on, otherwise define a subplot by ``admixtureplot()``.
@@ -349,15 +356,16 @@ def admixtureplot(
         g = list(data.keys())[0]
         ylabel = "K=%d" % len(data[g].columns)
 
-    return _draw_admixtureplot(data=data,
-                               group_order=group_order,
-                               linewidth=linewidth,
-                               edgewidth=edgewidth,
-                               palette=palette,
-                               xticklabels=xticklabels,
-                               xticklabel_kws=xticklabel_kws,
-                               ylabel=ylabel,
-                               ylabel_kws=ylabel_kws,
-                               hierarchical_kws=hierarchical_kws,
-                               set_xticklabel_top=set_xticklabel_top,
-                               ax=ax)
+    with use_style(style):
+        return _draw_admixtureplot(data=data,
+                                   group_order=group_order,
+                                   linewidth=linewidth,
+                                   edgewidth=edgewidth,
+                                   palette=palette,
+                                   xticklabels=xticklabels,
+                                   xticklabel_kws=xticklabel_kws,
+                                   ylabel=ylabel,
+                                   ylabel_kws=ylabel_kws,
+                                   hierarchical_kws=hierarchical_kws,
+                                   set_xticklabel_top=set_xticklabel_top,
+                                   ax=ax)

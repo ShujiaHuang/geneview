@@ -9,6 +9,7 @@ from scipy.stats import norm, chi2
 from matplotlib.pyplot import subplots
 
 from ..utils import is_numeric
+from ..plotstyle import use_style
 
 
 def ppoints(n, a=0.5):
@@ -60,7 +61,7 @@ def ppoints(n, a=0.5):
 
 
 def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0.8, title=None,
-           xlabel=None, ylabel=None, ablinecolor="r", **kwargs):
+           xlabel=None, ylabel=None, ablinecolor="r", style=None, **kwargs):
     """Creat Q-Q plot.
     **CAUSION: The x-axis(expected) is created from uniform distribution.**
 
@@ -103,6 +104,11 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
     ablinecolor : matplotlib color, default is 'r' (red), optional
         Color for the abline in plot. if set ``ablinecolor=None`` 
         means do not plot the abline.
+
+    style : str, PlotStyle, or None, optional
+        Plot style to apply. Can be a registered style name (e.g. "nature",
+        "science", "cell"), a PlotStyle object, or None (the default) to use
+        the currently active style.
 
     kwargs : key, value pairings, optional
         Other keyword arguments are passed to ``plt.scatter()``
@@ -184,36 +190,37 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
 
     data = np.array(data, dtype=float)
 
-    # create observed and expected
-    e = ppoints(len(data)) if other is None else sorted(other)
+    with use_style(style):
+        # create observed and expected
+        e = ppoints(len(data)) if other is None else sorted(other)
 
-    if logp:
-        o = -np.log10(sorted(data))
-        e = -np.log10(e)
-    else:
-        o = np.array(sorted(data))
-        e = np.array(e)
+        if logp:
+            o = -np.log10(sorted(data))
+            e = -np.log10(e)
+        else:
+            o = np.array(sorted(data))
+            e = np.array(e)
 
-    if "marker" not in kwargs:
-        kwargs["marker"] = marker
-    ax = _do_plot(e, o, ax=ax, color=color, ablinecolor=ablinecolor, alpha=alpha, **kwargs)
+        if "marker" not in kwargs:
+            kwargs["marker"] = marker
+        ax = _do_plot(e, o, ax=ax, color=color, ablinecolor=ablinecolor, alpha=alpha, **kwargs)
 
-    expected_median = chi2.ppf(0.5, 1)  # This value is equal to 0.4549364
-    lambda_value = round(np.median(norm.ppf(1-data/2) ** 2) / expected_median, 3)
-    if title:
-        title += r"$(\lambda = %s)$" % lambda_value
-    else:
-        title = r"$\lambda = %s$" % lambda_value
+        expected_median = chi2.ppf(0.5, 1)  # This value is equal to 0.4549364
+        lambda_value = round(np.median(norm.ppf(1-data/2) ** 2) / expected_median, 3)
+        if title:
+            title += r"$(\lambda = %s)$" % lambda_value
+        else:
+            title = r"$\lambda = %s$" % lambda_value
 
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
     return ax
 
 
 def qqnorm(data, ax=None, xlabel="Expected normal distribution", ylabel="Observed distribution", 
-           color=None, ablinecolor="r", alpha=0.8, **kwargs):
+           color=None, ablinecolor="r", alpha=0.8, style=None, **kwargs):
     """Creat Q-Q plot against the normal distribution values.
     *CAUSION: The x-axis(expected) is created from normal distribution.*
 
@@ -243,6 +250,11 @@ def qqnorm(data, ax=None, xlabel="Expected normal distribution", ylabel="Observe
 
     alpha : float scalar, default is 0.8, optional
         The alpha blending value, between 0(transparent) and 1(opaque)
+
+    style : str, PlotStyle, or None, optional
+        Plot style to apply. Can be a registered style name (e.g. "nature",
+        "science", "cell"), a PlotStyle object, or None (the default) to use
+        the currently active style.
 
     kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.scatter()``
@@ -297,14 +309,15 @@ def qqnorm(data, ax=None, xlabel="Expected normal distribution", ylabel="Observe
     obs = (obs - obs.mean()) / obs.std()
     obs.sort()
 
-    # create expected
-    e = norm.ppf(ppoints(len(obs)))
+    with use_style(style):
+        # create expected
+        e = norm.ppf(ppoints(len(obs)))
 
-    ax = _do_plot(e, obs, ax=ax, color=color, ablinecolor=ablinecolor,
-                  alpha=alpha, **kwargs)
+        ax = _do_plot(e, obs, ax=ax, color=color, ablinecolor=ablinecolor,
+                      alpha=alpha, **kwargs)
 
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
     return ax
 
