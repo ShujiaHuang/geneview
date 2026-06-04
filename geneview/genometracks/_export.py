@@ -188,3 +188,52 @@ def _write_wig(df: pd.DataFrame, filepath: str) -> None:
             for _, row in grp.iterrows():
                 pos = int(row["start"]) + 1  # WIG is 1-based
                 fh.write(f"{pos}\t{row['value']}\n")
+
+
+# ---------------------------------------------------------------------------
+# Figure export helpers
+# ---------------------------------------------------------------------------
+
+def save_figure(
+    axes,
+    filepath: str,
+    dpi: int = 150,
+    fmt: Optional[str] = None,
+    bbox_inches: str = "tight",
+    **kwargs,
+) -> str:
+    """Save a track figure to disk with auto-detected format.
+
+    Parameters
+    ----------
+    axes : list of matplotlib.axes.Axes
+        The axes returned by :func:`plot_tracks` (or any track plot).
+    filepath : str
+        Output file path.  The format is inferred from the extension
+        (``.png``, ``.pdf``, ``.svg``, ``.eps``).  Override with *fmt*.
+    dpi : int
+        Resolution for raster formats (PNG, JPEG).  Default is 150.
+    fmt : str, optional
+        Explicit output format (``"png"``, ``"pdf"``, ``"svg"``, ``"eps"``).
+        If ``None``, inferred from *filepath* extension.
+    bbox_inches : str
+        Passed to ``Figure.savefig``.  Default is ``"tight"``.
+    **kwargs
+        Additional keyword arguments passed to ``Figure.savefig``.
+
+    Returns
+    -------
+    str
+        The path to the saved file.
+
+    Examples
+    --------
+    >>> axes = plot_tracks(tracks, region=region)          # doctest: +SKIP
+    >>> save_figure(axes, "output.pdf")                    # doctest: +SKIP
+    'output.pdf'
+    """
+    if not axes:
+        raise ValueError("No axes provided.")
+    fig = axes[0].figure if isinstance(axes, list) else axes.figure
+    fig.savefig(filepath, dpi=dpi, bbox_inches=bbox_inches, format=fmt, **kwargs)
+    return filepath

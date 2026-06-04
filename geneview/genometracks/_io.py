@@ -245,6 +245,99 @@ def read_bigwig(
         bw.close()
 
 
+def read_bigbed(
+    filepath: str,
+    region: Optional[GenomicInterval] = None,
+    nrows: Optional[int] = None,
+) -> pd.DataFrame:
+    """Read a BigBed file into a DataFrame.
+
+    Requires the optional ``pyBigWig`` package (which also supports
+    BigBed).  Each entry is returned as a row with standard BED column
+    names.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the BigBed file (``.bigbed`` or ``.bb``).
+    region : GenomicInterval, optional
+        Genomic region to read.  If *None*, reads the entire first
+        chromosome.
+    nrows : int, optional
+        Maximum number of rows to return.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with standardized BED column names.
+
+    Examples
+    --------
+    >>> from geneview.genometracks import read_bigbed, GenomicInterval
+    >>> region = GenomicInterval("chr7", 26_000_000, 27_000_000)
+    >>> df = read_bigbed("features.bb", region=region)  # doctest: +SKIP
+    """
+    try:
+        import pyBigWig
+    except ImportError:
+        raise ImportError(
+            "The 'pyBigWig' package is required to read BigBed files. "
+            "Install it with: pip install pyBigWig"
+        )
+
+    bb = pyBigWig.open(filepath)
+    if not bb.isBigBed():
+        bb.close()
+        raise ValueError(f"File is not a BigBed: {filepath}")
+
+    try:
+        chroms = bb.chroms()
+        if region is not None:
+            from ._utils import match_chrom_format
+            chrom = match_chrom_format(region.chrom, chroms.keys())
+            start = region.start
+            end = region.end
+        else:
+            chrom = next(iter(chroms))
+            start = 0
+            end = chroms[chrom]
+
+        records = []
+        for cur_start, cur_end, bed_line in bb.entries(chrom, start, end):
+            fields = bed_line.split("\t")
+            row = {
+                "chrom": chrom,
+                "start": int(cur_start),
+                "end": int(cur_end),
+            }
+            # Map extra BED fields
+            extra_cols = [
+                "name", "score", "strand", "thick_start", "thick_end",
+                "item_rgb", "block_count", "block_sizes", "block_starts",
+            ]
+            for i, col_name in enumerate(extra_cols):
+                if i < len(fields):
+                    val = fields[i]
+                    if col_name in ("start", "end", "thick_start", "thick_end",
+                                    "score", "block_count"):
+                        try:
+                            val = int(val)
+                        except (ValueError, TypeError):
+                            pass
+                    row[col_name] = val
+
+            records.append(row)
+            if nrows is not None and len(records) >= nrows:
+                break
+
+        if not records:
+            return pd.DataFrame(columns=_BED_COLUMNS[:4])
+
+        return pd.DataFrame(records)
+    finally:
+        bb.close()
+
+
 def read_bam_coverage(
     filepath: str,
     region: Optional[GenomicInterval] = None,
@@ -614,6 +707,8 @@ def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
         return readers[ext](filepath, nrows=nrows)
     elif ext in (".bw", ".bigwig"):
         return read_bigwig(filepath)
+    elif ext in (".bb", ".bigbed"):
+        return read_bigbed(filepath, nrows=nrows)
     elif ext == ".bam":
         return read_bam_coverage(filepath)
     elif ext == ".cram":

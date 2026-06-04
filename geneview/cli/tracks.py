@@ -5,8 +5,9 @@ Usage::
     $ geneview tracks --region <chr:start-end> [options]
 
 This subcommand creates genome browser-style track plots from the command line.
-It supports IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack,
-DataTrack, HighlightTrack, and GenomeAxisTrack.
+It supports IdeogramTrack, AnnotationTrack, GeneRegionTrack, DataTrack,
+AlignmentsTrack, BAMCoverageTrack, VCFTrack, SequenceTrack, HighlightTrack,
+and GenomeAxisTrack.
 
 Examples
 --------
@@ -23,6 +24,15 @@ Add annotation and data tracks::
         -g gene_models.gtf \\
         -d coverage.bedgraph \\
         -o tracks.png
+
+Add BAM alignment and VCF variant tracks::
+
+    $ geneview tracks --region chr14:66903600-66905100 \\
+        -b alignments.bam --aln-type pileup --paired \\
+        --bam-coverage alignments.bam \\
+        --vcf variants.vcf.gz \\
+        --reference chr14.fa \\
+        -o bam_vcf_tracks.png
 
 Customize track appearance::
 
@@ -53,8 +63,9 @@ def register(subparsers):
         "tracks",
         help="Create a genome track plot from genomic data files.",
         description="Create a genome browser-style track plot with ideogram, "
-                    "annotation, gene region, and data tracks. Supports BED, GFF/GTF, "
-                    "bedGraph, and BigWig input formats.",
+                    "annotation, gene region, data, alignment, BAM coverage, "
+                    "VCF variant, and sequence tracks. Supports BED, GFF/GTF, "
+                    "bedGraph, BigWig, BAM/CRAM, VCF/BCF, and FASTA input formats.",
         epilog="Example: geneview tracks --region chr7:20M-60M --ideogram -a features.bed -o tracks.png",
     )
 
@@ -141,6 +152,81 @@ def register(subparsers):
         default="Data",
         help="Track name for data tracks. (default: Data)")
 
+    # --- BAM/CRAM alignment tracks ---
+    p.add_argument(
+        "-b", "--bam",
+        action="append", default=[], dest="bam_files", metavar="FILE",
+        help="BAM or CRAM file for AlignmentsTrack. Can be specified multiple times.")
+    p.add_argument(
+        "--aln-type",
+        choices=["coverage", "pileup", "sashimi"],
+        default="coverage",
+        help="Display mode for AlignmentsTrack. (default: coverage)")
+    p.add_argument(
+        "--paired",
+        action="store_true", default=False,
+        help="Treat BAM reads as paired-end data.")
+    p.add_argument(
+        "--aln-color",
+        default=None,
+        help="Fill color for alignment reads. Use 'strand' for strand-based "
+             "coloring, 'gray' for uniform gray backdrop, or any matplotlib "
+             "color name/hex. (default: auto)")
+    p.add_argument(
+        "--reference",
+        default=None, metavar="FILE",
+        help="Reference FASTA file (indexed) for mismatch display in pileup mode.")
+    p.add_argument(
+        "--min-indel-size",
+        type=int, default=0,
+        help="Minimum indel length to display. Useful for noisy long-read data. (default: 0)")
+    p.add_argument(
+        "--aln-name",
+        default=None,
+        help="Track name for alignment tracks. (default: derived from filename)")
+
+    # --- BAM coverage track ---
+    p.add_argument(
+        "--bam-coverage",
+        action="append", default=[], dest="bam_coverage_files", metavar="FILE",
+        help="BAM or CRAM file for BAMCoverageTrack (standalone coverage line/fill). "
+             "Can be specified multiple times.")
+    p.add_argument(
+        "--coverage-type",
+        choices=["line", "fill"],
+        default="fill",
+        help="Display mode for BAMCoverageTrack. (default: fill)")
+    p.add_argument(
+        "--coverage-color",
+        default="#5B8DB8",
+        help="Color for BAMCoverageTrack. (default: #5B8DB8)")
+    p.add_argument(
+        "--coverage-name",
+        default=None,
+        help="Track name for coverage tracks. (default: derived from filename)")
+
+    # --- VCF variant track ---
+    p.add_argument(
+        "--vcf",
+        action="append", default=[], dest="vcf_files", metavar="FILE",
+        help="VCF or BCF file (indexed) for VCFTrack. Can be specified multiple times.")
+    p.add_argument(
+        "--vcf-color-by",
+        choices=["allele", "quality"],
+        default="allele",
+        help="How to color variants in VCFTrack. 'allele' colors by alt allele "
+             "nucleotide; 'quality' colors by QUAL score. (default: allele)")
+    p.add_argument(
+        "--vcf-name",
+        default=None,
+        help="Track name for VCF tracks. (default: derived from filename)")
+
+    # --- Sequence track ---
+    p.add_argument(
+        "--sequence",
+        default=None, metavar="FILE",
+        help="FASTA or 2bit file for SequenceTrack (nucleotide display).")
+
     # --- Style ---
     add_style_arg(p)
 
@@ -211,11 +297,15 @@ def run(args):
     args : argparse.Namespace
         Parsed command-line arguments.
     """
+    import os
     from geneview.genometracks import (
         plot_tracks, GenomicInterval, GenomeAxisTrack,
         IdeogramTrack, AnnotationTrack, GeneRegionTrack,
         DataTrack, HighlightTrack,
-        read_bed, read_auto,
+        AlignmentsTrack, BAMCoverageTrack, VCFTrack,
+        SequenceTrack,
+        read_bed, read_auto, read_fasta, read_2bit,
+        is_paired_end,
     )
     import matplotlib.pyplot as plt
 
@@ -298,6 +388,108 @@ def run(args):
                 "Could not load data file '%s': %s" % (data_file, e)
             )
 
+    # --- BAM coverage tracks ---
+    for cov_file in args.bam_coverage_files:
+        try:
+            cov_name = args.coverage_name or os.path.basename(cov_file).split(".")[0]
+            cov_track = BAMCoverageTrack(
+                filepath=cov_file,
+                type=args.coverage_type,
+                col=args.coverage_color,
+                name=cov_name + " Coverage",
+            )
+            tracks.append(cov_track)
+        except Exception as e:
+            raise RuntimeError(
+                "Could not load BAM coverage file '%s': %s" % (cov_file, e)
+            )
+
+    # --- VCF variant tracks ---
+    for vcf_file in args.vcf_files:
+        try:
+            vcf_name = args.vcf_name or os.path.basename(vcf_file).split(".")[0]
+
+            # Build color function
+            if args.vcf_color_by == "quality":
+                def _vcf_color_by_qual(variant):
+                    qual = variant.qual
+                    if qual is None:
+                        return "#999999"
+                    if qual >= 50:
+                        return "#2E7D32"
+                    elif qual >= 20:
+                        return "#FFC107"
+                    return "#C62828"
+                color_fn = _vcf_color_by_qual
+            else:
+                color_fn = None  # Use default alt-allele coloring
+
+            vcf_track = VCFTrack(
+                filepath=vcf_file,
+                color_fn=color_fn,
+                name=vcf_name,
+            )
+            tracks.append(vcf_track)
+        except Exception as e:
+            raise RuntimeError(
+                "Could not load VCF file '%s': %s" % (vcf_file, e)
+            )
+
+    # --- BAM/CRAM alignment tracks ---
+    for bam_file in args.bam_files:
+        try:
+            aln_name = args.aln_name or os.path.basename(bam_file).split(".")[0]
+
+            # Build color function
+            color_fn = None
+            color_by_strand = False
+            if args.aln_color == "strand":
+                color_by_strand = True
+            elif args.aln_color == "gray":
+                color_fn = lambda read: "lightgray"
+            elif args.aln_color is not None:
+                _c = args.aln_color
+                color_fn = lambda read, c=_c: c
+
+            # Auto-detect paired-end if not explicitly set
+            is_paired = args.paired
+            if not is_paired:
+                try:
+                    is_paired = is_paired_end(bam_file)
+                except Exception:
+                    pass
+
+            aln_track = AlignmentsTrack(
+                filepath=bam_file,
+                is_paired=is_paired,
+                type=args.aln_type,
+                reference=args.reference,
+                show_mismatches=args.reference is not None,
+                min_indel_size=args.min_indel_size,
+                color_fn=color_fn,
+                color_by_strand=color_by_strand,
+                name=aln_name,
+            )
+            tracks.append(aln_track)
+        except Exception as e:
+            raise RuntimeError(
+                "Could not load BAM file '%s': %s" % (bam_file, e)
+            )
+
+    # --- Sequence track ---
+    if args.sequence:
+        try:
+            seq_path = args.sequence
+            ext = os.path.splitext(seq_path)[1].lower()
+            if ext == ".2bit":
+                seq_data = read_2bit(seq_path, region)
+            else:
+                seq_data = read_fasta(seq_path, region)
+            seq_track = SequenceTrack(sequence=seq_data, name="Sequence")
+            tracks.append(seq_track)
+        except Exception as e:
+            sys.stderr.write(f"[WARNING] Could not load sequence file: {e}\n")
+
     # Wrap tracks with HighlightTrack if highlights are provided
     if hl_regions is not None and data_tracks:
         ht = HighlightTrack(
@@ -307,7 +499,6 @@ def run(args):
             alpha=args.highlight_alpha,
         )
         # Replace the data_tracks in the track list with the HighlightTrack wrapper
-        # The HighlightTrack will expand during plot_tracks
         for dt in data_tracks:
             if dt in tracks:
                 tracks.remove(dt)
@@ -316,7 +507,8 @@ def run(args):
     # --- Check that we have at least one track ---
     if not tracks:
         raise RuntimeError(
-            "No tracks to plot. Use --ideogram, -a, -g, or -d to add tracks."
+            "No tracks to plot. Use --ideogram, -a, -g, -d, -b, --bam-coverage, "
+            "--vcf, or --sequence to add tracks."
         )
 
     # --- Create figure and plot ---

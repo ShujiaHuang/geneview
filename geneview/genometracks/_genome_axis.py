@@ -36,6 +36,79 @@ def _choose_tick_interval(span: int, target_ticks: int = 8) -> int:
     return _NICE_INTERVALS[-1]
 
 
+def get_ticks(start: int, end: int, target_n_labels: int = 10):
+    """Compute nicely spaced genomic tick positions and labels.
+
+    Tries to place approximately ``target_n_labels`` ticks at round
+    coordinate positions between ``start`` and ``end``.
+
+    This is a standalone utility ported from ``genomeview.axis.get_ticks``.
+    It can be used independently of any track to build custom axes.
+
+    Parameters
+    ----------
+    start : int
+        Start coordinate (inclusive).
+    end : int
+        End coordinate (inclusive).
+    target_n_labels : int
+        Approximate number of ticks desired.  Default is 10.
+
+    Returns
+    -------
+    list of tuple
+        Each element is ``(coordinate, label)`` where *coordinate* is an
+        ``int`` and *label* is a formatted string (e.g. ``"2.5Mb"``,
+        ``"150kb"``, ``"1,234"``).
+
+    Examples
+    --------
+    >>> ticks = get_ticks(2_000_000, 3_000_000, target_n_labels=5)
+    >>> for pos, label in ticks:
+    ...     print(pos, label)
+    """
+    import math
+
+    ticks = []
+    start = int(start)
+    end = int(end)
+    width = end - start
+    if width <= 0:
+        return [(start, str(start))]
+
+    # Initial resolution estimate
+    res = (10 ** round(math.log10(width))) / (10 ** math.floor(math.log10(target_n_labels)))
+
+    n_ticks = width / res
+    if n_ticks > target_n_labels * 2:
+        res *= 5
+    elif n_ticks > target_n_labels * 1.5:
+        res *= 2.5
+    elif n_ticks < target_n_labels * 0.15:
+        res /= 10.0
+    elif n_ticks < target_n_labels * 0.25:
+        res /= 8.0
+    elif n_ticks < target_n_labels * 0.5:
+        res /= 4.0
+    elif n_ticks < target_n_labels * 0.8:
+        res /= 2.0
+
+    round_start = start - (start % res)
+    res = max(1, int(res))
+
+    for i in range(int(round_start), end, res):
+        res_digits = math.log10(res)
+        if res_digits >= 6:
+            label = f"{i / 1e6:.1f}Mb"
+        elif res_digits >= 3:
+            label = f"{i / 1e3:.1f}kb"
+        else:
+            label = f"{i:,}"
+        ticks.append((i, label))
+
+    return ticks
+
+
 class GenomeAxisTrack(Track):
     """A track displaying a genomic coordinate axis.
 

@@ -21,7 +21,7 @@ Some of the features that geneview offers are:
 - **Admixture plot** — Population structure visualization from ADMIXTURE output (.Q files) with hierarchical clustering.
 - **Venn diagram** — Set intersection diagrams for 2–6 datasets with customizable petal labels and colors.
 - **Karyotype plot** — Cytogenetic band visualization with G-banding color schemes.
-- **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack (line/histogram/heatmap + average/confint/smooth/horizon/grid/regression), SequenceTrack (nucleotide display), AlignmentsTrack (BAM/CRAM pileup/sashimi), DetailsAnnotationTrack (detail panels), HighlightTrack, and OverlayTrack.
+- **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack (line/histogram/heatmap + average/confint/smooth/horizon/grid/regression), SequenceTrack (nucleotide display), AlignmentsTrack (BAM/CRAM pileup/sashimi with strand coloring, clipping, overlap highlighting, read labels, custom color_fn), BAMCoverageTrack (standalone coverage line/fill), VCFTrack (variant display with custom coloring), GroupedAlignmentsTrack (grouped BAM reads), DetailsAnnotationTrack (detail panels), HighlightTrack, and OverlayTrack. BigBed file support included. CLI supports BAM/CRAM, VCF, and all track types directly.
 - **Plot Styles** — Built-in journal-compliant styles (**Nature**, **Science**, **Cell**) that configure fonts, sizes, colours, and export settings in a single call.
 - **Color palettes** — Curated color schemes (XKCD RGB, Circos, matplotlib colormaps) optimized for genomics figures.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
@@ -71,7 +71,7 @@ subcommands:
   qq           Create a Q-Q plot from GWAS association results.
   venn         Create a Venn diagram from 2-6 input files.
   admixture    Create an Admixture plot from ADMIXTURE .Q output.
-  tracks       Create a genome track plot from BED, GFF, or bedGraph files.
+  tracks       Create a genome track plot from BED, GFF, BAM, VCF, or bedGraph files.
 ```
 
 Use `geneview <subcommand> --help` for detailed options of each command.
@@ -208,6 +208,17 @@ geneview tracks --region chr7:26490000-26720000 \
     -g gene_models.gtf \
     -d coverage.bedgraph \
     -o genome_tracks.png
+```
+
+Add BAM alignment pileup, BAM coverage, and VCF variant tracks:
+
+```bash
+geneview tracks --region chr14:66903600-66905100 \
+    --vcf hg002.chr14.vcf.gz \
+    -b illumina.chr14.bam --aln-type pileup --paired --aln-color gray \
+    --bam-coverage illumina.chr14.bam --coverage-type fill \
+    --reference chr14.fa \
+    -o vcf_bam_tracks.png
 ```
 
 Customize data track appearance and add highlight regions:
@@ -587,7 +598,7 @@ ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_peta
 
 ### Genome Tracks
 
-The **genome tracks** module provides a Gviz-inspired track browser for visualizing genomic features along a shared coordinate axis. It supports multiple track types including IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack, SequenceTrack, AlignmentsTrack, DetailsAnnotationTrack, HighlightTrack, and OverlayTrack.
+The **genome tracks** module provides a Gviz-inspired track browser for visualizing genomic features along a shared coordinate axis. It supports multiple track types including IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack, SequenceTrack, AlignmentsTrack, BAMCoverageTrack, VCFTrack, GroupedAlignmentsTrack, DetailsAnnotationTrack, HighlightTrack, and OverlayTrack.
 
 #### IdeogramTrack — Chromosome ideogram (auto-loaded)
 
@@ -710,6 +721,58 @@ axes = plot_tracks([GenomeAxisTrack(), track],
 ```
 
 ![genome_tracks_alignments_combined.png](./examples/figures/genome_tracks_alignments_combined.png)
+
+#### BAMCoverageTrack — Standalone BAM coverage
+
+Display per-base coverage from a BAM/CRAM file as a continuous line or filled area:
+
+```python
+from geneview.genometracks import BAMCoverageTrack, GenomeAxisTrack, GenomicInterval, plot_tracks
+
+cov = BAMCoverageTrack(filepath="alignments.bam", type="fill", col="#4CAF50")
+axes = plot_tracks([GenomeAxisTrack(), cov],
+                   region=GenomicInterval("chr7", 26_500_000, 26_800_000), figsize=(14, 4))
+```
+
+![genome_tracks_bam_coverage.png](./examples/figures/genome_tracks_bam_coverage.png)
+
+#### VCFTrack — Variant display
+
+Display SNPs and other variants from a VCF/BCF file as colored rectangles, with custom coloring by alt allele or quality:
+
+```python
+from geneview.genometracks import VCFTrack, GenomeAxisTrack, GenomicInterval, plot_tracks
+
+tracks = [
+    GenomeAxisTrack(),
+    VCFTrack("sample.vcf.gz", name="SNPs"),
+]
+axes = plot_tracks(tracks, region=GenomicInterval("14", 66903600, 66905100))
+```
+
+![genome_tracks_vcf_basic.png](./examples/figures/genome_tracks_vcf_basic.png)
+
+#### Custom read coloring (color_fn)
+
+Color each read individually using a callback function — useful for coloring by insert size, mapping quality, or as a gray backdrop for variant display:
+
+```python
+from geneview.genometracks import AlignmentsTrack
+
+# Color by insert size
+def color_by_insert_size(read):
+    isize = abs(read.template_length)
+    if isize < 100 or isize > 1500:
+        return "red"
+    if isize > 550:
+        return "blue"
+    return "green"
+
+aln = AlignmentsTrack("paired_end.bam", type="pileup", is_paired=True,
+                      color_fn=color_by_insert_size)
+```
+
+![genome_tracks_color_by_insert.png](./examples/figures/genome_tracks_color_by_insert.png)
 
 #### DetailsAnnotationTrack — Annotation with detail panels
 

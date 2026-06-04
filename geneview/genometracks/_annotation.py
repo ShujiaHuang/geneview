@@ -64,6 +64,10 @@ class AnnotationTrack(StackedTrack):
     group_annotation : str or None
         Label groups by: 'id', 'group', 'feature', or None.
         When set, draw connecting lines and group labels. Default is None.
+    feature_filter : callable, optional
+        A function ``f(row: pd.Series) -> bool``; only features for which
+        it returns ``True`` are drawn.  Useful for filtering by score,
+        biotype, or any other column.
     name : str
         Track name for the title panel. Default is "Annotation".
     height : float
@@ -103,6 +107,7 @@ class AnnotationTrack(StackedTrack):
         show_overplotting: bool = False,
         merge_groups: bool = False,
         col_line: Optional[str] = None,
+        feature_filter: Optional[Callable] = None,
         name: str = "Annotation",
         height: float = 1.0,
         display_params: Optional[Dict[str, Any]] = None,
@@ -135,6 +140,7 @@ class AnnotationTrack(StackedTrack):
         self.just_group = just_group
         self.show_overplotting = show_overplotting
         self.merge_groups = merge_groups
+        self.feature_filter = feature_filter
         if col_line is not None:
             self.set_param("col_line", col_line)
 
@@ -158,6 +164,8 @@ class AnnotationTrack(StackedTrack):
             The genomic region to display.
         """
         sub = self.subset(region)
+        if sub is not None and self.feature_filter is not None:
+            sub = sub[sub.apply(self.feature_filter, axis=1)].reset_index(drop=True)
         if sub is None or len(sub) == 0:
             ax.set_xlim(region.start, region.end)
             ax.set_ylim(0, 1)
@@ -203,6 +211,10 @@ class AnnotationTrack(StackedTrack):
                 if feat not in self._feature_colors:
                     feature_color_map[feat] = next(color_cycle)
 
+        # Detect BED12 columns for transcript-aware rendering
+        bed12_cols = {"thick_start", "thick_end", "block_count", "block_sizes", "block_starts"}
+        has_bed12 = bed12_cols.issubset(sub.columns)
+
         span = region.end - region.start
 
         for i, (idx, row) in enumerate(sub.iterrows()):
@@ -238,7 +250,12 @@ class AnnotationTrack(StackedTrack):
             alpha = self.get_param("alpha", 1.0)
 
             # Draw the feature shape
-            if self.shape == "box":
+            if has_bed12:
+                self._draw_bed12_transcript(
+                    ax, row, region, y_center, feat_height,
+                    color, edge_color, lwd, alpha, span,
+                )
+            elif self.shape == "box":
                 self._draw_box(ax, x_start, y_center, width, feat_height,
                                color, edge_color, lwd, alpha, row.get("strand", "*"))
             elif self.shape == "ellipse":
@@ -375,6 +392,130 @@ class AnnotationTrack(StackedTrack):
             linewidth=lwd, alpha=alpha, zorder=3,
         )
         ax.add_patch(polygon)
+
+    def _draw_bed12_transcript(
+        self, ax, row, region, y_center, feat_height,
+        color, edge_color, lwd, alpha, span,
+    ):
+        """Draw a BED12 transcript with thick (CDS) and thin (UTR) exons.
+
+        Intron lines are drawn between exons with directional chevrons
+        indicating strand.
+        """
+        tx_start = int(row["start"])
+        tx_end = int(row["end"])
+        strand = row.get("strand", "*")
+
+        thick_start = int(row["thick_start"]) if pd.notna(row.get("thick_start")) else None
+        thick_end = int(row["thick_end"]) if pd.notna(row.get("thick_end")) else None
+
+        # Parse block information
+        try:
+            block_sizes = [int(x) for x in str(row["block_sizes"]).rstrip(",").split(",") if x]
+            block_starts = [int(x) for x in str(row["block_starts"]).rstrip(",").split(",") if x]
+        except (ValueError, TypeError):
+            # Fallback: draw as simple box
+            x_s = max(tx_start, region.start)
+            x_e = min(tx_end, region.end)
+            if x_e > x_s:
+                self._draw_arrow(ax, x_s, y_center, x_e - x_s, feat_height,
+                                 color, edge_color, lwd, alpha, strand)
+            return
+
+        n_blocks = min(len(block_sizes), len(block_starts))
+        if n_blocks == 0:
+            return
+
+        # Intron line (thin) height
+        intron_h = feat_height * 0.15
+        intron_y = y_center  # middle of the row
+
+        # Draw intron lines with directional chevrons between exons
+        for i in range(n_blocks - 1):
+            exon_end = tx_start + block_starts[i] + block_sizes[i]
+            next_exon_start = tx_start + block_starts[i + 1]
+
+            ix_start = max(exon_end, region.start)
+            ix_end = min(next_exon_start, region.end)
+            if ix_end <= ix_start:
+                continue
+
+            # Draw intron line
+            ax.plot(
+                [ix_start, ix_end], [intron_y, intron_y],
+                color=color, linewidth=max(0.5, lwd), alpha=alpha, zorder=2,
+            )
+
+            # Draw directional chevrons on the intron
+            intron_len = ix_end - ix_start
+            n_arrows = max(1, int(round(intron_len / (feat_height * 2))))
+            arrow_frac = np.linspace(0.1, 0.9, n_arrows)
+            chevron_size = intron_h * 0.6
+
+            for frac in arrow_frac:
+                cx = ix_start + frac * (ix_end - ix_start)
+                if strand == "-":
+                    # Left-pointing chevron
+                    ax.plot(
+                        [cx + chevron_size, cx, cx + chevron_size],
+                        [intron_y + chevron_size, intron_y, intron_y - chevron_size],
+                        color=color, linewidth=max(0.4, lwd * 0.7),
+                        alpha=alpha, zorder=2, solid_capstyle="round",
+                    )
+                else:
+                    # Right-pointing chevron (default for + and *)
+                    ax.plot(
+                        [cx - chevron_size, cx, cx - chevron_size],
+                        [intron_y + chevron_size, intron_y, intron_y - chevron_size],
+                        color=color, linewidth=max(0.4, lwd * 0.7),
+                        alpha=alpha, zorder=2, solid_capstyle="round",
+                    )
+
+        # Draw exons (thin then thick on top)
+        for pass_type in ("thin", "thick"):
+            for i in range(n_blocks):
+                exon_abs_start = tx_start + block_starts[i]
+                exon_abs_end = exon_abs_start + block_sizes[i]
+
+                # Clip to visible region
+                ex_start = max(exon_abs_start, region.start)
+                ex_end = min(exon_abs_end, region.end)
+                if ex_end <= ex_start:
+                    continue
+
+                if pass_type == "thick":
+                    # Thick (CDS) portion
+                    if thick_start is None or thick_end is None:
+                        continue
+                    if exon_abs_end <= thick_start or exon_abs_start >= thick_end:
+                        continue
+                    cds_start = max(thick_start, exon_abs_start, region.start)
+                    cds_end = min(thick_end, exon_abs_end, region.end)
+                    if cds_end <= cds_start:
+                        continue
+                    h = feat_height
+                    y = y_center
+                else:
+                    # Thin (UTR) portion: skip if fully within CDS
+                    if (thick_start is not None and thick_end is not None
+                            and exon_abs_start >= thick_start
+                            and exon_abs_end <= thick_end):
+                        continue
+                    h = feat_height * 0.5
+                    y = y_center
+
+                rect = FancyBboxPatch(
+                    (ex_start if pass_type == "thin"
+                     else max(cds_start, ex_start),
+                     y - h / 2),
+                    (ex_end - ex_start) if pass_type == "thin"
+                    else (min(cds_end, ex_end) - max(cds_start, ex_start)),
+                    h,
+                    boxstyle="round,pad=0",
+                    facecolor=color, edgecolor=edge_color,
+                    linewidth=lwd, alpha=alpha, zorder=3,
+                )
+                ax.add_patch(rect)
 
     def _draw_strand_arrow(self, ax, x_start, x_end, y_center, feat_height, strand, span):
         """Draw a small strand direction indicator inside a box feature."""

@@ -83,3 +83,42 @@ export_tracks(df, raw_path, fmt="bedgraph")
 print(f"Exported raw DataFrame: {raw_path}")
 
 print("All export_tracks examples complete.")
+
+# ---------------------------------------------------------------------------
+# 6. save_figure() — convenience figure export
+# ---------------------------------------------------------------------------
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from geneview.genometracks import (
+    GenomeAxisTrack, GenomicInterval, plot_tracks, save_figure,
+)
+
+FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
+
+# Create a simple track figure
+ann_track2 = AnnotationTrack(ann_data, name="Export Demo")
+region = GenomicInterval("chr7", 500, 4000)
+axes = plot_tracks([GenomeAxisTrack(), ann_track2], region=region,
+                   figsize=(12, 4))
+
+# Save using save_figure (auto-detects format from extension)
+png_path = os.path.join(FIG_DIR, "genome_tracks_save_figure.png")
+save_figure(axes, png_path, dpi=150)
+print(f"\nSaved PNG: {png_path}")
+
+# save_figure also supports PDF, SVG, EPS
+pdf_path = os.path.join(tempfile.gettempdir(), "track_figure.pdf")
+save_figure(axes, pdf_path)
+print(f"Saved PDF: {pdf_path}")
+
+svg_path = os.path.join(tempfile.gettempdir(), "track_figure.svg")
+save_figure(axes, svg_path)
+print(f"Saved SVG: {svg_path}")
+
+# You can also override the format explicitly
+save_figure(axes, os.path.join(tempfile.gettempdir(), "track_eps"), fmt="eps")
+print("Saved EPS (explicit fmt)")
+
+plt.close("all")
+print("\nAll save_figure examples complete.")

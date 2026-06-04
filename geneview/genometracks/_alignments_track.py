@@ -16,7 +16,8 @@ import matplotlib.patches as mpatches
 from matplotlib.patches import FancyArrowPatch, Arc
 from matplotlib.collections import PolyCollection
 
-from ._base import StackedTrack, GenomicInterval
+from ._base import Track, StackedTrack, GenomicInterval
+from ._utils import match_chrom_format
 
 
 # CIGAR operation codes (from pysam / SAM spec)
@@ -92,6 +93,62 @@ class AlignmentsTrack(StackedTrack):
         Alpha for mismatch highlights.  Default is 0.6.
     transformation : callable, optional
         Function applied to coverage values before plotting.
+    quick_consensus : bool
+        If True (default), use per-position allele-frequency tallies to
+        filter mismatches: a mismatch is only drawn when the alt allele is
+        supported by at least *consensus_threshold* fraction of reads at
+        that position.  Essential for noisy long-read data (PacBio / ONT).
+    consensus_threshold : float
+        Minimum alt-allele fraction required to draw a mismatch when
+        *quick_consensus* is enabled.  Default is 0.2.
+    read_filter : callable, optional
+        A function ``f(pysam.AlignedSegment) -> bool``; only reads for
+        which it returns ``True`` are included in pileup and coverage
+        calculations.  Useful for filtering by MAPQ, tag, etc.
+    show_clipping : bool
+        If True, draw soft/hard clipped bases as coloured blocks at read
+        edges.  Default is False.
+    col_clipping : str
+        Color for clipping indicators.  Default is ``"cyan"``.
+    min_indel_size : int
+        Minimum indel length (in bp) to draw.  Indels smaller than this
+        are silently skipped.  Useful for long-read data where small
+        indels are common noise.  Default is 0 (show all).
+    show_insertion_labels : bool
+        If True, draw insertion lengths as text labels when there is
+        sufficient space.  Default is False.
+    color_by_strand : bool
+        If True, colour forward-strand reads differently from reverse-
+        strand reads (``fill_reads_fwd`` / ``fill_reads_rev``).
+        Default is False.
+    fill_reads_fwd : str
+        Fill color for forward-strand reads when ``color_by_strand`` is
+        True.  Default is ``"#E89E9D"``.
+    fill_reads_rev : str
+        Fill color for reverse-strand reads when ``color_by_strand`` is
+        True.  Default is ``"#8C8FCE"``.
+    include_secondary : bool
+        If True (default), include secondary and supplementary alignments
+        in the pileup view.  Set to False to show only primary alignments.
+    overlap_color : str, optional
+        Color used to highlight overlapping portions of paired-end read
+        mates.  When set, regions where both mates overlap are drawn as a
+        thin overlay bar on top of the reads.  Default is None (disabled).
+    draw_read_labels : bool
+        If True, draw read query names as text labels to the right of each
+        read in pileup mode.  Default is False.
+    min_insertion_label_size : int
+        Minimum insertion length (in bp) for which an insertion-size label
+        is drawn automatically, even when ``show_insertion_labels`` is
+        False.  Insertions shorter than this still show the vertical bar
+        but omit the label.  Default is 5.
+    color_fn : callable, optional
+        A function ``f(pysam.AlignedSegment) -> str`` that returns a
+        matplotlib color string for each read.  When set, this overrides
+        ``fill_reads``, ``color_by_strand``, and related color parameters.
+        Useful for coloring reads by insert size, mapping quality, or
+        any other per-read property (equivalent to genomeview's
+        ``track.color_fn``).
     name : str
         Track name.  Default is "Alignments".
     height : float
@@ -123,6 +180,21 @@ class AlignmentsTrack(StackedTrack):
         alpha_reads: float = 0.8,
         alpha_mismatch: float = 0.6,
         transformation: Optional[Callable] = None,
+        quick_consensus: bool = True,
+        consensus_threshold: float = 0.2,
+        read_filter: Optional[Callable] = None,
+        show_clipping: bool = False,
+        col_clipping: str = "cyan",
+        min_indel_size: int = 0,
+        show_insertion_labels: bool = False,
+        color_by_strand: bool = False,
+        fill_reads_fwd: str = "#E89E9D",
+        fill_reads_rev: str = "#8C8FCE",
+        include_secondary: bool = True,
+        overlap_color: Optional[str] = None,
+        draw_read_labels: bool = False,
+        min_insertion_label_size: int = 5,
+        color_fn: Optional[Callable] = None,
         name: str = "Alignments",
         height: float = 2.0,
         display_params: Optional[Dict[str, Any]] = None,
@@ -154,6 +226,21 @@ class AlignmentsTrack(StackedTrack):
         self.alpha_reads = alpha_reads
         self.alpha_mismatch = alpha_mismatch
         self.transformation = transformation
+        self.quick_consensus = quick_consensus
+        self.consensus_threshold = consensus_threshold
+        self.read_filter = read_filter
+        self.show_clipping = show_clipping
+        self.col_clipping = col_clipping
+        self.min_indel_size = min_indel_size
+        self.show_insertion_labels = show_insertion_labels
+        self.color_by_strand = color_by_strand
+        self.fill_reads_fwd = fill_reads_fwd
+        self.fill_reads_rev = fill_reads_rev
+        self.include_secondary = include_secondary
+        self.overlap_color = overlap_color
+        self.draw_read_labels = draw_read_labels
+        self.min_insertion_label_size = min_insertion_label_size
+        self.color_fn = color_fn
 
         if isinstance(type, str):
             self.plot_types = [type]
@@ -176,18 +263,50 @@ class AlignmentsTrack(StackedTrack):
             )
 
     def _fetch_reads(self, region: GenomicInterval):
-        """Fetch reads overlapping the region. Returns pysam AlignmentFile and iterator."""
+        """Fetch reads overlapping the region. Returns pysam AlignmentFile and list.
+
+        When ``self.read_filter`` is set, only reads passing the filter
+        callback are included.
+        """
         pysam = self._import_pysam()
         aln = pysam.AlignmentFile(self.filepath, "rb")
-        reads = list(aln.fetch(region.chrom, region.start, region.end))
+        chrom = match_chrom_format(region.chrom, aln.references)
+        raw_reads = aln.fetch(chrom, region.start, region.end)
+        if self.read_filter is not None:
+            reads = [r for r in raw_reads if self.read_filter(r)]
+        else:
+            reads = list(raw_reads)
+        # Filter secondary/supplementary if requested
+        if not self.include_secondary:
+            reads = [r for r in reads
+                     if not r.is_secondary and not r.is_supplementary]
         return aln, reads
+
+    def _build_mismatch_counts(self, region: GenomicInterval):
+        """Build a MismatchCounts tally for the region (quick-consensus mode).
+
+        Returns ``None`` when quick_consensus is disabled or no reference
+        is available.
+        """
+        if not self.quick_consensus:
+            return None
+        pysam = self._import_pysam()
+        from ._mismatch_counts import MismatchCounts
+        aln = pysam.AlignmentFile(self.filepath, "rb")
+        try:
+            mc = MismatchCounts(region.chrom, region.start, region.end)
+            mc.tally_reads(aln)
+            return mc
+        finally:
+            aln.close()
 
     def _compute_coverage(self, region: GenomicInterval) -> np.ndarray:
         """Compute per-base coverage across the region."""
         pysam = self._import_pysam()
         aln = pysam.AlignmentFile(self.filepath, "rb")
+        chrom = match_chrom_format(region.chrom, aln.references)
         cov = aln.count_coverage(
-            region.chrom, region.start, region.end,
+            chrom, region.start, region.end,
             quality_threshold=0,
         )
         # cov is (A, C, G, T) arrays; sum for total coverage
@@ -204,7 +323,8 @@ class AlignmentsTrack(StackedTrack):
         pysam = self._import_pysam()
         fa = pysam.FastaFile(self.reference)
         try:
-            return fa.fetch(region.chrom, region.start, region.end).upper()
+            chrom = match_chrom_format(region.chrom, fa.references)
+            return fa.fetch(chrom, region.start, region.end).upper()
         finally:
             fa.close()
 
@@ -279,6 +399,9 @@ class AlignmentsTrack(StackedTrack):
         # Reference sequence for mismatch detection
         ref_seq = self._get_reference_seq(region) if self.show_mismatches else None
 
+        # Quick-consensus mismatch tallies
+        mismatch_counts = self._build_mismatch_counts(region) if self.show_mismatches else None
+
         # Compute stacking for reads
         read_starts = []
         read_ends = []
@@ -315,6 +438,7 @@ class AlignmentsTrack(StackedTrack):
         row_height = (pileup_top - pileup_bottom) / max(n_rows, 1) * 0.85
 
         span = region.end - region.start
+        h = row_height * 0.8
 
         for i, read in enumerate(reads):
             if i >= len(stacks):
@@ -322,10 +446,41 @@ class AlignmentsTrack(StackedTrack):
             stack_row = stacks[i]
             y_center = pileup_bottom + (pileup_top - pileup_bottom) - (stack_row + 0.5) * row_height
 
-            # Draw read body from aligned pairs
             self._draw_single_read(
                 ax, read, region, y_center, row_height, ref_seq, span,
+                mismatch_counts=mismatch_counts,
             )
+
+            # Draw read label to the right of the read
+            if self.draw_read_labels and read.query_name:
+                read_end_x = min(read.reference_end or region.end, region.end)
+                ax.text(
+                    read_end_x + span * 0.005, y_center,
+                    read.query_name,
+                    ha="left", va="center",
+                    fontsize=3.5, color="#555555", alpha=0.8,
+                    zorder=5,
+                )
+
+            # Draw overlap highlight for paired-end reads
+            if (self.overlap_color and self.is_paired
+                    and read.is_proper_pair
+                    and read.next_reference_start is not None):
+                mate_start = read.next_reference_start
+                read_end = read.reference_end or 0
+                if mate_start < read_end:
+                    # Overlap region exists
+                    ov_start = max(mate_start, region.start)
+                    ov_end = min(read_end, region.end)
+                    if ov_end > ov_start:
+                        ov_rect = mpatches.Rectangle(
+                            (ov_start, y_center - h * 0.4),
+                            ov_end - ov_start, h * 0.8,
+                            facecolor=self.overlap_color,
+                            edgecolor="none",
+                            alpha=0.35, zorder=5,
+                        )
+                        ax.add_patch(ov_rect)
 
             # Draw mate connector for paired-end reads
             if self.is_paired and read.is_proper_pair and read.next_reference_start is not None:
@@ -341,10 +496,20 @@ class AlignmentsTrack(StackedTrack):
         aln.close()
 
     def _draw_single_read(self, ax, read, region, y_center, row_height,
-                          ref_seq, span):
-        """Draw a single read with CIGAR-aware blocks."""
+                          ref_seq, span, mismatch_counts=None):
+        """Draw a single read with CIGAR-aware blocks, clipping, and indels."""
         h = row_height * 0.8
-        read_color = self.fill_reads
+
+        # Custom color function takes priority
+        if self.color_fn is not None:
+            try:
+                read_color = self.color_fn(read)
+            except Exception:
+                read_color = self.fill_reads
+        elif self.color_by_strand:
+            read_color = self.fill_reads_rev if read.is_reverse else self.fill_reads_fwd
+        else:
+            read_color = self.fill_reads
 
         # Iterate over CIGAR blocks
         if read.cigartuples is None:
@@ -371,6 +536,7 @@ class AlignmentsTrack(StackedTrack):
                         self._draw_mismatches(
                             ax, read, ref_seq, ref_pos, query_pos, length,
                             region, y_center, h,
+                            mismatch_counts=mismatch_counts,
                         )
 
                 ref_pos += length
@@ -378,19 +544,37 @@ class AlignmentsTrack(StackedTrack):
 
             elif op == _CIGAR_I:
                 # Insertion
-                if self.show_indels and region.start <= ref_pos <= region.end:
+                if (self.show_indels
+                        and length > self.min_indel_size
+                        and region.start <= ref_pos <= region.end):
                     ax.plot(
                         [ref_pos, ref_pos],
                         [y_center - h * 0.6, y_center + h * 0.6],
                         color=self.col_insertion, linewidth=1.5, zorder=4,
                     )
+                    # Draw insertion size label
+                    draw_label = False
+                    if self.show_insertion_labels:
+                        draw_label = True
+                    elif length >= self.min_insertion_label_size:
+                        draw_label = True
+                    if draw_label:
+                        ax.text(
+                            ref_pos, y_center + h * 0.7,
+                            str(length),
+                            ha="center", va="bottom",
+                            fontsize=4, color=self.col_insertion,
+                            fontweight="bold", zorder=5,
+                        )
                 query_pos += length
 
             elif op == _CIGAR_D:
                 # Deletion
                 x_start = max(ref_pos, region.start)
                 x_end = min(ref_pos + length, region.end)
-                if self.show_indels and x_end > x_start:
+                if (self.show_indels
+                        and length > self.min_indel_size
+                        and x_end > x_start):
                     ax.plot(
                         [x_start, x_end],
                         [y_center, y_center],
@@ -411,12 +595,34 @@ class AlignmentsTrack(StackedTrack):
                 ref_pos += length
 
             elif op == _CIGAR_S:
+                # Soft clipping — draw as coloured block at read edge
+                if self.show_clipping and length >= 5:
+                    # Soft clips don't consume reference, but we can draw
+                    # a marker at the read boundary
+                    clip_x = ref_pos if query_pos == 0 else ref_pos
+                    if region.start <= clip_x <= region.end:
+                        clip_w = max(1, span / 500)
+                        rect = mpatches.Rectangle(
+                            (clip_x - clip_w / 2, y_center - h / 2),
+                            clip_w, h,
+                            facecolor=self.col_clipping,
+                            edgecolor="none",
+                            alpha=0.7, zorder=4,
+                        )
+                        ax.add_patch(rect)
                 query_pos += length
-            # H, P: no consumption
+            # H, P: no consumption of reference or query
 
     def _draw_mismatches(self, ax, read, ref_seq, ref_pos, query_pos,
-                         length, region, y_center, h):
-        """Color-code mismatched bases in a read."""
+                         length, region, y_center, h,
+                         mismatch_counts=None):
+        """Color-code mismatched bases in a read.
+
+        When *mismatch_counts* is provided (quick-consensus mode), a
+        mismatch is only drawn when the alt allele is supported by at
+        least ``self.consensus_threshold`` fraction of reads at that
+        position.
+        """
         try:
             query_seq = read.query_sequence
             if query_seq is None:
@@ -438,6 +644,13 @@ class AlignmentsTrack(StackedTrack):
             query_base = query_seq[qp].upper()
 
             if query_base != ref_base and query_base in _NUC_COLORS:
+                # Skip if quick-consensus is active and the alt allele
+                # does not have sufficient support at this position.
+                if mismatch_counts is not None:
+                    if not mismatch_counts.query(
+                        query_base, rp, threshold=self.consensus_threshold
+                    ):
+                        continue
                 color = _NUC_COLORS[query_base]
                 bp_width = max(1, (region.end - region.start) / 500)
                 rect = mpatches.Rectangle(
@@ -518,6 +731,148 @@ class AlignmentsTrack(StackedTrack):
                 ha="center", va="bottom", fontsize=5,
                 color="#E63946", zorder=5,
             )
+
+    def get_region(self) -> Optional[GenomicInterval]:
+        """Return the region covered by the BAM file (from index)."""
+        try:
+            pysam = self._import_pysam()
+            aln = pysam.AlignmentFile(self.filepath, "rb")
+            refs = aln.references
+            lengths = aln.lengths
+            aln.close()
+            if refs:
+                return GenomicInterval(refs[0], 0, int(lengths[0]))
+        except Exception:
+            pass
+        return None
+
+
+class BAMCoverageTrack(Track):
+    """Display per-base coverage from a BAM/CRAM file as a line or filled area.
+
+    Unlike ``AlignmentsTrack(type="coverage")`` which shows coverage inside
+    a pileup panel, ``BAMCoverageTrack`` is a standalone track that draws
+    coverage as a continuous line or filled-area plot — similar to
+    genomeview's ``BAMCoverageTrack``.
+
+    Requires the optional ``pysam`` package.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to a BAM or CRAM file.
+    type : str
+        Display style: ``"line"`` (default) or ``"fill"``.
+    col : str
+        Line / fill color.  Default is ``"#5B8DB8"``.
+    alpha : float
+        Transparency.  Default is 0.7.
+    linewidth : float
+        Line width for ``"line"`` mode.  Default is 1.0.
+    transformation : callable, optional
+        Function applied to coverage values before plotting
+        (e.g. ``np.log1p``).
+    name : str
+        Track name.  Default is derived from the file name.
+    height : float
+        Relative track height.  Default is 1.5.
+    display_params : dict, optional
+        Additional display parameters.
+    """
+
+    def __init__(
+        self,
+        filepath: str,
+        type: str = "line",
+        col: str = "#5B8DB8",
+        alpha: float = 0.7,
+        linewidth: float = 1.0,
+        transformation: Optional[Callable] = None,
+        name: Optional[str] = None,
+        height: float = 1.5,
+        display_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
+        if name is None:
+            import os
+            name = os.path.basename(filepath).split(".")[0]
+        dp = {"fontsize": 8}
+        if display_params:
+            dp.update(display_params)
+        super().__init__(name=name, height=height, display_params=dp, **kwargs)
+
+        self.filepath = filepath
+        self.plot_type = type
+        self.col = col
+        self.alpha = alpha
+        self.linewidth = linewidth
+        self.transformation = transformation
+
+    def _import_pysam(self):
+        try:
+            import pysam
+            return pysam
+        except ImportError:
+            raise ImportError(
+                "The 'pysam' package is required for BAMCoverageTrack. "
+                "Install it with: pip install pysam"
+            )
+
+    def draw(self, ax, region: GenomicInterval) -> None:
+        """Draw coverage line or filled area."""
+        pysam = self._import_pysam()
+        aln = pysam.AlignmentFile(self.filepath, "rb")
+        chrom = match_chrom_format(region.chrom, aln.references)
+
+        # Compute per-base coverage
+        cov = aln.count_coverage(
+            chrom, region.start, region.end, quality_threshold=0,
+        )
+        total = np.array(cov[0]) + np.array(cov[1]) + np.array(cov[2]) + np.array(cov[3])
+        aln.close()
+
+        if len(total) == 0:
+            ax.set_xlim(region.start, region.end)
+            ax.set_ylim(0, 1)
+            ax.axis("off")
+            return
+
+        if self.transformation is not None:
+            total = self.transformation(total.astype(float))
+
+        positions = np.arange(region.start, region.start + len(total))
+        max_cov = float(np.max(total)) if len(total) > 0 else 1.0
+        if max_cov == 0:
+            max_cov = 1.0
+
+        ax.set_xlim(region.start, region.end)
+        ax.set_ylim(0, max_cov * 1.1)
+
+        if self.plot_type == "fill":
+            ax.fill_between(
+                positions, 0, total,
+                color=self.col, alpha=self.alpha, step="mid", zorder=3,
+            )
+            ax.plot(
+                positions, total,
+                color=self.col, linewidth=self.linewidth * 0.5, zorder=4,
+            )
+        else:
+            ax.plot(
+                positions, total,
+                color=self.col, linewidth=self.linewidth, alpha=self.alpha,
+                zorder=3,
+            )
+
+        # Annotate max coverage
+        ax.text(
+            region.start, max_cov * 1.05,
+            f"max={int(max_cov)}",
+            ha="left", va="bottom", fontsize=6, color="#555555",
+        )
+
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
 
     def get_region(self) -> Optional[GenomicInterval]:
         """Return the region covered by the BAM file (from index)."""

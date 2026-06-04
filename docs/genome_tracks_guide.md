@@ -17,14 +17,20 @@ The genome tracks module in geneview provides a powerful system for visualizing 
 9. [DataTrack](#datatrack)
 10. [SequenceTrack](#sequencetrack)
 11. [AlignmentsTrack](#alignmentstrack)
-12. [HighlightTrack](#highlighttrack)
-13. [OverlayTrack](#overlaytrack)
-14. [File I/O](#file-io)
-15. [Exporting Tracks](#exporting-tracks)
-16. [Color Schemes](#color-schemes)
-17. [Advanced: plot_tracks()](#advanced-plot_tracks)
-18. [Display Parameters Reference](#display-parameters-reference)
-19. [Complete Example](#complete-example)
+12. [BAMCoverageTrack](#bamcoveragetrack)
+13. [VCFTrack](#vcftrack)
+14. [GroupedAlignmentsTrack](#groupedalignmentstrack)
+15. [HighlightTrack](#highlighttrack)
+16. [OverlayTrack](#overlaytrack)
+17. [File I/O](#file-io)
+18. [Exporting Tracks](#exporting-tracks) (export_tracks, save_figure)
+19. [Color Schemes](#color-schemes)
+20. [Advanced: plot_tracks()](#advanced-plot_tracks)
+21. [Multi-View Layouts](#multi-view-layouts)
+22. [Convenience API](#convenience-api)
+23. [Utility Functions](#utility-functions) (match_chrom_format, is_paired_end, is_long_frag_dataset, MismatchCounts, reverse_comp, get_ticks, find_tracks)
+24. [Display Parameters Reference](#display-parameters-reference)
+25. [Complete Example](#complete-example)
 
 ---
 
@@ -43,6 +49,9 @@ GeneRegionTrack  ─── gene models (exons/UTRs/introns)
 DataTrack        ─── numeric data (line/histogram/heatmap)
 SequenceTrack    ─── nucleotide sequence display
 AlignmentsTrack  ─── BAM/CRAM read alignments
+BAMCoverageTrack ─── standalone BAM/CRAM coverage line/fill
+VCFTrack         ─── VCF/BCF variant display
+GroupedAlignmentsTrack ─── BAM reads split into groups
 HighlightTrack   ─── cross-track highlights
 OverlayTrack     ─── overlay multiple tracks on same axes
 ```
@@ -54,6 +63,9 @@ Track (abstract base)
   ├── GenomeAxisTrack
   ├── IdeogramTrack (chromosome schematic)
   ├── SequenceTrack (nucleotide sequence)
+  ├── BAMCoverageTrack (standalone BAM coverage)
+  ├── VCFTrack (VCF/BCF variants)
+  ├── GroupedAlignmentsTrack (grouped BAM/CRAM reads)
   └── RangeTrack (has a DataFrame)
         ├── StackedTrack (overlapping features stacked)
         │     ├── AnnotationTrack
@@ -626,6 +638,52 @@ atrack = AnnotationTrack.from_bam(
 ```
 
 Each aligned read becomes a separate annotation feature.
+
+### BED12 Transcript Rendering
+
+When a DataFrame contains BED12 columns (`thick_start`, `thick_end`, `block_count`, `block_sizes`, `block_starts`), AnnotationTrack automatically renders transcript structures:
+
+- **Thick exons** (within `thick_start`–`thick_end`) represent CDS regions at full height
+- **Thin exons** (outside thick range) represent UTR regions at half height
+- **Intron lines** connect exons with strand-direction chevrons
+- Falls back to simple arrow rendering when CDS columns are `NaN`
+
+```python
+import pandas as pd
+
+bed12_df = pd.DataFrame([{
+    "chrom": "chr1", "start": 10000, "end": 30000,
+    "name": "GeneA", "score": 0, "strand": "+",
+    "thick_start": 12000, "thick_end": 27000,
+    "block_count": 4,
+    "block_sizes": "1500,2000,3000,1500",
+    "block_starts": "0,5000,12000,18500",
+}])
+
+atrack = AnnotationTrack(bed12_df, name="Transcripts")
+axes = plot_tracks(
+    [GenomeAxisTrack(), atrack],
+    region=GenomicInterval("chr1", 8000, 32000),
+)
+```
+
+### Feature Filtering
+
+Use `feature_filter` to draw only a subset of features based on any column value:
+
+```python
+# Only show features with score >= 100
+atrack = AnnotationTrack(
+    data,
+    feature_filter=lambda row: row["score"] >= 100,
+)
+
+# Only show protein-coding genes
+atrack = AnnotationTrack(
+    data,
+    feature_filter=lambda row: row.get("gene_biotype") == "protein_coding",
+)
+```
 
 ---
 
@@ -1219,6 +1277,17 @@ AlignmentsTrack(
     fill_coverage="#B3CDE3", # Coverage fill color
     fill_reads="#C8C8C8",   # Read fill color
     alpha_reads=0.7,         # Read transparency
+    show_clipping=False,     # Draw soft-clipped blocks at read edges
+    col_clipping="cyan",     # Color for clipping indicators
+    min_indel_size=0,        # Minimum indel length to draw (bp)
+    show_insertion_labels=False,  # Annotate insertions with size
+    color_by_strand=False,   # Color fwd/rev reads differently
+    fill_reads_fwd="#E89E9D", # Forward-strand read color
+    fill_reads_rev="#8C8FCE", # Reverse-strand read color
+    include_secondary=True,  # Include secondary/supplementary alignments
+    overlap_color=None,      # Highlight paired-end overlap regions
+    draw_read_labels=False,  # Show read query names on pileup
+    min_insertion_label_size=5, # Auto-label insertions >= this size
     name="Alignments",
     height=2.0,
 )
@@ -1312,6 +1381,400 @@ aln = AlignmentsTrack(
     "rnaseq.bam",
     type=["coverage", "sashimi"],
     sashimi_score=5,  # Only show junctions with >= 5 reads
+)
+```
+
+### Quick Consensus Filtering
+
+For noisy long-read data (PacBio/ONT), filter pileup mismatches by consensus threshold to avoid being overwhelmed by per-read errors:
+
+```python
+aln = AlignmentsTrack(
+    "longreads.bam",
+    type="pileup",
+    quick_consensus=True,     # Enable consensus filtering (default)
+    consensus_threshold=0.2,  # Alt allele must be >20% to show
+    reference="hg38.fa",
+)
+```
+
+Set `quick_consensus=False` to show all mismatches, or increase `consensus_threshold` for stricter filtering.
+
+### Read Filtering
+
+Pass a custom callable to `read_filter` to include only specific reads:
+
+```python
+# Show only primary alignments
+def primary_only(read):
+    return not read.is_secondary and not read.is_supplementary
+
+aln = AlignmentsTrack(
+    "alignments.bam",
+    type="pileup",
+    read_filter=primary_only,
+)
+```
+
+### Chromosome Name Normalisation
+
+The `match_chrom_format()` utility handles `chr1` vs `1` mismatches automatically when fetching reads. This is also exposed for manual use:
+
+```python
+from geneview.genometracks import match_chrom_format
+
+# BAM header uses '1', '2', ... but your region uses 'chr1'
+chrom = match_chrom_format("chr1", bam.references)  # returns '1'
+```
+
+### Clipping Visualization
+
+Draw soft-clipped bases as coloured blocks at read edges (ported from genomeview):
+
+```python
+aln = AlignmentsTrack(
+    "longreads.bam",
+    type="pileup",
+    show_clipping=True,
+    col_clipping="cyan",     # or any matplotlib color
+)
+```
+
+Clips shorter than 5 bp are not drawn to avoid visual noise.
+
+### Strand-Based Read Coloring
+
+Color forward- and reverse-strand reads differently:
+
+```python
+aln = AlignmentsTrack(
+    "alignments.bam",
+    type="pileup",
+    color_by_strand=True,
+    fill_reads_fwd="#E89E9D",  # warm red for forward
+    fill_reads_rev="#8C8FCE",  # cool blue for reverse
+)
+```
+
+### Indel Size Filtering
+
+Suppress small indels that are common noise in long-read data:
+
+```python
+aln = AlignmentsTrack(
+    "longreads.bam",
+    type="pileup",
+    show_indels=True,
+    min_indel_size=5,          # only draw indels ≥ 5 bp
+    show_insertion_labels=True, # annotate insertions with their size
+)
+```
+
+### Secondary / Supplementary Alignment Filtering
+
+By default all alignments (including secondary and supplementary) are shown. Set `include_secondary=False` to display only primary alignments:
+
+```python
+aln = AlignmentsTrack(
+    "alignments.bam",
+    type="pileup",
+    include_secondary=False,
+)
+```
+
+### Read Labels
+
+Show read query names to the right of each read in pileup mode:
+
+```python
+aln = AlignmentsTrack(
+    "alignments.bam",
+    type="pileup",
+    draw_read_labels=True,
+)
+```
+
+### Paired-End Overlap Highlighting
+
+Highlight the overlapping portions of paired-end read mates with `overlap_color`:
+
+```python
+aln = AlignmentsTrack(
+    "paired_end.bam",
+    type="pileup",
+    is_paired=True,
+    overlap_color="lime",
+)
+```
+
+### Auto Insertion Labels
+
+Insertions larger than `min_insertion_label_size` (default: 5 bp) are automatically labelled with their size, even when `show_insertion_labels` is False:
+
+```python
+aln = AlignmentsTrack(
+    "long_reads.bam",
+    type="pileup",
+    min_insertion_label_size=10,  # only label insertions >= 10 bp
+)
+```
+
+### Custom Read Coloring (color_fn)
+
+Use a custom function to color each read individually. This overrides `fill_reads` and `color_by_strand`, equivalent to genomeview's `track.color_fn`:
+
+```python
+# Color by insert size (paired-end data)
+def color_by_insert_size(read):
+    isize = abs(read.template_length)
+    if isize < 100 or isize > 1500:
+        return "red"       # abnormal
+    if isize > 550:
+        return "blue"      # large insert
+    return "green"         # normal
+
+aln = AlignmentsTrack(
+    "paired_end.bam",
+    type="pileup",
+    is_paired=True,
+    color_fn=color_by_insert_size,
+)
+
+# Uniform gray backdrop (useful for VCF+ BAM views)
+aln = AlignmentsTrack(
+    "reads.bam",
+    type="pileup",
+    color_fn=lambda read: "lightgray",
+)
+
+# Color by mapping quality
+def color_by_mapq(read):
+    if read.mapping_quality >= 40:
+        return "#1565C0"  # dark blue
+    elif read.mapping_quality >= 20:
+        return "#64B5F6"  # light blue
+    return "#FF9800"      # orange
+
+aln = AlignmentsTrack("reads.bam", type="pileup", color_fn=color_by_mapq)
+```
+
+![genome_tracks_color_by_insert.png](../examples/figures/genome_tracks_color_by_insert.png)
+
+---
+
+## BAMCoverageTrack
+
+A standalone track that displays per-base coverage from a BAM/CRAM file as a continuous line or filled-area plot. Unlike `AlignmentsTrack(type="coverage")` which shows coverage inside a pileup panel, `BAMCoverageTrack` is a dedicated coverage track — similar to genomeview's `BAMCoverageTrack`.
+
+### Constructor
+
+```python
+from geneview.genometracks import BAMCoverageTrack
+
+cov = BAMCoverageTrack(
+    filepath="alignments.bam",
+    type="line",                # "line" or "fill"
+    col="#5B8DB8",              # line/fill color
+    alpha=0.7,                  # transparency
+    linewidth=1.0,              # line width (line mode)
+    transformation=None,        # e.g. np.log1p
+    name=None,                  # auto-derived from file name
+    height=1.5,
+)
+```
+
+### Basic Usage
+
+```python
+from geneview.genometracks import (
+    BAMCoverageTrack, GenomeAxisTrack, GenomicInterval, plot_tracks,
+)
+
+region = GenomicInterval("chr7", 26_500_000, 26_800_000)
+cov_line = BAMCoverageTrack("sample.bam", type="line", name="Coverage (line)")
+cov_fill = BAMCoverageTrack("sample.bam", type="fill", name="Coverage (fill)")
+
+axes = plot_tracks(
+    [GenomeAxisTrack(), cov_line, cov_fill],
+    region=region,
+    figsize=(14, 6),
+)
+```
+
+![genome_tracks_bam_coverage.png](../examples/figures/genome_tracks_bam_coverage.png)
+
+### Log-Transformed Coverage
+
+```python
+import numpy as np
+from geneview.genometracks import BAMCoverageTrack
+
+cov_log = BAMCoverageTrack(
+    "sample.bam",
+    type="fill",
+    transformation=np.log1p,
+    name="log1p Coverage",
+)
+```
+
+![genome_tracks_bam_coverage_log.png](../examples/figures/genome_tracks_bam_coverage_log.png)
+
+---
+
+## VCFTrack
+
+Displays genomic variants from a VCF or BCF file as colored rectangles. Overlapping variants are stacked vertically. Supports custom coloring via `color_fn`, similar to genomeview's VCFTrack extension example.
+
+### Constructor
+
+```python
+from geneview.genometracks import VCFTrack
+
+vcf = VCFTrack(
+    filepath="variants.vcf.gz",    # indexed VCF/BCF file
+    color_fn=None,                  # f(VariantRecord) -> color string
+    min_variant_width=0.002,        # min width as fraction of region
+    row_height=0.12,                # row height as fraction of axes
+    margin_y=0.02,                  # gap between rows
+    alpha=0.85,                     # opacity
+    name="Variants",
+    height=1.0,
+)
+```
+
+### Basic Usage
+
+```python
+from geneview.genometracks import (
+    VCFTrack, GenomeAxisTrack, GenomicInterval, plot_tracks,
+)
+
+region = GenomicInterval("14", 66903600, 66905100)
+tracks = [
+    GenomeAxisTrack(),
+    VCFTrack("sample.vcf.gz", name="SNPs"),
+]
+axes = plot_tracks(tracks, region=region)
+```
+
+By default, variants are colored by their first alt allele nucleotide (A=blue, C=orange, G=green, T=vermillion).
+
+![genome_tracks_vcf_basic.png](../examples/figures/genome_tracks_vcf_basic.png)
+
+### Custom Coloring
+
+```python
+# Color by variant quality
+def color_by_qual(variant):
+    qual = variant.qual
+    if qual is None:
+        return "#999999"
+    if qual >= 50:
+        return "#2E7D32"   # high quality
+    elif qual >= 20:
+        return "#FFC107"   # medium quality
+    return "#C62828"       # low quality
+
+vcf = VCFTrack("sample.vcf.gz", color_fn=color_by_qual)
+```
+
+![genome_tracks_vcf_quality.png](../examples/figures/genome_tracks_vcf_quality.png)
+
+### VCF + BAM Combined View
+
+Combine VCFTrack with AlignmentsTrack (using `color_fn` for gray reads) to visualize variants alongside read evidence, mirroring the genomeview notebook's `fig1` example:
+
+```python
+from geneview.genometracks import (
+    VCFTrack, AlignmentsTrack, BAMCoverageTrack,
+    GenomeAxisTrack, GenomicInterval, plot_tracks,
+)
+
+region = GenomicInterval("14", 66903600, 66905100)
+tracks = [
+    GenomeAxisTrack(),
+    VCFTrack("hg002.vcf.gz", name="HG002 Variants"),
+    AlignmentsTrack(
+        "illumina.bam", is_paired=True, type="pileup",
+        name="Illumina", color_fn=lambda r: "lightgray",
+    ),
+    AlignmentsTrack(
+        "pacbio.bam", type="pileup",
+        name="PacBio", min_indel_size=10,
+        color_fn=lambda r: "lightgray",
+    ),
+]
+axes = plot_tracks(tracks, region=region, figsize=(14, 12))
+```
+
+![genome_tracks_vcf_with_bam.png](../examples/figures/genome_tracks_vcf_with_bam.png)
+
+---
+
+## GroupedAlignmentsTrack
+
+Display BAM/CRAM reads split into groups by tag or custom callback. Each group is rendered as a separate panel within the same track, useful for haplotype-phased data, methylation bins, or any custom read classification.
+
+### Constructor
+
+```python
+from geneview.genometracks import GroupedAlignmentsTrack, get_group_by_tag_fn
+
+# Group by BAM tag (e.g. HP for 10x Genomics phasing)
+keyfn = get_group_by_tag_fn("HP")
+gtrack = GroupedAlignmentsTrack(
+    filepath="phased.bam",
+    keyfn=keyfn,
+    type="coverage",          # or "pileup"
+    is_paired=False,
+    reference=None,
+    space_between=0.05,       # Gap between group panels
+    category_label_fn=None,   # Format group labels: f(str) -> str
+    quick_consensus=True,     # Passed to each sub-track
+    consensus_threshold=0.2,  # Passed to each sub-track
+    name="GroupedAlignments",
+    height=3.0,
+)
+```
+
+### Basic Usage
+
+```python
+from geneview.genometracks import (
+    GenomeAxisTrack, GroupedAlignmentsTrack,
+    get_group_by_tag_fn, GenomicInterval, plot_tracks,
+)
+
+# Group reads by the HP (haplotype) tag
+keyfn = get_group_by_tag_fn("HP")
+grouped = GroupedAlignmentsTrack(
+    "phased.bam",
+    keyfn=keyfn,
+    type="coverage",
+    name="Haplotypes",
+)
+
+region = GenomicInterval("chr1", 100000, 200000)
+axes = plot_tracks(
+    [GenomeAxisTrack(), grouped],
+    region=region,
+)
+```
+
+### Custom Grouping Function
+
+```python
+def mapq_group(read):
+    """Group reads by mapping quality."""
+    if read.mapping_quality >= 50:
+        return "High MAPQ"
+    return "Low MAPQ"
+
+grouped = GroupedAlignmentsTrack(
+    "alignments.bam",
+    keyfn=mapq_group,
+    type="coverage",
+    category_label_fn=lambda x: f"Quality: {x}",
 )
 ```
 
@@ -1497,6 +1960,20 @@ from geneview.genometracks import read_bigwig
 df = read_bigwig("signal.bw", region=GenomicInterval("chr7", 26500000, 26800000))
 ```
 
+### BigBed Files (optional)
+
+Requires `pyBigWig` (which also supports BigBed):
+
+```python
+from geneview.genometracks import read_bigbed, GenomicInterval
+
+region = GenomicInterval("chr7", 26_000_000, 27_000_000)
+df = read_bigbed("features.bb", region=region)
+# Returns DataFrame with BED columns: chrom, start, end, name, score, strand, ...
+```
+
+BigBed files are also auto-detected by `visualize_files()` and `read_auto()`.
+
 ### BAM Coverage (optional)
 
 Requires `pysam`:
@@ -1641,6 +2118,8 @@ auto_bw   = read_auto("examples/data/genome_tracks/test.bw")
 
 ## Exporting Tracks
 
+### export_tracks()
+
 Export track data to common genomic file formats using `export_tracks`:
 
 ```python
@@ -1665,6 +2144,34 @@ export_tracks(grtrack, "genes.gff", format="gff")
 | `gff` | chrom, source, feature, start (1-based), end, score, strand, frame, attributes |
 | `bedgraph` | chrom, start, end, value |
 | `wig` | fixedStep or variableStep WIG format |
+
+### save_figure()
+
+Convenience wrapper for saving track figures with auto-detected format:
+
+```python
+from geneview.genometracks import plot_tracks, save_figure
+
+axes = plot_tracks(tracks, region=region)
+
+# Auto-detect format from extension
+save_figure(axes, "output.png", dpi=150)
+save_figure(axes, "output.pdf")
+save_figure(axes, "output.svg")
+
+# Explicit format override
+save_figure(axes, "output", fmt="eps")
+```
+
+**Parameters:**
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `axes` | required | Axes list from `plot_tracks()` or single Axes |
+| `filepath` | required | Output file path |
+| `dpi` | `150` | Resolution for raster formats |
+| `fmt` | `None` | Explicit format (`"png"`, `"pdf"`, `"svg"`, `"eps"`); auto-detected if `None` |
+| `bbox_inches` | `"tight"` | Passed to `Figure.savefig` |
 
 ---
 
@@ -1834,6 +2341,258 @@ axes = plot_tracks([gtrack, atrack], region=region,
     margin=10,          # outer margin
     inner_margin=5,     # space between title and data panels
 )
+```
+
+### Custom Drawing (Pre/Post Render)
+
+Since `plot_tracks()` returns standard matplotlib Axes, you can draw custom annotations before or after rendering tracks — equivalent to genomeview's pre-renderer/post-renderer callbacks:
+
+```python
+# Post-render: add custom overlays on returned axes
+axes = plot_tracks([gtrack, cov_track, aln_track], region=region)
+
+# Highlight a region across all panels
+for ax in axes:
+    ax.axvspan(start + 1500, start + 3500, alpha=0.15, color="green", zorder=0)
+
+# Add text annotation on a specific panel
+axes[0].text((start+1500 + start+3500) / 2, 1.05,
+             "Region of Interest", ha="center", fontsize=9, color="green")
+
+# Add an arrow pointing to a specific position
+axes[-1].annotate("SNP", xy=(pos, 0.5), xytext=(pos+200, 0.8),
+                  arrowprops=dict(arrowstyle="->", color="red"))
+
+# Add a vertical marker line
+axes[-1].axvline(pos, color="red", linestyle="--", alpha=0.7)
+```
+
+![genome_tracks_custom_combined.png](../examples/figures/genome_tracks_custom_combined.png)
+
+---
+
+## Multi-View Layouts
+
+Render multiple independent genomic views in a single figure. Ported from genomeview’s `ViewRow` (side-by-side) and `Document` (stacked multi-region) concepts.
+
+### plot_tracks_grid() — Side-by-Side Views
+
+Compare different loci or datasets in a grid layout:
+
+```python
+from geneview.genometracks import (
+    GenomeAxisTrack, AnnotationTrack, DataTrack,
+    GenomicInterval, plot_tracks_grid,
+)
+
+# Two views: one for each region
+view_left = [
+    GenomeAxisTrack(),
+    AnnotationTrack(cpg_data, name="Region A"),
+]
+view_right = [
+    GenomeAxisTrack(),
+    AnnotationTrack(cpg_data, name="Region B"),
+]
+
+axes = plot_tracks_grid(
+    [view_left, view_right],
+    regions=[
+        GenomicInterval("chr7", 26_500_000, 26_800_000),
+        GenomicInterval("chr7", 27_000_000, 27_300_000),
+    ],
+    columns=2,
+    figsize=(20, 6),
+    title="Side-by-Side Comparison",
+)
+```
+
+**Parameters:**
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `views` | required | List of track lists, one per column |
+| `regions` | `None` | One `GenomicInterval` per view (auto-derived if `None`) |
+| `columns` | `2` | Number of grid columns |
+| `figsize` | `None` | Figure size `(w, h)` in inches |
+| `title` | `None` | Main figure title |
+
+### plot_tracks_multi() — Stacked Multi-Region
+
+Stack track sections from different genomic regions vertically:
+
+```python
+from geneview.genometracks import plot_tracks_multi
+
+sections = [
+    ([GenomeAxisTrack(), AnnotationTrack(data1, name="Region A")],
+     GenomicInterval("chr1", 100_000, 200_000)),
+    ([GenomeAxisTrack(), AnnotationTrack(data2, name="Region B")],
+     GenomicInterval("chr2", 500_000, 600_000)),
+]
+
+axes = plot_tracks_multi(
+    sections,
+    title="Multi-Region Overview",
+)
+```
+
+**Parameters:**
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `sections` | required | List of `(track_list, region)` tuples |
+| `figsize` | `None` | Figure size |
+| `title` | `None` | Main title (shown on first section) |
+
+---
+
+## Convenience API
+
+### visualize_files()
+
+Auto-detect file types from extensions and build the appropriate tracks automatically. The quickest way to visualize a set of genomic files:
+
+```python
+from geneview.genometracks import visualize_files, plot_tracks, GenomicInterval
+
+# From a list of file paths
+tracks = visualize_files(
+    ["sample.bam", "genes.gtf", "signal.bw"],
+    region=GenomicInterval("chr1", 100_000, 200_000),
+)
+axes = plot_tracks(tracks)
+
+# From a dict (keys become track names)
+tracks = visualize_files(
+    {"Control": "ctrl.bam", "Treatment": "treat.bam", "Genes": "genes.gtf"},
+    region=GenomicInterval("chr1", 100_000, 200_000),
+)
+axes = plot_tracks(tracks)
+```
+
+**Supported extensions:**
+
+| Extension | Track Type |
+|-----------|------------|
+| `.bam`, `.cram` | `AlignmentsTrack` (auto-detects paired-end) |
+| `.bed`, `.bed.gz` | `AnnotationTrack` |
+| `.gff`, `.gff3`, `.gtf` | `AnnotationTrack` |
+| `.bigwig`, `.bw` | `DataTrack` |
+| `.bedgraph`, `.bdg` | `DataTrack` |
+
+**Parameters:**
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `file_paths` | required | List or dict of file paths |
+| `region` | required | `GenomicInterval` to display |
+| `reference` | `None` | FASTA path for BAM mismatch display |
+| `axis_on_top` | `False` | Place genome axis at top |
+| `show_mismatches` | `True` | Passed to `AlignmentsTrack` |
+| `quick_consensus` | `True` | Enable consensus filtering |
+| `consensus_threshold` | `0.2` | Consensus threshold |
+
+---
+
+## Utility Functions
+
+### match_chrom_format()
+
+Normalise chromosome names between different naming conventions (`chr1` vs `1`, `chrM` vs `MT`):
+
+```python
+from geneview.genometracks import match_chrom_format
+
+match_chrom_format("chr1", ["1", "2"])    # → "1"
+match_chrom_format("1", ["chr1", "chr2"])  # → "chr1"
+match_chrom_format("chrM", ["MT"])         # → "MT"
+match_chrom_format("MT", ["chrM"])         # → "chrM"
+```
+
+### is_paired_end()
+
+Detect whether a BAM file contains paired-end reads (scans up to *n* reads):
+
+```python
+from geneview.genometracks import is_paired_end
+
+if is_paired_end("sample.bam"):
+    print("Paired-end data")
+```
+
+### is_long_frag_dataset()
+
+Detect long-read (PacBio/ONT) datasets by checking for large fragment sizes:
+
+```python
+from geneview.genometracks import is_long_frag_dataset
+
+if is_long_frag_dataset("longreads.bam"):
+    print("Long-read data")
+```
+
+### MismatchCounts
+
+Low-level per-position base frequency tallying, useful for custom analyses:
+
+```python
+from geneview.genometracks import MismatchCounts
+import pysam
+
+bam = pysam.AlignmentFile("reads.bam", "rb")
+mc = MismatchCounts("chr1", 100_000, 200_000)
+mc.tally_reads(bam)
+
+# Query: is there >30% alt allele at position 150000?
+has_support = mc.query("G", 150_000, threshold=0.3)
+```
+
+### reverse_comp()
+
+Return the reverse complement of a DNA sequence. Non-ACGT characters are left unchanged:
+
+```python
+from geneview.genometracks import reverse_comp
+
+reverse_comp("ATCG")      # → "CGAT"
+reverse_comp("AATTCC")    # → "GGAATT"
+reverse_comp("atcg")      # → "cgat" (lowercase supported)
+reverse_comp("ANCG")      # → "CGNT" (N preserved)
+```
+
+### get_ticks()
+
+Compute nicely-spaced genomic tick positions and labels. This standalone utility (ported from `genomeview.axis.get_ticks`) can be used to build custom axes:
+
+```python
+from geneview.genometracks import get_ticks
+
+ticks = get_ticks(2_000_000, 3_000_000, target_n_labels=8)
+for pos, label in ticks:
+    print(pos, label)
+# (2000000, '2000.0kb')
+# (2125000, '2125.0kb')
+# ...
+```
+
+![genome_tracks_get_ticks.png](../examples/figures/genome_tracks_get_ticks.png)
+
+### find_tracks()
+
+Retrieve tracks by name or type from a track list (equivalent to genomeview's `Document.get_tracks(name)`):
+
+```python
+from geneview.genometracks import find_tracks, GenomeAxisTrack, AnnotationTrack
+
+# Find by name
+by_name = find_tracks(track_list, name="Genes")
+
+# Find by type
+by_type = find_tracks(track_list, track_type=GenomeAxisTrack)
+
+# Find with both filters
+both = find_tracks(track_list, name="Axis", track_type=GenomeAxisTrack)
 ```
 
 ---

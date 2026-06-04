@@ -23,6 +23,62 @@ from ._genome_axis import GenomeAxisTrack
 from ._ideogram import IdeogramTrack
 
 
+def find_tracks(track_list: Union[Track, List[Track]], name: Optional[str] = None,
+                track_type: Optional[type] = None) -> List[Track]:
+    """Find tracks by name or type in a track list.
+
+    Similar to genomeview's ``Document.get_tracks(name)``.  This is a
+    standalone utility that works with any list of :class:`Track` objects
+    (e.g. the list you pass to :func:`plot_tracks`).
+
+    Parameters
+    ----------
+    track_list : Track or list of Track
+        The tracks to search through.
+    name : str, optional
+        If provided, only tracks whose ``name`` attribute matches
+        (case-sensitive) are returned.
+    track_type : type, optional
+        If provided, only tracks that are instances of this class
+        (or a subclass) are returned.
+
+    Returns
+    -------
+    list of Track
+        Matching tracks.
+
+    Examples
+    --------
+    >>> from geneview.genometracks import find_tracks, GenomeAxisTrack, AnnotationTrack
+    >>> import pandas as pd
+    >>> ann = AnnotationTrack(pd.DataFrame({"chrom":["chr1"],"start":[0],"end":[100]}), name="Genes")
+    >>> tracks = [GenomeAxisTrack(), ann]
+    >>> find_tracks(tracks, name="Genes")
+    [AnnotationTrack(name='Genes', height=1.0)]
+    >>> find_tracks(tracks, track_type=GenomeAxisTrack)
+    [GenomeAxisTrack(name='Axis', height=0.3)]
+    """
+    if isinstance(track_list, Track):
+        track_list = [track_list]
+
+    results = []
+    for track in track_list:
+        # Handle HighlightTrack (contains sub-tracks)
+        if isinstance(track, HighlightTrack) and track.track_list:
+            results.extend(find_tracks(track.track_list, name=name, track_type=track_type))
+            continue
+
+        match = True
+        if name is not None and track.name != name:
+            match = False
+        if track_type is not None and not isinstance(track, track_type):
+            match = False
+        if match:
+            results.append(track)
+
+    return results
+
+
 def _apply_style_to_tracks(tracks, style):
     """Apply plotstyle track-parameter overrides to a list of tracks.
 
