@@ -7,7 +7,6 @@ the Gviz R package's test datasets (chr7 region ~26.5-26.8 Mb).
 Author: geneview contributors
 """
 import os
-import shutil
 import numpy as np
 
 
@@ -16,14 +15,10 @@ import numpy as np
 # ---------------------------------------------------------------------------
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(SCRIPT_DIR, "..", "data", "genome_tracks")
-GVIZ_EXT = os.path.join(SCRIPT_DIR, "..", "..", "learn_from", "Gviz", "inst", "extdata")
 
 
 def ensure_dirs():
     os.makedirs(DATA_DIR, exist_ok=True)
-    gviz_out = os.path.join(DATA_DIR, "gviz_samples")
-    os.makedirs(gviz_out, exist_ok=True)
-    return gviz_out
 
 
 # ---------------------------------------------------------------------------
@@ -195,33 +190,13 @@ def generate_multi_sample(output_dir, seed=42):
 
 
 # ---------------------------------------------------------------------------
-# 6. Copy Gviz sample test files
-# ---------------------------------------------------------------------------
-def copy_gviz_samples(gviz_out_dir):
-    """Copy real Gviz test files for users who want to try loading real data."""
-    filenames = ["test.bed", "test.bedGraph", "test.gtf", "test.gff3"]
-    copied = 0
-    for fname in filenames:
-        src = os.path.join(GVIZ_EXT, fname)
-        dst = os.path.join(gviz_out_dir, fname)
-        if os.path.exists(src):
-            shutil.copy2(src, dst)
-            copied += 1
-            print(f"[INFO] Copied {fname} -> {dst}")
-        else:
-            print(f"[WARN] Gviz sample file not found: {src}")
-    print(f"[INFO] {copied}/{len(filenames)} Gviz sample files copied")
-
-
-# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    gviz_out = ensure_dirs()
+    ensure_dirs()
     generate_cpg_islands(DATA_DIR)
     generate_gene_models(DATA_DIR)
     generate_coverage(DATA_DIR)
     generate_annotations(DATA_DIR)
     generate_multi_sample(DATA_DIR)
-    copy_gviz_samples(gviz_out)
     print("\n[DONE] All genome tracks example data generated successfully.")

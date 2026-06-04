@@ -1094,3 +1094,298 @@ class TestAnnotationTrackTransparentEdge:
         })
         atrack = AnnotationTrack(data, display_params={"col": "black"})
         assert atrack.get_param("col") == "black"
+
+
+# =============================================================================
+# DetailsAnnotationTrack tests
+# =============================================================================
+
+class TestDetailsAnnotationTrack:
+
+    def _make_data(self):
+        return pd.DataFrame({
+            "chrom": ["chr7"] * 3,
+            "start": [1000, 1500, 2000],
+            "end": [1300, 1800, 2300],
+            "strand": ["+", "-", "+"],
+            "name": ["feat1", "feat2", "feat3"],
+        })
+
+    def test_creation(self):
+        from geneview.genometracks._annotation import DetailsAnnotationTrack
+        data = self._make_data()
+        track = DetailsAnnotationTrack(data)
+        assert track.name == "Annotation"
+        assert track.details_size == 0.4
+
+    def test_draw_with_details(self):
+        from geneview.genometracks._annotation import DetailsAnnotationTrack
+        data = self._make_data()
+        track = DetailsAnnotationTrack(data)
+        fig, ax = plt.subplots()
+        region = GenomicInterval("chr7", 900, 2400)
+        track.draw(ax, region)
+        plt.close(fig)
+
+    def test_custom_fun(self):
+        from geneview.genometracks._annotation import DetailsAnnotationTrack
+        data = self._make_data()
+        calls = []
+        def my_fun(ax, identifier, region, **kwargs):
+            calls.append(identifier)
+        track = DetailsAnnotationTrack(data, fun=my_fun)
+        fig, ax = plt.subplots()
+        region = GenomicInterval("chr7", 900, 2400)
+        track.draw(ax, region)
+        assert len(calls) > 0
+        plt.close(fig)
+
+    def test_select_fun(self):
+        from geneview.genometracks._annotation import DetailsAnnotationTrack
+        data = self._make_data()
+        track = DetailsAnnotationTrack(
+            data, select_fun=lambda row: row["name"] == "feat1"
+        )
+        fig, ax = plt.subplots()
+        region = GenomicInterval("chr7", 900, 2400)
+        track.draw(ax, region)
+        plt.close(fig)
+
+
+# =============================================================================
+# AnnotationTrack enhancement tests
+# =============================================================================
+
+class TestAnnotationTrackEnhancements:
+
+    def test_just_group(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [1000, 1500],
+            "end": [1300, 1800],
+            "group": ["grp1", "grp1"],
+        })
+        at = AnnotationTrack(data, just_group="above")
+        assert at.just_group == "above"
+
+    def test_show_overplotting(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [1000, 1100],
+            "end": [1500, 1600],
+        })
+        at = AnnotationTrack(data, show_overplotting=True)
+        assert at.show_overplotting is True
+
+    def test_merge_groups(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [1000, 1100],
+            "end": [1500, 1600],
+            "group": ["grp1", "grp1"],
+        })
+        at = AnnotationTrack(data, merge_groups=True)
+        assert at.merge_groups is True
+
+    def test_col_line(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"],
+            "start": [1000],
+            "end": [1300],
+        })
+        at = AnnotationTrack(data, col_line="red")
+        assert at.get_param("col_line") == "red"
+
+
+# =============================================================================
+# GeneRegionTrack enhancement tests
+# =============================================================================
+
+class TestGeneRegionTrackEnhancements:
+
+    def _make_data(self):
+        return pd.DataFrame({
+            "chrom": ["chr7"] * 6,
+            "start": [1000, 1200, 1500, 1000, 1200, 1800],
+            "end":   [1100, 1400, 1700, 1100, 1400, 2000],
+            "strand": ["+"] * 6,
+            "feature": ["CDS", "exon", "CDS", "CDS", "exon", "CDS"],
+            "transcript_id": ["tx1"] * 3 + ["tx2"] * 3,
+            "gene_name": ["GeneA"] * 6,
+        })
+
+    def test_exon_annotation(self):
+        data = self._make_data()
+        grt = GeneRegionTrack(data, exon_annotation="exon")
+        assert grt.exon_annotation == "exon"
+        region = GenomicInterval("chr7", 900, 2100)
+        axes = plot_tracks([grt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_collapse_shortest(self):
+        data = self._make_data()
+        grt = GeneRegionTrack(data, collapse_transcripts="shortest")
+        collapsed = grt._collapse(data)
+        # Should pick the shorter transcript
+        tx_ids = collapsed["transcript_id"].unique()
+        assert len(tx_ids) == 1
+
+    def test_gene_symbols(self):
+        data = self._make_data()
+        grt = GeneRegionTrack(data, gene_symbols=True)
+        assert grt.gene_symbols is True
+        region = GenomicInterval("chr7", 900, 2100)
+        axes = plot_tracks([grt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_transcript_annotation(self):
+        data = self._make_data()
+        grt = GeneRegionTrack(data, transcript_annotation="symbol")
+        assert grt.transcript_annotation == "symbol"
+        region = GenomicInterval("chr7", 900, 2100)
+        axes = plot_tracks([grt], region=region, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+
+# =============================================================================
+# Stubs tests
+# =============================================================================
+
+class TestStubs:
+
+    def test_biomart_raises(self):
+        from geneview.genometracks._biomart import BiomartGeneRegionTrack
+        track = BiomartGeneRegionTrack(genome="hg38", chromosome="chr7")
+        fig, ax = plt.subplots()
+        region = GenomicInterval("chr7", 0, 1000)
+        with pytest.raises(NotImplementedError, match="Biomart"):
+            track.draw(ax, region)
+        plt.close(fig)
+
+    def test_biomart_get_region(self):
+        from geneview.genometracks._biomart import BiomartGeneRegionTrack
+        track = BiomartGeneRegionTrack(
+            genome="hg38", chromosome="chr7", start=100, end=200
+        )
+        region = track.get_region()
+        assert region is not None
+        assert region.chrom == "chr7"
+        assert region.start == 100
+
+    def test_ucsc_raises(self):
+        from geneview.genometracks._ucsc import UcscTrack
+        track = UcscTrack(genome="hg38", chromosome="chr7")
+        fig, ax = plt.subplots()
+        region = GenomicInterval("chr7", 0, 1000)
+        with pytest.raises(NotImplementedError, match="UCSC"):
+            track.draw(ax, region)
+        plt.close(fig)
+
+    def test_ucsc_get_region(self):
+        from geneview.genometracks._ucsc import UcscTrack
+        track = UcscTrack(genome="hg38", chromosome="chr7", from_=100, to=200)
+        region = track.get_region()
+        assert region is not None
+        assert region.start == 100
+
+
+# =============================================================================
+# Schemes tests
+# =============================================================================
+
+class TestSchemes:
+
+    def test_apply_default_scheme(self):
+        from geneview.genometracks._schemes import apply_scheme
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [1000, 1500],
+            "end": [1300, 1800],
+        })
+        at = AnnotationTrack(data)
+        apply_scheme(at, "default")
+        assert at.get_param("fill") == "lightgray"
+
+    def test_apply_genes_scheme(self):
+        from geneview.genometracks._schemes import apply_scheme
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 2,
+            "start": [1000, 1500],
+            "end": [1300, 1800],
+            "gene_name": ["GeneA", "GeneB"],
+        })
+        grt = GeneRegionTrack(data)
+        apply_scheme(grt, "genes")
+        assert hasattr(grt, '_scheme_color_map')
+
+    def test_invalid_scheme(self):
+        from geneview.genometracks._schemes import apply_scheme
+        data = pd.DataFrame({
+            "chrom": ["chr7"], "start": [1000], "end": [1300],
+        })
+        at = AnnotationTrack(data)
+        with pytest.raises(ValueError, match="Unknown scheme"):
+            apply_scheme(at, "nonexistent")
+
+    def test_scheme_in_plot_tracks(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 3,
+            "start": [1000, 1500, 2000],
+            "end": [1300, 1800, 2300],
+            "gene_name": ["A", "B", "C"],
+        })
+        grt = GeneRegionTrack(data)
+        region = GenomicInterval("chr7", 900, 2400)
+        axes = plot_tracks([grt], region=region, scheme="genes", figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+
+# =============================================================================
+# plot_tracks new parameter tests
+# =============================================================================
+
+class TestPlotTracksNewParams:
+
+    def test_cex(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 10,
+            "start": np.linspace(1000, 2000, 10, dtype=int),
+            "end": np.linspace(1050, 2050, 10, dtype=int),
+            "value": np.random.randn(10).cumsum(),
+        })
+        dt = DataTrack(data, type="line")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, cex=1.5, figsize=(8, 3))
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_add_mode(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 5,
+            "start": np.linspace(1000, 2000, 5, dtype=int),
+            "end": np.linspace(1050, 2050, 5, dtype=int),
+            "value": np.random.randn(5).cumsum(),
+        })
+        dt = DataTrack(data, type="line")
+        region = GenomicInterval("chr7", 1000, 2050)
+        fig, ax = plt.subplots()
+        axes = plot_tracks([dt], region=region, add=True, ax=ax)
+        assert len(axes) == 1
+        plt.close("all")
+
+    def test_ylim(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 5,
+            "start": np.linspace(1000, 2000, 5, dtype=int),
+            "end": np.linspace(1050, 2050, 5, dtype=int),
+            "value": np.random.randn(5).cumsum(),
+        })
+        dt = DataTrack(data, type="line")
+        region = GenomicInterval("chr7", 1000, 2050)
+        axes = plot_tracks([dt], region=region, ylim=(-5, 5), figsize=(8, 3))
+        assert dt._ylim == (-5, 5)
+        plt.close("all")

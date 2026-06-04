@@ -24,6 +24,9 @@ _PLOT_TYPES = (
     "line", "histogram", "heatmap", "polygon", "gradient",
     "points", "mountain", "boxplot",
     "b", "s", "S",  # Gviz-compatible: combined, stair-post, stair-pre
+    "a", "confint", "smooth", "horizon", "g", "r",
+    # Gviz additional: average, confidence interval, loess smooth,
+    # horizon plot, grid, regression
 )
 
 # Aggregation functions
@@ -112,7 +115,7 @@ class DataTrack(NumericTrack):
     def __init__(
         self,
         data: Union[pd.DataFrame, str, None] = None,
-        type: str = "line",
+        type: Union[str, List[str]] = "line",
         value_columns: Optional[List[str]] = None,
         groups: Optional[List] = None,
         ylim: Optional[Tuple[float, float]] = None,
@@ -128,14 +131,27 @@ class DataTrack(NumericTrack):
         window_size: Optional[int] = None,
         aggregation: str = "mean",
         legend: bool = False,
+        smooth_span: float = 0.3,
         name: str = "Data",
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
     ):
-        if type not in _PLOT_TYPES:
-            raise ValueError(
-                f"Plot type must be one of {_PLOT_TYPES}, got '{type}'."
-            )
+        # Support composite types (list of types)
+        if isinstance(type, (list, tuple)):
+            for t in type:
+                if t not in _PLOT_TYPES:
+                    raise ValueError(
+                        f"Plot type must be one of {_PLOT_TYPES}, got '{t}'."
+                    )
+            self._composite_types = list(type)
+            type_str = type[0]  # primary type for validation
+        else:
+            if type not in _PLOT_TYPES:
+                raise ValueError(
+                    f"Plot type must be one of {_PLOT_TYPES}, got '{type}'."
+                )
+            self._composite_types = None
+            type_str = type
 
         dp = {
             "col": col,
@@ -155,7 +171,7 @@ class DataTrack(NumericTrack):
             height=height, display_params=dp,
         )
 
-        self.plot_type = type
+        self.plot_type = type_str
         self.groups = groups
         self._ylim = ylim
         self.baseline = baseline
@@ -168,6 +184,7 @@ class DataTrack(NumericTrack):
         self.window_size = window_size
         self.aggregation = aggregation
         self.legend = legend
+        self.smooth_span = smooth_span
 
     def get_ylim(self) -> Tuple[float, float]:
         """Get y-axis limits, using user-provided or auto-computed."""
@@ -207,17 +224,26 @@ class DataTrack(NumericTrack):
             "b": self._draw_combined,
             "s": self._draw_stairs_post,
             "S": self._draw_stairs_pre,
+            "a": self._draw_average,
+            "confint": self._draw_confint,
+            "smooth": self._draw_smooth,
+            "horizon": self._draw_horizon,
+            "g": self._draw_grid_type,
+            "r": self._draw_regression,
         }
 
         # Apply windowing if configured
         plot_data, windowed_values = self._apply_window(sub)
 
-        draw_method = draw_methods.get(self.plot_type, self._draw_line)
-        if self.window is not None and self.plot_type not in ("heatmap", "boxplot"):
-            # Use windowed data for applicable types
-            draw_method(ax, plot_data, region, _precomputed=windowed_values)
-        else:
-            draw_method(ax, sub, region)
+        # Handle composite types
+        types_to_draw = self._composite_types if self._composite_types else [self.plot_type]
+
+        for ptype in types_to_draw:
+            draw_method = draw_methods.get(ptype, self._draw_line)
+            if self.window is not None and ptype not in ("heatmap", "boxplot"):
+                draw_method(ax, plot_data, region, _precomputed=windowed_values)
+            else:
+                draw_method(ax, sub, region)
 
         # Draw grid if requested
         if self.get_param("grid", False):
@@ -588,3 +614,156 @@ class DataTrack(NumericTrack):
             color = colors[i % len(colors)]
             ax.step(midpoints, values, where="pre", color=color,
                     linewidth=lwd, alpha=alpha, zorder=3, label=col_name)
+
+    def _draw_average(self, ax, data, region, _precomputed=None):
+        """Draw group-wise mean at each position as a line (Gviz type 'a')."""
+        col = self.get_param("col", "#0080FF")
+        if isinstance(col, list):
+            colors = col
+        else:
+            colors = [col]
+        lwd = self.get_param("lwd", 1.5)
+        alpha = self.get_param("alpha", 1.0)
+        midpoints = self._get_midpoints(data)
+
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        if not value_arrays:
+            return
+
+        # Compute mean across all value columns at each position
+        matrix = np.array([vals for _, vals in value_arrays])
+        mean_vals = np.nanmean(matrix, axis=0)
+
+        color = colors[0] if colors else "#0080FF"
+        ax.plot(midpoints, mean_vals, color=color, linewidth=lwd * 1.5,
+                alpha=alpha, zorder=5, label="mean")
+
+    def _draw_confint(self, ax, data, region, _precomputed=None):
+        """Draw group-wise mean +/- 1.96*SE as a filled band (Gviz type 'confint')."""
+        col = self.get_param("col", "#0080FF")
+        if isinstance(col, list):
+            color = col[0]
+        else:
+            color = col
+        alpha = self.get_param("alpha", 0.3)
+        midpoints = self._get_midpoints(data)
+
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        if not value_arrays:
+            return
+
+        matrix = np.array([vals for _, vals in value_arrays])
+        mean_vals = np.nanmean(matrix, axis=0)
+        n = matrix.shape[0]
+        se = np.nanstd(matrix, axis=0) / np.sqrt(max(n, 1))
+
+        upper = mean_vals + 1.96 * se
+        lower = mean_vals - 1.96 * se
+
+        ax.fill_between(midpoints, lower, upper, color=color, alpha=alpha,
+                        zorder=3, label="95% CI")
+        ax.plot(midpoints, mean_vals, color=color, linewidth=1.0,
+                alpha=min(1.0, alpha + 0.5), zorder=4)
+
+    def _draw_smooth(self, ax, data, region, _precomputed=None):
+        """Draw loess/LOWESS smoothed line (Gviz type 'smooth')."""
+        col = self.get_param("col", "#0080FF")
+        if isinstance(col, list):
+            colors = col
+        else:
+            colors = [col]
+        lwd = self.get_param("lwd", 2.0)
+        alpha = self.get_param("alpha", 1.0)
+        midpoints = self._get_midpoints(data)
+
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        for i, (col_name, values) in enumerate(value_arrays):
+            color = colors[i % len(colors)]
+
+            # Try statsmodels LOWESS, fallback to rolling mean
+            try:
+                from statsmodels.nonparametric.smoothers_lowess import lowess
+                frac = self.smooth_span
+                smoothed = lowess(values, midpoints, frac=frac, return_sorted=False)
+            except ImportError:
+                # Fallback: rolling mean
+                kernel = max(3, int(len(values) * self.smooth_span))
+                if kernel % 2 == 0:
+                    kernel += 1
+                k = np.ones(kernel) / kernel
+                smoothed = np.convolve(values, k, mode="same")
+
+            ax.plot(midpoints, smoothed, color=color, linewidth=lwd,
+                    alpha=alpha, zorder=5, label=f"{col_name} smooth")
+
+    def _draw_horizon(self, ax, data, region, _precomputed=None):
+        """Draw horizon plot: positive/negative bands as stacked layers."""
+        col = self.get_param("col", "#0080FF")
+        if isinstance(col, list):
+            color = col[0]
+        else:
+            color = col
+        alpha = self.get_param("alpha", 0.6)
+        midpoints = self._get_midpoints(data)
+
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        if not value_arrays:
+            return
+
+        # Average across samples
+        matrix = np.array([vals for _, vals in value_arrays])
+        vals = np.nanmean(matrix, axis=0)
+
+        baseline = self.baseline
+        pos_vals = np.maximum(vals - baseline, 0)
+        neg_vals = np.minimum(vals - baseline, 0)
+
+        # Positive band (above baseline)
+        ax.fill_between(midpoints, baseline, baseline + pos_vals,
+                        color=color, alpha=alpha, zorder=3)
+
+        # Negative band (below baseline) - mirror
+        neg_color = "#DC0000"  # red for negative
+        ax.fill_between(midpoints, baseline, baseline + neg_vals,
+                        color=neg_color, alpha=alpha, zorder=3)
+
+        ax.axhline(y=baseline, color="#888888", linewidth=0.5,
+                   linestyle="--", zorder=2)
+
+    def _draw_grid_type(self, ax, data, region, _precomputed=None):
+        """Draw horizontal grid lines as a standalone plot type (Gviz type 'g')."""
+        ylim = self.get_ylim()
+        grid_color = self.get_param("col_grid", "#DDDDDD")
+        n_lines = 5
+        ys = np.linspace(ylim[0], ylim[1], n_lines)
+        for y in ys:
+            ax.axhline(y=y, color=grid_color, linewidth=0.3, alpha=0.7, zorder=1)
+
+    def _draw_regression(self, ax, data, region, _precomputed=None):
+        """Draw linear regression line (Gviz type 'r')."""
+        col = self.get_param("col", "#DC0000")
+        if isinstance(col, list):
+            color = col[0]
+        else:
+            color = col
+        lwd = self.get_param("lwd", 1.5)
+        alpha = self.get_param("alpha", 0.8)
+        midpoints = self._get_midpoints(data)
+
+        value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
+        if not value_arrays:
+            return
+
+        for i, (col_name, values) in enumerate(value_arrays):
+            # Fit linear regression: y = a + b*x
+            mask = np.isfinite(values) & np.isfinite(midpoints)
+            if mask.sum() < 2:
+                continue
+            x_fit = midpoints[mask]
+            y_fit = values[mask]
+            coeffs = np.polyfit(x_fit, y_fit, 1)
+            y_pred = np.polyval(coeffs, midpoints)
+
+            ax.plot(midpoints, y_pred, color=color, linewidth=lwd,
+                    linestyle="--", alpha=alpha, zorder=5,
+                    label=f"{col_name} regression")

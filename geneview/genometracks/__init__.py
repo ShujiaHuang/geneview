@@ -53,12 +53,16 @@ from ._base import (
     NumericTrack,
 )
 from ._genome_axis import GenomeAxisTrack
-from ._annotation import AnnotationTrack
+from ._annotation import AnnotationTrack, DetailsAnnotationTrack
 from ._gene_region import GeneRegionTrack
 from ._data_track import DataTrack
 from ._highlight import HighlightTrack
 from ._overlay import OverlayTrack
 from ._ideogram import IdeogramTrack
+from ._sequence_track import SequenceTrack
+from ._alignments_track import AlignmentsTrack
+from ._biomart import BiomartGeneRegionTrack
+from ._ucsc import UcscTrack
 from ._track_plot import plot_tracks
 from ._io import (
     read_bed,
@@ -67,18 +71,28 @@ from ._io import (
     read_bigwig,
     read_bam_coverage,
     read_cram_coverage,
+    read_wig,
+    read_fasta,
+    read_2bit,
     read_auto,
 )
+from ._export import export_tracks
+from ._schemes import apply_scheme
 
 __all__ = [
     # Track types
     "GenomeAxisTrack",
     "AnnotationTrack",
+    "DetailsAnnotationTrack",
     "GeneRegionTrack",
     "DataTrack",
     "IdeogramTrack",
     "HighlightTrack",
     "OverlayTrack",
+    "SequenceTrack",
+    "AlignmentsTrack",
+    "BiomartGeneRegionTrack",
+    "UcscTrack",
     # Core
     "plot_tracks",
     "GenomicInterval",
@@ -94,5 +108,12 @@ __all__ = [
     "read_bigwig",
     "read_bam_coverage",
     "read_cram_coverage",
+    "read_wig",
+    "read_fasta",
+    "read_2bit",
     "read_auto",
+    # Export
+    "export_tracks",
+    # Schemes
+    "apply_scheme",
 ]

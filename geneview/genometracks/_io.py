@@ -383,6 +383,192 @@ def _read_alignment_coverage(
         alignment.close()
 
 
+def read_wig(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
+    """Read a WIG (Wiggle) file into a DataFrame.
+
+    Supports both ``fixedStep`` and ``variableStep`` WIG formats.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the WIG file.
+    nrows : int, optional
+        Maximum number of data rows to read.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns: chrom, start, end, value.
+    """
+    records = []
+    chrom = None
+    start = 0
+    step = 1
+    span = 1
+    mode = None  # "fixedStep" or "variableStep"
+    count = 0
+
+    with open(filepath, "r") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or line.startswith("track"):
+                continue
+
+            if line.startswith("fixedStep"):
+                mode = "fixedStep"
+                params = _parse_wig_header(line)
+                chrom = params.get("chrom", chrom)
+                start = int(params.get("start", 1)) - 1  # WIG is 1-based
+                step = int(params.get("step", 1))
+                span = int(params.get("span", 1))
+                continue
+
+            if line.startswith("variableStep"):
+                mode = "variableStep"
+                params = _parse_wig_header(line)
+                chrom = params.get("chrom", chrom)
+                span = int(params.get("span", 1))
+                continue
+
+            if mode == "fixedStep":
+                try:
+                    value = float(line)
+                except ValueError:
+                    continue
+                records.append({
+                    "chrom": chrom,
+                    "start": start,
+                    "end": start + span,
+                    "value": value,
+                })
+                start += step
+                count += 1
+                if nrows and count >= nrows:
+                    break
+
+            elif mode == "variableStep":
+                parts = line.split()
+                if len(parts) >= 2:
+                    try:
+                        pos = int(parts[0]) - 1  # WIG is 1-based
+                        value = float(parts[1])
+                    except ValueError:
+                        continue
+                    records.append({
+                        "chrom": chrom,
+                        "start": pos,
+                        "end": pos + span,
+                        "value": value,
+                    })
+                    count += 1
+                    if nrows and count >= nrows:
+                        break
+
+    if not records:
+        return pd.DataFrame(columns=["chrom", "start", "end", "value"])
+
+    df = pd.DataFrame(records)
+    df["start"] = df["start"].astype(int)
+    df["end"] = df["end"].astype(int)
+    return df
+
+
+def _parse_wig_header(line: str) -> dict:
+    """Parse a WIG header line (fixedStep or variableStep) into a dict."""
+    params = {}
+    # Remove the keyword prefix
+    parts = line.split(None, 1)
+    if len(parts) < 2:
+        return params
+    for item in parts[1].split():
+        if "=" in item:
+            key, value = item.split("=", 1)
+            params[key.strip()] = value.strip()
+    return params
+
+
+def read_fasta(
+    filepath: str,
+    region: Optional[GenomicInterval] = None,
+) -> str:
+    """Read a genomic sequence from a FASTA file.
+
+    Requires the optional ``pysam`` package for indexed FASTA access.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the FASTA file (must be indexed with ``samtools faidx``).
+    region : GenomicInterval, optional
+        Genomic region to extract.  If *None*, the entire first sequence
+        is returned.
+
+    Returns
+    -------
+    str
+        Nucleotide sequence string (uppercase ACGTN).
+    """
+    try:
+        import pysam
+    except ImportError:
+        raise ImportError(
+            "The 'pysam' package is required to read FASTA files. "
+            "Install it with: pip install pysam"
+        )
+
+    fa = pysam.FastaFile(filepath)
+    try:
+        if region is not None:
+            seq = fa.fetch(region.chrom, region.start, region.end)
+        else:
+            seq = fa.fetch(fa.references[0])
+        return seq.upper()
+    finally:
+        fa.close()
+
+
+def read_2bit(
+    filepath: str,
+    region: Optional[GenomicInterval] = None,
+) -> str:
+    """Read a genomic sequence from a 2bit file.
+
+    Requires the optional ``py2bit`` package.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the 2bit file.
+    region : GenomicInterval, optional
+        Genomic region to extract.  If *None*, the entire first sequence
+        is returned.
+
+    Returns
+    -------
+    str
+        Nucleotide sequence string (uppercase ACGTN).
+    """
+    try:
+        import py2bit
+    except ImportError:
+        raise ImportError(
+            "The 'py2bit' package is required to read 2bit files. "
+            "Install it with: pip install py2bit"
+        )
+
+    tb = py2bit.open(filepath)
+    try:
+        if region is not None:
+            seq = tb.sequence(region.chrom, region.start, region.end)
+        else:
+            chroms = tb.chroms()
+            chrom = next(iter(chroms))
+            seq = tb.sequence(chrom, 0, chroms[chrom])
+        return seq.upper()
+    finally:
+        tb.close()
+
+
 def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
     """Auto-detect file format and read genomic data.
 
@@ -390,6 +576,7 @@ def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
         - .bed -> read_bed
         - .gff, .gff3, .gtf -> read_gff
         - .bedgraph, .bdg -> read_bedgraph
+        - .wig -> read_wig
         - .bw, .bigwig -> read_bigwig
         - .bam -> read_bam_coverage
         - .cram -> read_cram_coverage
@@ -420,6 +607,7 @@ def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
         ".gtf": read_gff,
         ".bedgraph": read_bedgraph,
         ".bdg": read_bedgraph,
+        ".wig": read_wig,
     }
 
     if ext in readers:
@@ -442,5 +630,6 @@ def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
 
         raise ValueError(
             f"Cannot determine file format for '{filepath}'. "
-            f"Supported extensions: .bed, .gff, .gff3, .gtf, .bedgraph, .bdg, .bw, .bigwig, .bam, .cram"
+            f"Supported extensions: .bed, .gff, .gff3, .gtf, .bedgraph, .bdg, "
+            f".wig, .bw, .bigwig, .bam, .cram"
         )

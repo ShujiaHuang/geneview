@@ -56,6 +56,10 @@ def plot_tracks(
     show_title: bool = True,
     reverse_strand: bool = False,
     style: Optional[str] = None,
+    cex: Optional[float] = None,
+    add: bool = False,
+    ylim: Optional[Tuple[float, float]] = None,
+    scheme: Optional[str] = None,
     **kwargs,
 ) -> List:
     """Plot one or more genome tracks in a vertically stacked layout.
@@ -103,6 +107,17 @@ def plot_tracks(
         dimensions, and track-panel settings are applied to all tracks and
         the overall layout.  ``None`` (default) uses the currently active
         matplotlib rcParams.
+    cex : float, optional
+        Global font expansion factor applied to all track text elements.
+        Multiplies the track's existing fontsize.  Default is None (no change).
+    add : bool
+        If True, plot into an existing axes without creating a new figure.
+        Requires ``ax`` to be provided.  Default is False.
+    ylim : tuple of float, optional
+        Global y-axis limits applied to all DataTrack panels.
+    scheme : str, optional
+        Name of a color scheme to apply to GeneRegionTrack and
+        AnnotationTrack objects (e.g. ``"genes"``, ``"transcripts"``).
     **kwargs
         Additional display parameters applied to all tracks.
 
@@ -165,6 +180,28 @@ def plot_tracks(
     # Apply style-level track parameter overrides (before user kwargs)
     _apply_style_to_tracks(expanded_tracks, resolved_style)
 
+    # Apply global cex factor to all tracks
+    if cex is not None:
+        for track in expanded_tracks:
+            current_fs = track.get_param("fontsize", 10)
+            track.set_param("fontsize", current_fs * cex)
+
+    # Apply color scheme to applicable tracks
+    if scheme is not None:
+        from ._schemes import apply_scheme
+        for track in expanded_tracks:
+            from ._gene_region import GeneRegionTrack
+            from ._annotation import AnnotationTrack
+            if isinstance(track, (GeneRegionTrack, AnnotationTrack)):
+                apply_scheme(track, scheme)
+
+    # Apply global ylim to DataTrack objects
+    if ylim is not None:
+        from ._data_track import DataTrack
+        for track in expanded_tracks:
+            if isinstance(track, DataTrack):
+                track._ylim = ylim
+
     # Apply global display parameters to all tracks
     if kwargs:
         for track in expanded_tracks:
@@ -197,8 +234,10 @@ def plot_tracks(
     total_size = sum(sizes)
     norm_sizes = [s / total_size for s in sizes]
 
-    # Simple mode: plotting into a provided axes
-    if ax is not None:
+    # Simple mode: plotting into a provided axes or add mode
+    if ax is not None or add:
+        if ax is None:
+            ax = plt.gca()
         axes_list = _plot_single_ax(expanded_tracks, highlights, ax, region)
         if reverse_strand:
             for a in axes_list:

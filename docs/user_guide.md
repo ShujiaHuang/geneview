@@ -672,6 +672,16 @@ Full example scripts are available in the [`examples/scripts/`](../examples/scri
 | `genome_tracks_highlight.py` | Highlight regions |
 | `genome_tracks_comprehensive.py` | Full showcase |
 | `genome_tracks_bam_cram.py` | BAM/CRAM coverage as DataTrack |
+| `genome_tracks_io.py` | File I/O with real test data (BED, bedGraph, BigWig, BAM, GTF, GFF3) |
+| `genome_tracks_multi_sample.py` | Multi-sample heatmap and overlay |
+| `genome_tracks_sequence.py` | SequenceTrack (nucleotide display) |
+| `genome_tracks_alignments.py` | AlignmentsTrack (BAM/CRAM pileup, sashimi) |
+| `genome_tracks_details.py` | DetailsAnnotationTrack (detail panels) |
+| `genome_tracks_data_extended.py` | Extended DataTrack types (average, confint, smooth, horizon, grid, regression) |
+| `genome_tracks_export.py` | Exporting tracks to BED, GFF, bedGraph, WIG |
+| `genome_tracks_annotation_enhanced.py` | AnnotationTrack enhancements (just_group, overplotting, merge_groups, from_bam) |
+| `genome_tracks_gene_region_enhanced.py` | GeneRegionTrack enhancements (exon_annotation, gene_symbols, shortest) |
+| `genome_tracks_schemes.py` | Color schemes and plot_tracks params (cex, add, ylim, scheme) |
 
 Run any example:
 

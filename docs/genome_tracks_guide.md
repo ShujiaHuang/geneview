@@ -12,14 +12,19 @@ The genome tracks module in geneview provides a powerful system for visualizing 
 4. [GenomeAxisTrack](#genomeaxistrack)
 5. [IdeogramTrack](#ideogramtrack)
 6. [AnnotationTrack](#annotationtrack)
-7. [GeneRegionTrack](#generegiontrack)
-8. [DataTrack](#datatrack)
-9. [HighlightTrack](#highlighttrack)
-10. [OverlayTrack](#overlaytrack)
-11. [File I/O](#file-io)
-12. [Advanced: plot_tracks()](#advanced-plot_tracks)
-13. [Display Parameters Reference](#display-parameters-reference)
-14. [Complete Example](#complete-example)
+7. [DetailsAnnotationTrack](#detailsannotationtrack)
+8. [GeneRegionTrack](#generegiontrack)
+9. [DataTrack](#datatrack)
+10. [SequenceTrack](#sequencetrack)
+11. [AlignmentsTrack](#alignmentstrack)
+12. [HighlightTrack](#highlighttrack)
+13. [OverlayTrack](#overlaytrack)
+14. [File I/O](#file-io)
+15. [Exporting Tracks](#exporting-tracks)
+16. [Color Schemes](#color-schemes)
+17. [Advanced: plot_tracks()](#advanced-plot_tracks)
+18. [Display Parameters Reference](#display-parameters-reference)
+19. [Complete Example](#complete-example)
 
 ---
 
@@ -33,8 +38,11 @@ The fundamental concept is similar to genome browsers: individual types of genom
 GenomeAxisTrack  ─── coordinate ruler
 IdeogramTrack    ─── chromosome ideogram (cytobands)
 AnnotationTrack  ─── generic ranges (boxes/arrows)
+  └── DetailsAnnotationTrack  ─── annotations with detail panels
 GeneRegionTrack  ─── gene models (exons/UTRs/introns)
 DataTrack        ─── numeric data (line/histogram/heatmap)
+SequenceTrack    ─── nucleotide sequence display
+AlignmentsTrack  ─── BAM/CRAM read alignments
 HighlightTrack   ─── cross-track highlights
 OverlayTrack     ─── overlay multiple tracks on same axes
 ```
@@ -45,10 +53,13 @@ OverlayTrack     ─── overlay multiple tracks on same axes
 Track (abstract base)
   ├── GenomeAxisTrack
   ├── IdeogramTrack (chromosome schematic)
+  ├── SequenceTrack (nucleotide sequence)
   └── RangeTrack (has a DataFrame)
         ├── StackedTrack (overlapping features stacked)
         │     ├── AnnotationTrack
-        │     └── GeneRegionTrack
+        │     │     └── DetailsAnnotationTrack
+        │     ├── GeneRegionTrack
+        │     └── AlignmentsTrack (BAM/CRAM reads)
         └── NumericTrack (numeric value columns)
               └── DataTrack
         └── HighlightTrack (wrapper/container)
@@ -536,6 +547,121 @@ atrack = AnnotationTrack(bed_data, name="BED Features")
 atrack = AnnotationTrack("features.bed", name="BED Features")
 ```
 
+### Group Label Justification
+
+Control where group labels appear relative to the feature row:
+
+```python
+atrack = AnnotationTrack(data, group_annotation="feature",
+    just_group="left")    # left, right, above, below
+```
+
+### Overplotting Indicator
+
+Color-code features by overlap depth when collapsing:
+
+```python
+atrack = AnnotationTrack(data, show_overplotting=True)
+```
+
+### Merging Groups
+
+When `collapse=True`, merge overlapping items within the same group:
+
+```python
+atrack = AnnotationTrack(data, merge_groups=True, stacking="squish")
+```
+
+### Connector Line Color
+
+Customize the line connecting grouped features:
+
+```python
+atrack = AnnotationTrack(data, group_annotation="id",
+    col_line="#CC0000")
+```
+
+### Creating from BAM Files
+
+Create an AnnotationTrack from aligned reads in a BAM file (requires `pysam`):
+
+```python
+atrack = AnnotationTrack.from_bam(
+    "alignments.bam",
+    region=GenomicInterval("chr7", 26500000, 26800000),
+    name="Reads",
+)
+```
+
+Each aligned read becomes a separate annotation feature.
+
+---
+
+## DetailsAnnotationTrack
+
+An extended AnnotationTrack that draws detail panels below selected features, connected by lines. Useful for showing per-feature zoom-in views or custom sub-plots.
+
+### Constructor
+
+```python
+DetailsAnnotationTrack(
+    data,                      # DataFrame or file path
+    fun=None,                  # Callable(identifier, ax, data_row) for custom detail
+    select_fun=None,           # Callable(data_row) -> bool; which features get details
+    details_size=0.3,          # Fraction of track height for detail panels
+    details_connector_col="#888888",
+    details_connector_lty="-",
+    details_connector_lwd=0.5,
+    details_border_col="#CCCCCC",
+    details_border_fill="#FFFFEE",
+    details_min_width=20,      # Minimum pixel width for a detail panel
+    details_ratio=1.0,         # Width ratio relative to feature
+    group_details=False,       # Group detail panels by feature group
+    name="DetailsAnnotation",
+    height=2.0,
+    **kwargs,                  # Passed to AnnotationTrack
+)
+```
+
+### Basic Usage
+
+```python
+from geneview.genometracks import DetailsAnnotationTrack, GenomicInterval, plot_tracks
+
+data = pd.DataFrame({
+    "chrom": ["chr7"] * 3,
+    "start": [2000000, 2050000, 2100000],
+    "end":   [2020000, 2070000, 2120000],
+    "name": ["geneA", "geneB", "geneC"],
+})
+
+# Default detail panels (shows feature info text)
+dtrack = DetailsAnnotationTrack(data, name="Details")
+axes = plot_tracks([dtrack], region=GenomicInterval("chr7", 1950000, 2150000))
+```
+
+### Custom Detail Function
+
+```python
+def my_detail(identifier, ax, data_row):
+    ax.text(0.5, 0.5, f"Detail for {identifier}",
+            transform=ax.transAxes, ha="center", va="center")
+    ax.set_title(identifier, fontsize=6)
+
+dtrack = DetailsAnnotationTrack(data, fun=my_detail, details_size=0.4)
+```
+
+### Selective Details
+
+Only show detail panels for specific features:
+
+```python
+dtrack = DetailsAnnotationTrack(
+    data,
+    select_fun=lambda row: row.get("name", "").startswith("geneA"),
+)
+```
+
 ---
 
 ## GeneRegionTrack
@@ -619,6 +745,47 @@ grtrack = GeneRegionTrack(data, show_id=None)
 | `fontcolor` | `"#333333"` | Label text color |
 | `lwd` | 0.8 | Line width |
 
+### Exon Annotation Labels
+
+Label individual exons with different information modes:
+
+```python
+# Show exon numbers on each exon box
+grtrack = GeneRegionTrack(data, exon_annotation="exon")
+
+# Show gene symbol on each exon
+grtrack = GeneRegionTrack(data, exon_annotation="symbol")
+
+# Show gene ID
+grtrack = GeneRegionTrack(data, exon_annotation="gene")
+
+# Show transcript ID
+grtrack = GeneRegionTrack(data, exon_annotation="transcript")
+
+# Show feature type
+grtrack = GeneRegionTrack(data, exon_annotation="feature")
+```
+
+### Gene Symbols
+
+Use gene_name (symbol) instead of gene_id for transcript labels:
+
+```python
+grtrack = GeneRegionTrack(data, gene_symbols=True)
+```
+
+### Transcript Annotation Alias
+
+`transcript_annotation` is an alias for `show_id` with additional `"symbol"` mode:
+
+```python
+# Equivalent to show_id="transcript"
+grtrack = GeneRegionTrack(data, transcript_annotation="transcript")
+
+# Show gene symbol instead of ID
+grtrack = GeneRegionTrack(data, transcript_annotation="symbol")
+```
+
 ---
 
 ## DataTrack
@@ -661,6 +828,18 @@ DataTrack(
 | `"b"` | Combined line + points |
 | `"s"` | Stair steps (horizontal first, then vertical) |
 | `"S"` | Stair steps (vertical first, then horizontal) |
+| `"a"` | Average (mean across value columns per position) |
+| `"confint"` | Confidence interval (mean ± 1.96×SE band) |
+| `"smooth"` | LOWESS/loess smoothed line |
+| `"horizon"` | Horizon plot (positive/negative bands from baseline) |
+| `"g"` | Horizontal grid lines (standalone) |
+| `"r"` | Linear regression line |
+
+Multiple types can be combined by passing a list:
+
+```python
+dtrack = DataTrack(data, type=["boxplot", "a", "g"])
+```
 
 ### Line Plot
 
@@ -821,6 +1000,81 @@ dtrack = DataTrack(data, type="line",
                    display_params={"grid": True, "col_grid": "#DDDDDD"})
 ```
 
+### Average (type "a")
+
+Compute and draw the mean across all value columns at each position:
+
+```python
+# Multi-sample data
+data = pd.DataFrame({
+    "chrom": ["chr7"] * 50,
+    "start": np.arange(1000, 2000, 20),
+    "end":   np.arange(1020, 2020, 20),
+    "sample_A": rng.randn(50).cumsum(),
+    "sample_B": rng.randn(50).cumsum() + 2,
+    "sample_C": rng.randn(50).cumsum() - 1,
+})
+dtrack = DataTrack(data, type="a", name="Average", col="#3C5488")
+```
+
+### Confidence Interval (type "confint")
+
+Draw mean ± 1.96×SE as a filled band:
+
+```python
+dtrack = DataTrack(data, type="confint", name="95% CI", col="#00A087")
+```
+
+### Smooth / Loess (type "smooth")
+
+Apply LOWESS smoothing (or rolling mean fallback):
+
+```python
+dtrack = DataTrack(data, type="smooth", smooth_span=0.3, name="Smooth")
+```
+
+The `smooth_span` parameter controls the fraction of data used for local regression (default 0.3). Requires `statsmodels` for LOWESS; falls back to a rolling mean if not available.
+
+### Horizon Plot (type "horizon")
+
+Split data into positive and negative bands relative to a baseline:
+
+```python
+dtrack = DataTrack(data, type="horizon", name="Horizon", baseline=0)
+```
+
+Positive values are drawn above the baseline in blue; negative values below in red.
+
+### Grid Type (type "g")
+
+Standalone horizontal grid lines:
+
+```python
+dtrack = DataTrack(data, type="g", name="Grid")
+```
+
+### Regression (type "r")
+
+Fit and draw a linear regression line:
+
+```python
+dtrack = DataTrack(data, type="r", name="Regression")
+```
+
+### Composite Plot Types
+
+Combine multiple plot types by passing a list:
+
+```python
+# Boxplot + average line + grid
+dtrack = DataTrack(data, type=["boxplot", "a", "g"], name="Composite")
+
+# Line + confidence interval
+dtrack = DataTrack(data, type=["line", "confint"], name="Signal + CI")
+```
+
+Each type is drawn in order on the same axes.
+
 ### Display Parameters
 
 | Parameter | Default | Description |
@@ -829,6 +1083,205 @@ dtrack = DataTrack(data, type="line",
 | `col` | `"#0080FF"` | Line color |
 | `baseline` | 0 | Y-position of baseline for mountain/polygon |
 | `ncolor` | 100 | Number of colors for gradient |
+
+---
+
+## SequenceTrack
+
+Displays nucleotide sequence as colored letters, boxes, or a continuous line depending on zoom level.
+
+### Constructor
+
+```python
+SequenceTrack(
+    sequence=None,        # str, DataFrame with chrom/start/end/seq, or None
+    fasta_path=None,      # Path to indexed FASTA file (.fa + .fai)
+    twobit_path=None,     # Path to 2bit genome file
+    chromosome=None,      # Chromosome name
+    complement=False,     # Show reverse complement
+    add53=False,          # Draw 5'→3' direction arrow
+    fontcolor=None,       # Dict of nucleotide -> color
+    noLetters=False,      # Force box mode even at high zoom
+    cex=1.0,              # Font size scaling factor
+    name="Sequence",
+    height=0.5,
+)
+```
+
+### Zoom-Level Rendering
+
+The display automatically adapts to the visible region width:
+
+| Region Width | Display Mode |
+|--------------|-------------|
+| < 200 bp | Individual colored letters (A, C, G, T) |
+| 200–2000 bp | Colored boxes per nucleotide |
+| > 2000 bp | Single continuous colored line |
+
+Default nucleotide colors: A=green (`#009E73`), C=blue (`#0072B2`), G=yellow (`#E69F00`), T=red (`#D55E00`).
+
+### String Sequence
+
+```python
+from geneview.genometracks import SequenceTrack, GenomicInterval, plot_tracks
+
+seq_track = SequenceTrack(
+    sequence="ATCGATCGATCGATCG" * 5,
+    chromosome="chr7",
+    name="Sequence",
+)
+axes = plot_tracks([seq_track], region=GenomicInterval("chr7", 0, 80))
+```
+
+### Loading from FASTA
+
+```python
+seq_track = SequenceTrack(
+    fasta_path="hg38.fa",
+    chromosome="chr7",
+    name="Sequence",
+)
+axes = plot_tracks([seq_track], region=GenomicInterval("chr7", 26500000, 26500100))
+```
+
+### Reverse Complement
+
+```python
+seq_track = SequenceTrack(sequence="ATCGATCG", complement=True, add53=True)
+```
+
+### Custom Nucleotide Colors
+
+```python
+seq_track = SequenceTrack(
+    sequence="ATCGATCG",
+    fontcolor={"A": "#FF0000", "T": "#00FF00", "C": "#0000FF", "G": "#FFFF00"},
+)
+```
+
+---
+
+## AlignmentsTrack
+
+Visualizes aligned reads from BAM or CRAM files with coverage, pileup, and sashimi plot modes. Requires `pysam`.
+
+### Constructor
+
+```python
+AlignmentsTrack(
+    filepath,              # Path to BAM or CRAM file
+    is_paired=False,       # Paired-end reads
+    show_mismatches=False, # Color mismatched bases vs reference
+    show_indels=False,     # Show insertions/deletions
+    reference=None,        # FASTA path for mismatch detection
+    type="coverage",       # "coverage", "pileup", "sashimi", or list
+    coverage_height=0.3,   # Relative height of coverage panel
+    sashimi_height=0.5,    # Relative height of sashimi panel
+    sashimi_score=1,       # Minimum reads for sashimi arcs
+    sashimi_filter=None,   # DataFrame of junction regions to show
+    reverse_stacking=False, # Reverse stacking order
+    col_mates=None,        # Color for mate connectors
+    col_gap="#888888",     # Color for gap/junction lines
+    col_deletion="#FF0000", # Deletion marker color
+    col_insertion="#0000FF", # Insertion marker color
+    fill_coverage="#B3CDE3", # Coverage fill color
+    fill_reads="#C8C8C8",   # Read fill color
+    alpha_reads=0.7,         # Read transparency
+    name="Alignments",
+    height=2.0,
+)
+```
+
+### Plot Modes
+
+| Mode | Description |
+|------|-------------|
+| `coverage` | Coverage depth histogram |
+| `pileup` | Individual reads with CIGAR-aware rendering |
+| `sashimi` | Arc plot showing splice junctions with read counts |
+
+Multiple modes can be combined:
+
+```python
+# Coverage + pileup
+aln = AlignmentsTrack("sample.bam", type=["coverage", "pileup"])
+
+# Coverage + sashimi
+aln = AlignmentsTrack("sample.bam", type=["coverage", "sashimi"])
+```
+
+### Basic Usage
+
+```python
+from geneview.genometracks import (
+    AlignmentsTrack, GeneRegionTrack, GenomeAxisTrack,
+    GenomicInterval, plot_tracks,
+)
+
+region = GenomicInterval("chr7", 26500000, 26550000)
+
+aln = AlignmentsTrack(
+    "alignments.bam",
+    type="coverage",
+    name="Coverage",
+)
+grtrack = GeneRegionTrack("gene_models.gtf", name="Genes")
+
+axes = plot_tracks(
+    [GenomeAxisTrack(), aln, grtrack],
+    region=region,
+)
+```
+
+### Mismatch Display
+
+Color-code mismatched bases against a reference sequence:
+
+```python
+aln = AlignmentsTrack(
+    "alignments.bam",
+    type="pileup",
+    show_mismatches=True,
+    reference="hg38.fa",
+)
+```
+
+### Indel Display
+
+Show insertions as vertical bars and deletions as bridging lines:
+
+```python
+aln = AlignmentsTrack(
+    "alignments.bam",
+    type="pileup",
+    show_indels=True,
+)
+```
+
+### Paired-End Reads
+
+Draw connectors between read mates:
+
+```python
+aln = AlignmentsTrack(
+    "paired.bam",
+    type="pileup",
+    is_paired=True,
+    col_mates="#CC0000",
+)
+```
+
+### Sashimi Plots
+
+Visualize splice junctions as arcs with read count labels:
+
+```python
+aln = AlignmentsTrack(
+    "rnaseq.bam",
+    type=["coverage", "sashimi"],
+    sashimi_score=5,  # Only show junctions with >= 5 reads
+)
+```
 
 ---
 
@@ -1063,6 +1516,42 @@ df = read_auto("signal.bedgraph") # calls read_bedgraph
 df = read_auto("signal.bw")       # calls read_bigwig
 df = read_auto("alignments.bam")  # calls read_bam_coverage
 df = read_auto("alignments.cram") # calls read_cram_coverage
+df = read_auto("signal.wig")      # calls read_wig
+seq = read_auto("genome.fa")      # calls read_fasta
+seq = read_auto("genome.2bit")    # calls read_2bit
+```
+
+### WIG Files
+
+Parse WIG format files (both fixedStep and variableStep):
+
+```python
+from geneview.genometracks import read_wig
+
+df = read_wig("signal.wig")
+# Returns DataFrame with: chrom, start, end, value
+```
+
+### FASTA Files (optional)
+
+Read nucleotide sequences from indexed FASTA files. Requires `pysam`:
+
+```python
+from geneview.genometracks import read_fasta, GenomicInterval
+
+seq = read_fasta("hg38.fa", region=GenomicInterval("chr7", 26500000, 26500100))
+# Returns a nucleotide string
+```
+
+### 2bit Files (optional)
+
+Read nucleotide sequences from 2bit genome files. Requires `py2bit`:
+
+```python
+from geneview.genometracks import read_2bit, GenomicInterval
+
+seq = read_2bit("hg38.2bit", region=GenomicInterval("chr7", 26500000, 26500100))
+# Returns a nucleotide string
 ```
 
 ### Using File Paths with Track Constructors
@@ -1074,6 +1563,100 @@ atrack = AnnotationTrack("features.bed", name="BED Features")
 grtrack = GeneRegionTrack("gene_models.gtf", name="Genes")
 dtrack = DataTrack("signal.bedgraph", type="line", name="Signal")
 ```
+
+### Loading Included Test Data
+
+The `examples/data/genome_tracks/` directory ships real test files that you can use
+to try each reader:
+
+| File | Format | Region | Description |
+|------|--------|--------|-------------|
+| `test.bed` | BED9 | chr7:127.47M | 9 features with RGB colors |
+| `test.bedGraph` | bedGraph | chr19:49.3M | 9 bins, signed values (-1 to +1) |
+| `test.bw` | BigWig | chr19:49.3M | BigWig coverage |
+| `test.bam` | BAM | chr1:189.89M | 3118 reads (hg19) |
+| `test.gtf` | GTF | chr1:67M | SGIP1 gene model |
+| `test.gff3` | GFF3 | chr1:67M | Same gene, GFF3 format |
+| `cpg_islands.bed` | BED6 | chr7:26.5M | 9 synthetic CpG islands |
+| `gene_models.gtf` | GTF | chr7:26.5M | 3 synthetic gene models |
+| `coverage.bedgraph` | bedGraph | chr7:26.5M | 100-bin synthetic coverage |
+| `annotations.bed` | BED6 | chr7:26.5M | 8 synthetic regulatory features |
+| `multi_sample.tsv` | TSV | chr7:26.5M | 6 samples (3 ctrl + 3 treat) |
+
+```python
+from geneview.genometracks import (
+    read_bed, read_bedgraph, read_gff, read_bigwig,
+    read_bam_coverage, read_auto, GenomicInterval,
+)
+
+# Real test data examples
+bed_data  = read_bed("examples/data/genome_tracks/test.bed")
+bg_data   = read_bedgraph("examples/data/genome_tracks/test.bedGraph")
+bigwig    = read_bigwig("examples/data/genome_tracks/test.bw")       # requires pyBigWig
+bam_cov   = read_bam_coverage(                                        # requires pysam
+    "examples/data/genome_tracks/test.bam",
+    region=GenomicInterval("chr1", 189_891_000, 189_900_000),
+)
+gtf_data  = read_gff("examples/data/genome_tracks/test.gtf")
+gff3_data = read_gff("examples/data/genome_tracks/test.gff3")
+
+# Auto-detect format
+auto_bed  = read_auto("examples/data/genome_tracks/test.bed")
+auto_bw   = read_auto("examples/data/genome_tracks/test.bw")
+```
+
+---
+
+## Exporting Tracks
+
+Export track data to common genomic file formats using `export_tracks`:
+
+```python
+from geneview.genometracks import export_tracks
+
+# Export AnnotationTrack to BED
+export_tracks(atrack, "features.bed", format="bed")
+
+# Export DataTrack to bedGraph
+export_tracks(dtrack, "signal.bedgraph", format="bedgraph")
+
+# Export DataTrack to WIG
+export_tracks(dtrack, "signal.wig", format="wig")
+
+# Export GeneRegionTrack to GFF
+export_tracks(grtrack, "genes.gff", format="gff")
+```
+
+| Format | Output Columns |
+|--------|---------------|
+| `bed` | chrom, start, end, name, score, strand |
+| `gff` | chrom, source, feature, start (1-based), end, score, strand, frame, attributes |
+| `bedgraph` | chrom, start, end, value |
+| `wig` | fixedStep or variableStep WIG format |
+
+---
+
+## Color Schemes
+
+Apply predefined color schemes to tracks using `apply_scheme` or the `scheme` parameter in `plot_tracks`:
+
+```python
+from geneview.genometracks import apply_scheme, plot_tracks
+
+# Apply a scheme to a single track
+apply_scheme(grtrack, "genes")
+
+# Or apply via plot_tracks
+axes = plot_tracks([grtrack], region=region, scheme="transcripts")
+```
+
+### Available Schemes
+
+| Scheme | Description |
+|--------|-------------|
+| `"default"` | Light gray fill, dark gray border |
+| `"genes"` | Distinct color per gene |
+| `"transcripts"` | Distinct color per transcript |
 
 ---
 
@@ -1093,6 +1676,10 @@ plot_tracks(
     show_title=True,     # Show track title panels
     reverse_strand=False, # Flip x-axis (3' on left)
     ax=None,             # Existing axes to plot into (single track only)
+    cex=None,            # Global font expansion factor
+    add=False,           # Plot into existing axes (no new figure)
+    ylim=None,           # Global y-axis limits for DataTrack panels
+    scheme=None,         # Apply named color scheme ("default", "genes", "transcripts")
     **kwargs,            # Additional kwargs
 )
 # Returns: list of matplotlib Axes
@@ -1157,6 +1744,39 @@ All tracks automatically share the same genomic x-axis. The last non-axis track 
 axes = plot_tracks([gtrack, atrack], region=region)
 fig = axes[0].figure  # Get the matplotlib Figure
 fig.savefig("output.png", dpi=300, bbox_inches="tight")
+```
+
+### Font Scaling (cex)
+
+Globally expand or shrink all text:
+
+```python
+axes = plot_tracks([gtrack, grtrack], cex=1.5)  # 150% font size
+```
+
+### Plot Into Existing Axes (add)
+
+Add a track to an already-existing figure:
+
+```python
+fig, ax = plt.subplots(figsize=(10, 2))
+axes = plot_tracks([dtrack], region=region, add=True, ax=ax)
+```
+
+### Global Y-axis Limits (ylim)
+
+Set the same y-axis limits for all DataTrack panels:
+
+```python
+axes = plot_tracks([dtrack1, dtrack2], region=region, ylim=(-5, 10))
+```
+
+### Color Scheme
+
+Apply a named color scheme to all annotation and gene tracks:
+
+```python
+axes = plot_tracks([grtrack, atrack], region=region, scheme="genes")
 ```
 
 ---
@@ -1239,6 +1859,59 @@ fig.savefig("output.png", dpi=300, bbox_inches="tight")
 | `grid` | False | Show grid lines |
 | `col_grid` | `"#DDDDDD"` | Grid line color |
 | `frame` | False | Draw frame around panel |
+
+---
+
+## BiomartGeneRegionTrack and UcscTrack (Stubs)
+
+These classes provide Gviz-compatible API signatures but raise `NotImplementedError` when drawn, since they require external server connections.
+
+### BiomartGeneRegionTrack
+
+```python
+from geneview.genometracks import BiomartGeneRegionTrack
+
+# Accepts Gviz-compatible parameters
+bm = BiomartGeneRegionTrack(
+    genome="hg38",
+    chromosome="chr7",
+    start=26500000,
+    end=26800000,
+    symbol="EGFR",
+)
+# bm.draw() raises NotImplementedError
+```
+
+**Alternative:** Use `GeneRegionTrack` with a local GTF/GFF file:
+
+```python
+from geneview.genometracks import GeneRegionTrack, read_gff
+gene_data = read_gff("Homo_sapiens.gtf")
+grtrack = GeneRegionTrack(gene_data, name="Genes")
+```
+
+### UcscTrack
+
+```python
+from geneview.genometracks import UcscTrack
+
+# Accepts Gviz-compatible parameters
+ucsc = UcscTrack(
+    genome="hg38",
+    chromosome="chr7",
+    track="knownGene",
+    table="knownGene",
+)
+# ucsc.draw() raises NotImplementedError
+```
+
+**Alternative:** Download the file from UCSC and use the appropriate `read_*` function:
+
+```python
+from geneview.genometracks import read_bed, AnnotationTrack
+df = read_bed("ucsc_known_genes.bed")
+atrack = AnnotationTrack(df, name="UCSC Genes")
+```
 
 ---
 

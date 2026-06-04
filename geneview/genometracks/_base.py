@@ -227,6 +227,8 @@ class RangeTrack(Track):
             data = read_auto(data)
         if not isinstance(data, pd.DataFrame):
             raise TypeError(f"Expected DataFrame or file path, got {type(data)}")
+        # Copy to avoid mutating the caller's DataFrame
+        data = data.copy()
         # Normalize column names to lowercase
         data.columns = [c.lower().strip() for c in data.columns]
         missing = self.REQUIRED_COLUMNS - set(data.columns)

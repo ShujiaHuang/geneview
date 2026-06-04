@@ -112,6 +112,9 @@ class GeneRegionTrack(StackedTrack):
         collapse_transcripts: Union[str, bool] = False,
         show_id: Optional[str] = "gene",
         thin_box_features: Optional[set] = None,
+        exon_annotation: Optional[str] = None,
+        gene_symbols: bool = False,
+        transcript_annotation: Optional[str] = None,
         name: str = "GeneRegion",
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
@@ -136,6 +139,9 @@ class GeneRegionTrack(StackedTrack):
         self.collapse_transcripts = collapse_transcripts
         self.show_id = show_id
         self._thin_features = thin_box_features or _THIN_BOX_FEATURES
+        self.exon_annotation = exon_annotation
+        self.gene_symbols = gene_symbols
+        self.transcript_annotation = transcript_annotation
 
     def draw(self, ax, region: GenomicInterval) -> None:
         """Draw the gene region track.
@@ -314,6 +320,33 @@ class GeneRegionTrack(StackedTrack):
                 result_rows.append(grp[grp[tx_col] == longest_tx])
             return pd.concat(result_rows) if result_rows else data
 
+        elif self.collapse_transcripts == "shortest":
+            tx_col = self._get_group_column(data)
+            if tx_col is None:
+                return data
+            gene_col = None
+            for col in ["gene_id", "gene", "gene_name"]:
+                if col in data.columns:
+                    gene_col = col
+                    break
+            if gene_col is None:
+                return data
+
+            result_rows = []
+            for gene, grp in data.groupby(gene_col):
+                grp = grp.copy()
+                if tx_col not in grp.columns:
+                    result_rows.append(grp)
+                    continue
+                _apply_kwargs = {} if Version(pd.__version__) < Version("2.2.0") else {"include_groups": False}
+                tx_lengths = grp.groupby(tx_col).apply(
+                    lambda g: g["end"].max() - g["start"].min(),
+                    **_apply_kwargs,
+                )
+                shortest_tx = tx_lengths.idxmin()
+                result_rows.append(grp[grp[tx_col] == shortest_tx])
+            return pd.concat(result_rows) if result_rows else data
+
         elif self.collapse_transcripts == "meta":
             # Meta-transcript: union of all exon positions per gene
             gene_col = None
@@ -407,6 +440,10 @@ class GeneRegionTrack(StackedTrack):
             if strand in ("+", "-"):
                 self._draw_strand_chevrons(ax, x_start, x_end, y_center, h, strand, region)
 
+            # Draw exon annotation label if requested
+            if self.exon_annotation:
+                self._draw_exon_label(ax, row, x_start, x_end, y_center, h, region)
+
     def _draw_single_feature(self, ax, row, region, y_center, row_height,
                              fill_color, fill_utr, edge_color, lwd, alpha):
         """Draw a single feature without transcript context."""
@@ -467,10 +504,57 @@ class GeneRegionTrack(StackedTrack):
             )
             ax.add_patch(line)
 
+    def _draw_exon_label(self, ax, row, x_start, x_end, y_center, h, region):
+        """Draw a label on an exon based on the exon_annotation setting."""
+        span = region.end - region.start
+        box_width = x_end - x_start
+        if box_width < span * 0.005:
+            return  # Too small for labels
+
+        fontsize = self.get_param("fontsize", 8) * 0.75
+        fontcolor = self.get_param("fontcolor", "#333333")
+        mid_x = (x_start + x_end) / 2
+
+        mode = self.exon_annotation
+        label = None
+
+        if mode == "exon":
+            label = str(row.get("feature", "exon"))
+        elif mode == "symbol":
+            for col in ["gene_name", "symbol", "gene"]:
+                if col in row.index and pd.notna(row[col]):
+                    label = str(row[col])
+                    break
+        elif mode == "gene":
+            for col in ["gene_id", "gene", "gene_name"]:
+                if col in row.index and pd.notna(row[col]):
+                    label = str(row[col])
+                    break
+        elif mode == "transcript":
+            for col in ["transcript_id", "transcript"]:
+                if col in row.index and pd.notna(row[col]):
+                    label = str(row[col])
+                    break
+        elif mode == "feature":
+            label = str(row.get("feature", ""))
+
+        if label:
+            ax.text(mid_x, y_center + h / 2 + 0.01, label,
+                    ha="center", va="bottom", fontsize=fontsize,
+                    color=fontcolor, clip_on=True, zorder=5)
+
     def _draw_label(self, ax, grp, region, y_center, row_height,
                     fontsize, fontcolor):
         """Draw a gene or transcript label."""
-        if self.show_id == "gene":
+        # Handle transcript_annotation alias
+        effective_show_id = self.show_id
+        if self.transcript_annotation is not None:
+            if self.transcript_annotation == "symbol":
+                effective_show_id = "symbol"
+            else:
+                effective_show_id = self.transcript_annotation
+
+        if effective_show_id == "gene":
             for col in ["gene_name", "gene", "gene_id", "symbol"]:
                 if col in grp.columns:
                     label = grp[col].iloc[0]
@@ -478,7 +562,7 @@ class GeneRegionTrack(StackedTrack):
                         break
             else:
                 return
-        elif self.show_id == "transcript":
+        elif effective_show_id == "transcript":
             for col in ["transcript_id", "transcript"]:
                 if col in grp.columns:
                     label = grp[col].iloc[0]
@@ -486,8 +570,27 @@ class GeneRegionTrack(StackedTrack):
                         break
             else:
                 return
+        elif effective_show_id == "symbol":
+            # Use gene_name instead of gene_id
+            for col in ["gene_name", "symbol", "gene"]:
+                if col in grp.columns:
+                    label = grp[col].iloc[0]
+                    if pd.notna(label):
+                        break
+            else:
+                return
+        elif effective_show_id == "exon":
+            return  # Exon labels handled by exon_annotation
         else:
             return
+
+        # Override with gene_symbols if requested
+        if self.gene_symbols and effective_show_id == "gene":
+            for col in ["gene_name", "symbol"]:
+                if col in grp.columns:
+                    label = grp[col].iloc[0]
+                    if pd.notna(label):
+                        break
 
         # Position label below the transcript
         x_pos = (grp["start"].min() + grp["end"].max()) / 2

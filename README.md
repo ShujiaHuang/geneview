@@ -21,7 +21,7 @@ Some of the features that geneview offers are:
 - **Admixture plot** — Population structure visualization from ADMIXTURE output (.Q files) with hierarchical clustering.
 - **Venn diagram** — Set intersection diagrams for 2–6 datasets with customizable petal labels and colors.
 - **Karyotype plot** — Cytogenetic band visualization with G-banding color schemes.
-- **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack (line/histogram/heatmap), HighlightTrack, and OverlayTrack.
+- **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack (line/histogram/heatmap + average/confint/smooth/horizon/grid/regression), SequenceTrack (nucleotide display), AlignmentsTrack (BAM/CRAM pileup/sashimi), DetailsAnnotationTrack (detail panels), HighlightTrack, and OverlayTrack.
 - **Plot Styles** — Built-in journal-compliant styles (**Nature**, **Science**, **Cell**) that configure fonts, sizes, colours, and export settings in a single call.
 - **Color palettes** — Curated color schemes (XKCD RGB, Circos, matplotlib colormaps) optimized for genomics figures.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
@@ -587,7 +587,7 @@ ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_peta
 
 ### Genome Tracks
 
-The **genome tracks** module provides a Gviz-inspired track browser for visualizing genomic features along a shared coordinate axis. It supports multiple track types including IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack, HighlightTrack, and OverlayTrack.
+The **genome tracks** module provides a Gviz-inspired track browser for visualizing genomic features along a shared coordinate axis. It supports multiple track types including IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack, SequenceTrack, AlignmentsTrack, DetailsAnnotationTrack, HighlightTrack, and OverlayTrack.
 
 #### IdeogramTrack — Chromosome ideogram (auto-loaded)
 
@@ -680,6 +680,86 @@ cram_track = DataTrack(cram_cov, type="histogram", name="CRAM Coverage")
 
 axes = plot_tracks([GenomeAxisTrack(), bam_track, cram_track], region=region, figsize=(14, 6))
 plt.show()
+```
+
+#### SequenceTrack — Nucleotide display
+
+Display nucleotide sequences as colored letters, boxes, or lines depending on zoom level:
+
+```python
+from geneview.genometracks import SequenceTrack, GenomeAxisTrack, GenomicInterval, plot_tracks
+
+seq = "ATCGATCGATCGATCG" * 5
+track = SequenceTrack(sequence=seq, name="Sequence")
+axes = plot_tracks([GenomeAxisTrack(), track],
+                   region=GenomicInterval("chr1", 0, len(seq)), figsize=(12, 3))
+```
+
+![genome_tracks_sequence_letters.png](./examples/figures/genome_tracks_sequence_letters.png)
+
+#### AlignmentsTrack — BAM/CRAM read alignments
+
+Visualize read alignments with coverage histograms, pileup diagrams, and sashimi plots (requires `pysam`):
+
+```python
+from geneview.genometracks import AlignmentsTrack, GenomeAxisTrack, GenomicInterval, plot_tracks
+
+track = AlignmentsTrack(filepath="alignments.bam", type=["coverage", "pileup"])
+axes = plot_tracks([GenomeAxisTrack(), track],
+                   region=GenomicInterval("chr12", 2966800, 2966950), figsize=(12, 6))
+```
+
+![genome_tracks_alignments_combined.png](./examples/figures/genome_tracks_alignments_combined.png)
+
+#### DetailsAnnotationTrack — Annotation with detail panels
+
+Extend AnnotationTrack with detail panels below features:
+
+```python
+from geneview.genometracks import DetailsAnnotationTrack, GenomeAxisTrack, GenomicInterval, plot_tracks
+import pandas as pd
+
+data = pd.DataFrame({
+    "chrom": ["chr7"] * 3, "start": [1000, 2000, 3000],
+    "end": [1500, 2800, 3600], "name": ["geneA", "geneB", "geneC"],
+})
+track = DetailsAnnotationTrack(data, name="Details")
+axes = plot_tracks([GenomeAxisTrack(), track],
+                   region=GenomicInterval("chr7", 800, 4000), figsize=(12, 4))
+```
+
+![genome_tracks_details_default.png](./examples/figures/genome_tracks_details_default.png)
+
+#### Extended DataTrack plot types
+
+DataTrack supports additional plot types: average (`"a"`), confidence interval (`"confint"`), LOWESS smooth (`"smooth"`), horizon plot (`"horizon"`), grid (`"g"`), regression (`"r"`), and composite types:
+
+```python
+from geneview.genometracks import DataTrack
+
+# Composite: boxplot + average + grid
+dtrack = DataTrack(data, type=["boxplot", "a", "g"], name="Composite")
+```
+
+![genome_tracks_data_composite.png](./examples/figures/genome_tracks_data_composite.png)
+
+#### Color schemes
+
+Apply predefined color schemes to gene and annotation tracks:
+
+```python
+axes = plot_tracks([grtrack], region=region, scheme="genes")
+```
+
+![genome_tracks_scheme_genes.png](./examples/figures/genome_tracks_scheme_genes.png)
+
+#### Export tracks
+
+Export track data to BED, GFF, bedGraph, or WIG format:
+
+```python
+from geneview.genometracks import export_tracks
+export_tracks(track, "output.bed", fmt="bed")
 ```
 
 ### Karyotype plot

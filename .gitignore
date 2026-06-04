@@ -22,3 +22,10 @@ geneview.egg-info/
 trash/
 tmp/
 learn_from/
+
+# Binary genomic data files (too large for GitHub)
+*.bam
+*.bam.bai
+*.bw
+*.bigwig
+*.2bit
