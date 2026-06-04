@@ -756,7 +756,7 @@ dtrack = DetailsAnnotationTrack(
 
 ## GeneRegionTrack
 
-Displays gene models in UCSC Genome Browser style: CDS as thick solid blocks, UTRs as thinner blocks, introns as thin connecting lines with directional chevron arrows, and gene labels positioned to the left of transcripts. Strand-based coloring (forward: `#E89E9D`, reverse: `#8C8FCE`) is applied automatically.
+Displays gene models with multiple drawing styles. The default **UCSC** style renders CDS as thick solid blocks, UTRs as thinner blocks, introns as thin connecting lines with directional chevron arrows, and gene labels positioned to the left of transcripts. Three additional styles ported from pyGenomeTracks — **flybase**, **tssarrow**, and **exonarrows** — offer alternative visual representations. Strand-based coloring (forward: `#E89E9D`, reverse: `#8C8FCE`) is applied automatically.
 
 ### GeneRegionTrack Constructor
 
@@ -767,6 +767,7 @@ GeneRegionTrack(
     collapse_transcripts=False, # False, True/"gene", "longest", "shortest", "meta"
     show_id="gene",             # "gene", "transcript", "exon", or None
     thin_box_features=None,     # Set of feature types drawn as thin boxes
+    style="UCSC",               # "UCSC", "flybase", "tssarrow", "exonarrows"
     name="GeneRegion",
     height=1.5,
     display_params=None,
@@ -792,6 +793,60 @@ axes = plot_tracks([grtrack], region=region)
 - **Labels**: Gene/transcript names positioned to the **left** of each transcript (UCSC convention)
 - **Colors**: Strand-based coloring — forward strand `#E89E9D` (warm red), reverse strand `#8C8FCE` (cool blue)
 - **Deduplication**: When GFF/GTF files contain both `exon` and `CDS`/`UTR` rows at the same coordinates, redundant `exon` rows are automatically filtered out
+
+### Drawing Styles
+
+The `style` parameter selects between four gene drawing modes (ported from pyGenomeTracks):
+
+| Style | Description |
+| :------: | :----------- |
+| `"UCSC"` | Default. Thick CDS blocks, thin UTR blocks, intron chevron arrows. |
+| `"flybase"` | Backbone line from transcript start to end. Last exon drawn as a filled directional arrow polygon. UTR height configurable via `height_utr`. |
+| `"tssarrow"` | Vertical line + arrow at the transcription start site (TSS). Half-height exon boxes with L-shaped intron connections. |
+| `"exonarrows"` | Full-height exon boxes with directional chevron arrows drawn inside. Filled rectangle intron connectors between exons. |
+
+```python
+# Default UCSC style (thick CDS, thin UTR, chevron intron arrows)
+grtrack = GeneRegionTrack(data, style="UCSC")
+
+# Flybase style (backbone line + arrow-tipped last exon)
+grtrack = GeneRegionTrack(data, style="flybase")
+
+# TSS arrow style (vertical line + arrow at TSS, half-height exons)
+grtrack = GeneRegionTrack(data, style="tssarrow")
+
+# Exon arrows style (full-height exons with arrows inside, filled intron connectors)
+grtrack = GeneRegionTrack(data, style="exonarrows")
+```
+
+![UCSC style](../examples/figures/genome_tracks_gene_region_style_ucsc.png)
+![flybase style](../examples/figures/genome_tracks_gene_region_style_flybase.png)
+![tssarrow style](../examples/figures/genome_tracks_gene_region_style_tssarrow.png)
+![exonarrows style](../examples/figures/genome_tracks_gene_region_style_exonarrows.png)
+
+#### Customising Styles
+
+Style-specific display parameters can be passed via `display_params`:
+
+```python
+# Flybase with grey UTR at half height and dark backbone
+grtrack = GeneRegionTrack(
+    data, style="flybase",
+    display_params={"color_utr": "#AAAAAA", "height_utr": 0.5, "color_backbone": "#555555"},
+)
+
+# Exonarrows with thin intron connectors and white arrows
+grtrack = GeneRegionTrack(
+    data, style="exonarrows",
+    display_params={"height_intron": 0.3, "arrow_interval": 3, "color_arrow": "white"},
+)
+
+# TSS arrow with custom UTR colour
+grtrack = GeneRegionTrack(
+    data, style="tssarrow",
+    display_params={"color_utr": "#BBBBBB", "height_utr": 0.6},
+)
+```
 
 ### Transcript Collapsing
 
@@ -828,6 +883,8 @@ grtrack = GeneRegionTrack(data, show_id=None)
 
 ### Display Parameters of GeneRegionTrack
 
+**Core parameters** (all styles):
+
 | Parameter | Default | Description |
 | :-----------: | :---------: | :-------------: |
 | `fill` | `"#E89E9D"` | Forward-strand fill color (CDS/exon) |
@@ -838,6 +895,19 @@ grtrack = GeneRegionTrack(data, show_id=None)
 | `fontsize` | 8 | Label font size |
 | `fontcolor` | `"#333333"` | Label text color |
 | `lwd` | 0.8 | Line width |
+
+**Style-specific parameters** (flybase / tssarrow / exonarrows):
+
+| Parameter | Default | Description |
+| :-----------: | :---------: | :-------------: |
+| `color_utr` | `None` | Explicit UTR color (None = same as exon) |
+| `color_backbone` | `None` | Backbone line color for flybase (None = same as intron) |
+| `color_arrow` | `None` | Arrow color inside exons for exonarrows (None = same as exon) |
+| `height_utr` | 1.0 | UTR height relative to CDS (1 = same height) |
+| `height_intron` | 0.5 | Intron connector height relative to CDS (exonarrows) |
+| `arrow_interval` | 2 | Spacing between arrows inside exons (exonarrows) |
+| `arrowhead_fraction` | 0.004 | Arrowhead size as fraction of region span (flybase) |
+| `arrowhead_included` | `False` | If `True`, arrow tip sits at interval boundary; otherwise extends beyond |
 
 ### Exon Annotation Labels
 

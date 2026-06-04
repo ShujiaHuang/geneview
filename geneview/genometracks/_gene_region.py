@@ -1,15 +1,30 @@
 """
 GeneRegionTrack - A track for displaying gene models.
 
-Displays gene structures in UCSC Genome Browser style:
+Displays gene structures with multiple drawing styles:
+
+**UCSC style** (default):
 - Coding exons (CDS) as thick solid blocks
 - UTRs as thinner blocks (~half CDS height)
 - Introns as thin horizontal connecting lines with directional chevron arrows
 - Gene labels positioned to the LEFT of the transcript
 
+**flybase style**:
+- Backbone line from transcript start to end
+- Last exon drawn as a filled directional arrow polygon
+- UTR with configurable height (``height_utr``)
+
+**tssarrow style**:
+- Vertical line + arrow at the transcription start site (TSS)
+- Half-height exon boxes with L-shaped intron connections
+
+**exonarrows style**:
+- Full-height exon boxes with directional arrows drawn inside
+- Filled rectangle intron connectors between exons
+
 Supports transcript grouping, strand-aware coloring, and gene/transcript/exon labels.
 
-Ported from Gviz's GeneRegionTrack-class.R.
+Ported from Gviz's GeneRegionTrack-class.R and pyGenomeTracks' BedTrack.py.
 """
 
 from typing import Optional, List, Dict, Any, Union
@@ -23,6 +38,11 @@ import matplotlib.patches as mpatches
 
 from ._base import StackedTrack, GenomicInterval
 from ._stacking import compute_stacking, get_stack_heights, get_num_stacks
+from matplotlib.lines import Line2D
+
+
+# Valid gene drawing styles
+_VALID_STYLES = {"UCSC", "flybase", "tssarrow", "exonarrows"}
 
 
 # Features that are drawn as thin boxes (UTRs and non-coding features)
@@ -84,12 +104,21 @@ class GeneRegionTrack(StackedTrack):
         Default is 'gene'.
     thin_box_features : set, optional
         Feature types to draw as thin boxes. Default includes UTRs.
+    style : str
+        Drawing style for gene models. One of:
+        - 'UCSC' (default): thick CDS, thin UTR, intron chevron arrows
+        - 'flybase': backbone line, last exon as filled arrow
+        - 'tssarrow': TSS arrow + vertical line, half-height exons
+        - 'exonarrows': full-height exons with arrows inside
     name : str
         Track name. Default is "GeneRegion".
     height : float
         Relative track height. Default is 1.5.
     display_params : dict, optional
-        Additional display parameters.
+        Additional display parameters. Supports pyGenomeTracks-style params:
+        ``color_utr``, ``color_backbone``, ``color_arrow``, ``height_utr``,
+        ``height_intron``, ``arrow_interval``, ``arrowhead_fraction``,
+        ``arrowhead_included``.
 
     Examples
     --------
@@ -117,11 +146,17 @@ class GeneRegionTrack(StackedTrack):
         exon_annotation: Optional[str] = None,
         gene_symbols: bool = False,
         transcript_annotation: Optional[str] = None,
+        style: str = "UCSC",
         name: str = "GeneRegion",
         height: float = 1.5,
         display_params: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
+        if style not in _VALID_STYLES:
+            raise ValueError(
+                f"Invalid style '{style}'. Must be one of {sorted(_VALID_STYLES)}."
+            )
+
         dp = {
             "col": "none",                   # genomeview: no edge stroke
             "fill": "#E89E9D",               # genomeview: forward strand color
@@ -131,6 +166,15 @@ class GeneRegionTrack(StackedTrack):
             "lwd": 0.8,
             "fontsize": 8,
             "fontcolor": "#333333",
+            # --- pyGenomeTracks-style display params ---
+            "color_utr": None,               # None = same as exon; or explicit color
+            "color_backbone": None,          # None = same as intron/exon color
+            "color_arrow": None,             # None = same as exon color
+            "height_utr": 1.0,               # UTR height relative to CDS (1=same)
+            "height_intron": 0.5,            # intron connector height relative to CDS
+            "arrow_interval": 2,             # distance between arrows (in units of arrow size)
+            "arrowhead_fraction": 0.004,     # arrowhead size as fraction of region span
+            "arrowhead_included": False,     # whether arrow tip is at interval boundary
         }
         if display_params:
             dp.update(display_params)
@@ -142,6 +186,7 @@ class GeneRegionTrack(StackedTrack):
 
         self.collapse_transcripts = collapse_transcripts
         self.show_id = show_id
+        self.style = style
         self._thin_features = thin_box_features or _THIN_BOX_FEATURES
         self.exon_annotation = exon_annotation
         self.gene_symbols = gene_symbols
@@ -449,35 +494,174 @@ class GeneRegionTrack(StackedTrack):
                 keep.append(idx)
         return grp.loc[keep]
 
+    @staticmethod
+    def _split_to_blocks(grp: pd.DataFrame):
+        """Split a transcript group into (start, end, type) blocks.
+
+        Mirrors pyGenomeTracks' ``_split_bed_to_blocks`` but works with
+        geneview's GFF-style DataFrame.  Returns a list of tuples
+        ``(start, end, feature_type)`` where *feature_type* is ``"coding"``
+        or ``"UTR"``.
+
+        Supports two data layouts:
+        1. **GFF-style** – each row is an exon/CDS/UTR feature.
+        2. **BED12-style** – a single row with ``thick_start``, ``thick_end``,
+           ``block_count``, ``block_sizes``, ``block_starts`` columns.
+        """
+        # --- BED12 path ---
+        if "block_count" in grp.columns and "block_sizes" in grp.columns:
+            first = grp.iloc[0]
+            try:
+                block_count = int(first["block_count"])
+                block_sizes = [
+                    int(x) for x in str(first["block_sizes"]).rstrip(",").split(",") if x
+                ]
+                block_starts = [
+                    int(x) for x in str(first["block_starts"]).rstrip(",").split(",") if x
+                ]
+            except (ValueError, TypeError):
+                return []
+
+            tx_start = int(first["start"])
+            thick_start = (
+                int(first["thick_start"])
+                if "thick_start" in first.index and pd.notna(first.get("thick_start"))
+                else None
+            )
+            thick_end = (
+                int(first["thick_end"])
+                if "thick_end" in first.index and pd.notna(first.get("thick_end"))
+                else None
+            )
+
+            n_blocks = min(block_count, len(block_sizes), len(block_starts))
+            positions = []
+            for i in range(n_blocks):
+                x0 = tx_start + block_starts[i]
+                x1 = x0 + block_sizes[i]
+
+                # No coding region at all
+                if thick_start is None or thick_end is None or thick_start == thick_end:
+                    positions.append((x0, x1, "UTR"))
+                    continue
+
+                # CDS start within this block
+                if x0 < thick_start < x1:
+                    positions.append((x0, thick_start, "UTR"))
+                    x0 = thick_start
+
+                # CDS end within this block
+                if x0 < thick_end < x1:
+                    positions.append((x0, thick_end, "coding"))
+                    x0 = thick_end
+
+                if x1 <= thick_start or x0 >= thick_end:
+                    ftype = "UTR"
+                else:
+                    ftype = "coding"
+                positions.append((x0, x1, ftype))
+
+            return positions
+
+        # --- GFF-style path ---
+        grp_sorted = grp.sort_values("start")
+        features = grp_sorted["feature"].astype(str).str.lower().str.strip() if "feature" in grp_sorted.columns else pd.Series(["exon"] * len(grp_sorted))
+        has_cds = features.isin({"cds"}).any()
+        has_utr = features.isin({"utr", "utr5", "utr3", "five_prime_utr",
+                                  "three_prime_utr", "5utr", "3utr",
+                                  "ncrna", "nc_rna"}).any()
+
+        if not has_cds and not has_utr:
+            # All features are generic 'exon' – treat as coding
+            return [
+                (int(r["start"]), int(r["end"]), "coding")
+                for _, r in grp_sorted.iterrows()
+            ]
+
+        positions = []
+        for (_, r), feat in zip(grp_sorted.iterrows(), features):
+            s, e = int(r["start"]), int(r["end"])
+            if feat in {"cds"}:
+                positions.append((s, e, "coding"))
+            elif feat in {"utr", "utr5", "utr3", "five_prime_utr",
+                          "three_prime_utr", "5utr", "3utr",
+                          "ncrna", "nc_rna", "start_codon", "stop_codon"}:
+                positions.append((s, e, "UTR"))
+            else:
+                # generic exon – check overlap with CDS/UTR already added
+                positions.append((s, e, "coding"))
+
+        return positions
+
     def _draw_transcript(self, ax, grp, region, y_center, row_height,
                          fill_color, fill_utr, edge_color, intron_color, lwd, alpha):
-        """Draw a complete transcript (UCSC Genome Browser style).
-
-        UCSC style:
-        - CDS: thick solid blocks (no edge stroke by default)
-        - UTR: thinner blocks (~half CDS height)
-        - Introns: thin horizontal connecting lines with directional chevron arrows
-        - Single strand-based color per transcript
-        - Gene label to the LEFT of the transcript
-        Drawing order: thin first, then thick on top.
-        """
+        """Draw a complete transcript, dispatching to style-specific methods."""
         grp = self._deduplicate_features(grp).sort_values("start")
         strand = grp["strand"].iloc[0] if "strand" in grp.columns else "*"
 
-        # UCSC: strand-based coloring
+        # Strand-based coloring
         if strand == "-" and hasattr(self, '_fill_rev'):
             tx_color = self._fill_rev
         else:
             tx_color = fill_color
 
-        # Override colors if explicitly set
+        # Resolve effective colours
         effective_intron = self._intron_color_override if hasattr(self, '_intron_color_override') and self._intron_color_override else tx_color
         effective_utr = self._fill_utr_override if hasattr(self, '_fill_utr_override') and self._fill_utr_override else tx_color
         effective_edge = edge_color if edge_color and edge_color != "none" else "none"
 
-        # UCSC proportions: CDS ~full, UTR ~half of CDS
+        # pyGenomeTracks-style colour overrides
+        color_utr = self.get_param("color_utr", None) or effective_utr
+        color_backbone = self.get_param("color_backbone", None) or effective_intron
+        color_arrow = self.get_param("color_arrow", None) or tx_color
+        height_utr = self.get_param("height_utr", 1.0)
+        height_intron = self.get_param("height_intron", 0.5)
+        arrow_interval = self.get_param("arrow_interval", 2)
+        arrowhead_fraction = self.get_param("arrowhead_fraction", 0.004)
+        arrowhead_included = self.get_param("arrowhead_included", False)
+
+        span = region.end - region.start
+        small_relative = arrowhead_fraction * span
+
+        if self.style == "flybase":
+            self._draw_transcript_flybase(
+                ax, grp, region, y_center, row_height,
+                tx_color, color_utr, effective_edge, color_backbone,
+                lwd, alpha, strand, height_utr, small_relative, arrowhead_included,
+            )
+        elif self.style == "tssarrow":
+            self._draw_transcript_tssarrow(
+                ax, grp, region, y_center, row_height,
+                tx_color, color_utr, effective_edge,
+                lwd, alpha, strand, height_utr, small_relative,
+            )
+        elif self.style == "exonarrows":
+            self._draw_transcript_exonarrows(
+                ax, grp, region, y_center, row_height,
+                tx_color, color_utr, effective_edge, color_arrow,
+                lwd, alpha, strand, height_intron, arrow_interval,
+                small_relative, region,
+            )
+        else:
+            # UCSC (default)
+            self._draw_transcript_ucsc(
+                ax, grp, region, y_center, row_height,
+                tx_color, effective_utr, effective_edge, effective_intron,
+                lwd, alpha, strand,
+            )
+
+    def _draw_transcript_ucsc(self, ax, grp, region, y_center, row_height,
+                               tx_color, effective_utr, edge_color, intron_color,
+                               lwd, alpha, strand):
+        """Draw transcript in UCSC Genome Browser style.
+
+        - CDS: thick solid blocks (no edge stroke by default)
+        - UTR: thinner blocks (~half CDS height)
+        - Introns: thin horizontal connecting lines with directional chevron arrows
+        Drawing order: thin first, then thick on top.
+        """
         thick_frac = 0.7   # CDS
-        thin_frac = 0.35   # UTR (slightly taller than genomeview)
+        thin_frac = 0.35   # UTR
 
         # --- Step 1: Draw intron connecting lines with directional chevron arrows ---
         if len(grp) > 1:
@@ -490,16 +674,14 @@ class GeneRegionTrack(StackedTrack):
                 x_intron_end = min(intron_end, region.end)
                 if x_intron_end <= x_intron_start:
                     continue
-                # Thin intron line
                 ax.plot([x_intron_start, x_intron_end],
                         [y_center, y_center],
-                        color=effective_intron, linewidth=min(lwd, 0.8),
+                        color=intron_color, linewidth=min(lwd, 0.8),
                         alpha=alpha, zorder=2, solid_capstyle='butt')
-                # Directional chevron arrows along the intron
                 if strand in ("+", "-"):
                     self._draw_intron_arrows(
                         ax, x_intron_start, x_intron_end, y_center,
-                        row_height, strand, effective_intron, lwd, alpha, region,
+                        row_height, strand, intron_color, lwd, alpha, region,
                     )
 
         # --- Step 2: Draw thin features first (UTR/non-coding) ---
@@ -515,7 +697,7 @@ class GeneRegionTrack(StackedTrack):
             h = row_height * thin_frac
             rect = mpatches.Rectangle(
                 (x_start, y_center - h / 2), width, h,
-                facecolor=effective_utr, edgecolor=effective_edge,
+                facecolor=effective_utr, edgecolor=edge_color,
                 linewidth=0, alpha=alpha, zorder=3,
             )
             ax.add_patch(rect)
@@ -535,12 +717,353 @@ class GeneRegionTrack(StackedTrack):
             h = row_height * thick_frac
             rect = mpatches.Rectangle(
                 (x_start, y_center - h / 2), width, h,
-                facecolor=tx_color, edgecolor=effective_edge,
+                facecolor=tx_color, edgecolor=edge_color,
                 linewidth=0, alpha=alpha, zorder=3,
             )
             ax.add_patch(rect)
             if self.exon_annotation:
                 self._draw_exon_label(ax, row, x_start, x_end, y_center, h, region)
+
+    # ------------------------------------------------------------------
+    # pyGenomeTracks-style drawing helpers
+    # ------------------------------------------------------------------
+
+    def _make_bed_arrow(self, start, end, strand, y_center, half_height,
+                        small_relative, arrowhead_included):
+        """Return polygon vertices for a filled directional arrow (BED convention).
+
+        Ported from pyGenomeTracks ``BedTrack._draw_arrow``.
+        """
+        y0 = y_center - half_height
+        y1 = y_center + half_height
+
+        if strand == "+":
+            x0 = start
+            if arrowhead_included:
+                x1 = max(start, end - small_relative)
+                x2 = end
+            else:
+                x1 = end
+                x2 = end + small_relative
+            vertices = [(x0, y0), (x0, y1), (x1, y1),
+                        (x2, y_center), (x1, y0)]
+        else:
+            if arrowhead_included:
+                x0 = min(end, start + small_relative)
+                xb = start
+            else:
+                x0 = start
+                xb = start - small_relative
+            x1 = end
+            vertices = [(x0, y0), (xb, y_center), (x0, y1),
+                        (x1, y1), (x1, y0)]
+        return vertices
+
+    def _plot_small_arrow_on_interval(self, ax, start_pos, end_pos, y_top, y_bottom,
+                                       strand, color, lwd, alpha, small_relative,
+                                       arrow_interval):
+        """Plot evenly distributed small chevron arrows on an interval.
+
+        Ported from pyGenomeTracks ``BedTrack.plot_arrows_on_interval``.
+        """
+        interval_length = end_pos - start_pos + 1
+        if interval_length <= small_relative:
+            return
+        interval_center = start_pos + interval_length / 2
+        step = max(1, int(arrow_interval * small_relative))
+        pos = np.arange(start_pos + small_relative,
+                        end_pos + small_relative, step)
+        if len(pos) == 0:
+            return
+        pos = pos + interval_center - pos.mean()
+
+        for xpos in pos:
+            if strand == ".":
+                continue
+            if strand == "+":
+                xdata = [xpos - small_relative / 4,
+                         xpos + small_relative / 4,
+                         xpos - small_relative / 4]
+            else:
+                xdata = [xpos + small_relative / 4,
+                         xpos - small_relative / 4,
+                         xpos + small_relative / 4]
+            ydata = [y_top, (y_bottom + y_top) / 2, y_bottom]
+            ax.add_line(Line2D(xdata, ydata, color=color,
+                               linewidth=max(0.3, lwd * 0.6), alpha=alpha, zorder=4))
+
+    # ------------------------------------------------------------------
+    # flybase style
+    # ------------------------------------------------------------------
+
+    def _draw_transcript_flybase(self, ax, grp, region, y_center, row_height,
+                                  tx_color, utr_color, edge_color, backbone_color,
+                                  lwd, alpha, strand, height_utr,
+                                  small_relative, arrowhead_included):
+        """Draw transcript in Flybase Gbrowse style.
+
+        - Backbone line from transcript start to end
+        - Last exon drawn as filled directional arrow polygon
+        - UTR uses configurable height (``height_utr``) and colour
+        """
+        positions = self._split_to_blocks(grp)
+        if not positions:
+            return
+
+        tx_start = int(grp["start"].min())
+        tx_end = int(grp["end"].max())
+        thick_frac = 0.7
+
+        # Simple case: single exon, no introns, fully coding
+        if len(positions) == 1:
+            s, e, ft = positions[0]
+            x_s = max(s, region.start)
+            x_e = min(e, region.end)
+            if x_e <= x_s:
+                return
+            h = row_height * thick_frac
+            if strand in ("+", "-"):
+                verts = self._make_bed_arrow(
+                    x_s, x_e, strand, y_center, h / 2,
+                    small_relative, arrowhead_included,
+                )
+                poly = mpatches.Polygon(
+                    verts, closed=True, fill=True,
+                    facecolor=tx_color, edgecolor=edge_color,
+                    linewidth=0, alpha=alpha, zorder=3,
+                )
+                ax.add_patch(poly)
+            else:
+                rect = mpatches.Rectangle(
+                    (x_s, y_center - h / 2), x_e - x_s, h,
+                    facecolor=tx_color, edgecolor=edge_color,
+                    linewidth=0, alpha=alpha, zorder=3,
+                )
+                ax.add_patch(rect)
+            return
+
+        # Draw backbone line
+        bx_start = max(tx_start, region.start)
+        bx_end = min(tx_end, region.end)
+        if bx_end > bx_start:
+            ax.plot([bx_start, bx_end], [y_center, y_center],
+                    color=backbone_color, linewidth=max(0.5, lwd),
+                    alpha=alpha, zorder=1)
+
+        # Order positions for arrow drawing: the *last* drawn exon gets the arrow
+        draw_positions = list(positions)
+        if strand == "-":
+            draw_positions = draw_positions[::-1]
+
+        # The first element in draw_positions (after reversal for -) is the
+        # "leading" exon that gets the arrow head.
+        first_pos = draw_positions.pop()
+
+        # Draw the leading exon as a filled arrow
+        s, e, ft = first_pos
+        if ft == "UTR":
+            _color = utr_color
+            hh = row_height * thick_frac * height_utr / 2
+        else:
+            _color = tx_color
+            hh = row_height * thick_frac / 2
+
+        x_s = max(s, region.start)
+        x_e = min(e, region.end)
+        if x_e > x_s:
+            verts = self._make_bed_arrow(
+                x_s, x_e, strand, y_center, hh,
+                small_relative, arrowhead_included,
+            )
+            poly = mpatches.Polygon(
+                verts, closed=True, fill=True,
+                facecolor=_color, edgecolor=edge_color,
+                linewidth=0, alpha=alpha, zorder=3,
+            )
+            ax.add_patch(poly)
+
+        # Draw remaining exons as rectangles
+        for s, e, ft in draw_positions:
+            if ft == "UTR":
+                _color = utr_color
+                h = row_height * thick_frac * height_utr
+            else:
+                _color = tx_color
+                h = row_height * thick_frac
+
+            x_s = max(s, region.start)
+            x_e = min(e, region.end)
+            if x_e <= x_s:
+                continue
+            rect = mpatches.Rectangle(
+                (x_s, y_center - h / 2), x_e - x_s, h,
+                facecolor=_color, edgecolor=edge_color,
+                linewidth=0, alpha=alpha, zorder=3,
+            )
+            ax.add_patch(rect)
+
+    # ------------------------------------------------------------------
+    # tssarrow style
+    # ------------------------------------------------------------------
+
+    def _draw_transcript_tssarrow(self, ax, grp, region, y_center, row_height,
+                                   tx_color, utr_color, edge_color,
+                                   lwd, alpha, strand, height_utr,
+                                   small_relative):
+        """Draw transcript in TSS-arrow style.
+
+        - Vertical line + arrow at TSS (start for +, end for -)
+        - Half-height exon boxes with L-shaped intron connections
+        """
+        positions = self._split_to_blocks(grp)
+        if not positions:
+            return
+
+        thick_frac = 0.7
+        half_box_h = row_height * thick_frac * 0.5  # half-height exons
+
+        y_bottom = y_center + half_box_h
+        y_top_intron = y_center - row_height * thick_frac * 0.25
+
+        # Draw TSS arrow + vertical line
+        if strand in ("+", "-"):
+            arrow_length = 10 * small_relative
+            y_arrow = y_center - row_height * thick_frac * 0.4
+            head_width = row_height * thick_frac * 0.25
+            head_length = small_relative * 3
+
+            if strand == "+":
+                x_tss = grp["start"].min()
+                dx = arrow_length
+            else:
+                x_tss = grp["end"].max()
+                dx = -arrow_length
+
+            y_bottom_line = y_center + half_box_h
+            ax.add_line(Line2D(
+                (x_tss, x_tss), (y_bottom_line, y_arrow),
+                color=tx_color, linewidth=max(0.5, lwd), alpha=alpha, zorder=3,
+            ))
+            ax.arrow(x_tss, y_arrow, dx, 0, overhang=1, width=0,
+                     head_width=head_width, head_length=head_length,
+                     length_includes_head=True,
+                     color=tx_color, linewidth=max(0.3, lwd * 0.5),
+                     alpha=alpha, zorder=3)
+
+        # Draw exon boxes and L-shaped intron connections
+        last_corner = None
+        for s, e, ft in positions:
+            if ft == "UTR":
+                _color = utr_color
+                h = half_box_h * height_utr
+            else:
+                _color = tx_color
+                h = half_box_h
+
+            x_s = max(s, region.start)
+            x_e = min(e, region.end)
+            if x_e <= x_s:
+                continue
+
+            y0 = y_center + h / 2
+            vertices = [(x_s, y0), (x_s, y0 - h),
+                        (x_e, y0 - h), (x_e, y0)]
+            poly = mpatches.Polygon(
+                vertices, closed=True, fill=True,
+                facecolor=_color, edgecolor="none",
+                linewidth=0, alpha=alpha, zorder=3,
+            )
+            ax.add_patch(poly)
+
+            # L-shaped intron connection
+            if last_corner is not None and last_corner[0] < x_s:
+                xdata = (last_corner[0],
+                         (last_corner[0] + x_s) / 2,
+                         x_s)
+                ydata = (last_corner[1], y_top_intron, y_center - h / 2 + h)
+                ax.add_line(Line2D(xdata, ydata, color=last_corner[2],
+                                   linewidth=max(0.3, lwd * 0.5),
+                                   alpha=alpha, zorder=2))
+
+            last_corner = (x_e, y_center - h / 2, _color)
+
+    # ------------------------------------------------------------------
+    # exonarrows style
+    # ------------------------------------------------------------------
+
+    def _draw_transcript_exonarrows(self, ax, grp, region, y_center, row_height,
+                                     tx_color, utr_color, edge_color, arrow_color,
+                                     lwd, alpha, strand, height_intron,
+                                     arrow_interval, small_relative, plot_region):
+        """Draw transcript with arrows inside exon boxes.
+
+        ::
+
+            ___________          ____________
+            |          |________|            |
+            | >  >  >  |________|  >  >  >   |
+            |__________|        |____________|
+        """
+        positions = self._split_to_blocks(grp)
+        if not positions:
+            return
+
+        thick_frac = 0.7
+        full_h = row_height * thick_frac
+        intron_h = full_h * height_intron
+
+        y_top = y_center + full_h / 2
+        y_bottom = y_center - full_h / 2
+        y_intron_top = y_center + intron_h / 2
+        y_intron_bottom = y_center - intron_h / 2
+
+        last_exon_end = None
+        for s, e, ft in positions:
+            if ft == "UTR":
+                _color = utr_color
+            else:
+                _color = tx_color
+
+            x_s = max(s, region.start)
+            x_e = min(e, region.end)
+            if x_e <= x_s:
+                continue
+
+            # Draw exon rectangle
+            vertices = [(x_s, y_top), (x_s, y_bottom),
+                        (x_e, y_bottom), (x_e, y_top)]
+            poly = mpatches.Polygon(
+                vertices, closed=True, fill=True,
+                facecolor=_color, edgecolor=edge_color,
+                linewidth=0, alpha=alpha, zorder=3,
+            )
+            ax.add_patch(poly)
+
+            # Draw directional arrows inside the exon
+            self._plot_small_arrow_on_interval(
+                ax, x_s, x_e,
+                y_center + full_h * 0.25, y_center - full_h * 0.25,
+                strand, arrow_color, lwd, alpha,
+                small_relative, arrow_interval,
+            )
+
+            # Draw intron connector (filled rectangle) between exons
+            if last_exon_end is not None and last_exon_end < x_s:
+                ix_s = max(last_exon_end, region.start)
+                ix_e = min(x_s, region.end)
+                if ix_e > ix_s:
+                    verts = [
+                        (ix_s, y_intron_top), (ix_s, y_intron_bottom),
+                        (ix_e, y_intron_bottom), (ix_e, y_intron_top),
+                    ]
+                    intron_poly = mpatches.Polygon(
+                        verts, closed=True, fill=True,
+                        facecolor=_color, edgecolor=edge_color,
+                        linewidth=0, alpha=alpha, zorder=3,
+                    )
+                    ax.add_patch(intron_poly)
+
+            last_exon_end = x_e
 
     def _draw_single_feature(self, ax, row, region, y_center, row_height,
                              fill_color, fill_utr, edge_color, lwd, alpha):
@@ -789,4 +1312,13 @@ _CLASS_DISPLAY_PARAM_OVERRIDES["GeneRegionTrack"] = {
     "lwd": 0.8,
     "fontsize": 8,
     "fontcolor": "#333333",
+    # pyGenomeTracks-style params
+    "color_utr": None,
+    "color_backbone": None,
+    "color_arrow": None,
+    "height_utr": 1.0,
+    "height_intron": 0.5,
+    "arrow_interval": 2,
+    "arrowhead_fraction": 0.004,
+    "arrowhead_included": False,
 }

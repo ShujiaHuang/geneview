@@ -3,7 +3,8 @@ GeneRegionTrack Enhancements Example
 =====================================
 
 Demonstrates new GeneRegionTrack features: exon_annotation, gene_symbols,
-transcript_annotation, and collapse_transcripts="shortest".
+transcript_annotation, collapse_transcripts="shortest",
+and combining drawing styles with annotation features.
 """
 import os
 import matplotlib
@@ -88,3 +89,43 @@ plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_shortest.png"),
 plt.close("all")
 
 print("All GeneRegionTrack enhancement examples saved.")
+
+# ---------------------------------------------------------------------------
+# 5. Drawing style + exon annotation (flybase with exon labels)
+# ---------------------------------------------------------------------------
+grtrack_style_exon = GeneRegionTrack(
+    gene_data, name="Flybase + Exon Labels",
+    style="flybase",
+    exon_annotation="exon",
+    collapse_transcripts="longest",
+)
+axes = plot_tracks(
+    [GenomeAxisTrack(), grtrack_style_exon],
+    region=region, figsize=(14, 4),
+    title="GeneRegionTrack - Flybase Style + Exon Annotation",
+)
+plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_style_exon_annotation.png"),
+            dpi=150, bbox_inches="tight")
+plt.close("all")
+print("[INFO] Saved genome_tracks_gene_region_style_exon_annotation.png")
+
+# ---------------------------------------------------------------------------
+# 6. Drawing style + gene symbols (tssarrow with gene symbol labels)
+# ---------------------------------------------------------------------------
+grtrack_style_sym = GeneRegionTrack(
+    gene_data, name="TSS Arrow + Symbols",
+    style="tssarrow",
+    gene_symbols=True,
+    collapse_transcripts="longest",
+)
+axes = plot_tracks(
+    [GenomeAxisTrack(), grtrack_style_sym],
+    region=region, figsize=(14, 4),
+    title="GeneRegionTrack - TSS Arrow Style + Gene Symbols",
+)
+plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_style_gene_symbols.png"),
+            dpi=150, bbox_inches="tight")
+plt.close("all")
+print("[INFO] Saved genome_tracks_gene_region_style_gene_symbols.png")
+
+print("\nAll GeneRegionTrack enhancement + style examples saved.")

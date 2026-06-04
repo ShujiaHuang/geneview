@@ -1,7 +1,7 @@
 """GeneRegionTrack -- visualize gene models (exons, UTRs, introns).
 
 Demonstrates loading a GTF file, creating a GeneRegionTrack, and exploring
-transcript collapsing modes and display options.
+transcript collapsing modes, drawing styles, and display options.
 
 Run:  python examples/scripts/genome_tracks_gene_region.py
 """
@@ -75,6 +75,60 @@ axes5 = plot_tracks(
     figsize=(14, 6),
 )
 figs.append(axes5[0].figure)
+
+# ---------------------------------------------------------------------------
+# 6. Drawing styles — 4-panel comparison (UCSC, flybase, tssarrow, exonarrows)
+# ---------------------------------------------------------------------------
+styles = ["UCSC", "flybase", "tssarrow", "exonarrows"]
+fig6, axs6 = plt.subplots(4, 1, figsize=(14, 10))
+plt.close(fig6)  # we'll fill axes manually then re-show
+
+for i, style in enumerate(styles):
+    grtrack_s = GeneRegionTrack(
+        gene_data, name=style,
+        style=style,
+        collapse_transcripts="longest",
+    )
+    plot_tracks(
+        [grtrack_s], region=region,
+        ax=axs6[i], add=True,
+        title=f"style='{style}'",
+    )
+
+axs6[0].set_title("GeneRegionTrack Drawing Styles (longest transcript)", fontsize=12)
+fig6.tight_layout()
+figs.append(fig6)
+
+# ---------------------------------------------------------------------------
+# 7. Style customisation — flybase + exonarrows with display_params
+# ---------------------------------------------------------------------------
+grtrack_fb = GeneRegionTrack(
+    gene_data, name="Flybase (custom)",
+    style="flybase",
+    collapse_transcripts="longest",
+    display_params={
+        "color_utr": "#AAAAAA",
+        "height_utr": 0.5,
+        "color_backbone": "#555555",
+    },
+)
+grtrack_ea = GeneRegionTrack(
+    gene_data, name="Exonarrows (custom)",
+    style="exonarrows",
+    collapse_transcripts="longest",
+    display_params={
+        "height_intron": 0.3,
+        "arrow_interval": 3,
+        "color_arrow": "white",
+    },
+)
+axes7 = plot_tracks(
+    [gtrack, grtrack_fb, grtrack_ea],
+    region=region,
+    title="Customised Drawing Styles",
+    figsize=(14, 7),
+)
+figs.append(axes7[0].figure)
 
 # ---------------------------------------------------------------------------
 # Save all figures
