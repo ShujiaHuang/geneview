@@ -36,7 +36,7 @@ Author: Shujia Huang
 """
 import sys
 
-from .utils import add_common_figure_args, create_figure, save_figure, resolve_output_path
+from .utils import add_common_figure_args, add_style_arg, create_figure, save_figure, resolve_output_path
 
 
 def register(subparsers):
@@ -95,6 +95,9 @@ def register(subparsers):
     p.add_argument("--shuffle-frac", type=float, default=None,
                    help="Randomly sample a fraction (0-1) of each population.")
 
+    # --- Style ---
+    add_style_arg(p)
+
     # --- Common figure arguments ---
     add_common_figure_args(p)
 
@@ -145,6 +148,7 @@ def run(args):
         ylabel=args.ylabel,
         ylabel_kws={"rotation": 0, "ha": "right"} if args.ylabel else None,
         set_xticklabel_top=args.set_xticklabel_top,
+        style=args.style,
         ax=ax,
     )
 

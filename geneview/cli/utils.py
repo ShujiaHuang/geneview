@@ -13,6 +13,10 @@ matplotlib.use("Agg")  # Non-interactive backend for CLI
 import matplotlib.pyplot as plt
 
 
+# Valid plot-style names that can be passed via --style.
+VALID_STYLES = ("geneview", "nature", "science", "cell")
+
+
 def get_figure_output_format(output_path):
     """Infer the output figure format from the file extension.
 
@@ -52,6 +56,25 @@ def save_figure(fig, output_path, dpi=300):
     fmt = get_figure_output_format(output_path)
     fig.savefig(output_path, format=fmt, dpi=dpi, bbox_inches="tight")
     sys.stderr.write("[INFO] Figure saved to %s\n" % output_path)
+
+
+def add_style_arg(parser):
+    """Add a ``--style`` argument to a subcommand parser.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        The subcommand parser to augment.
+    """
+    parser.add_argument(
+        "--style",
+        choices=VALID_STYLES,
+        default=None,
+        help="Apply a built-in plot style to the figure. "
+             "Choices: geneview (default), nature, science, cell. "
+             "Each style configures fonts, sizes, colours, and export settings "
+             "to comply with the corresponding journal's guidelines. "
+             "(default: None, uses the currently active style)")
 
 
 def add_common_figure_args(parser):

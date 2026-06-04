@@ -33,7 +33,7 @@ Author: Shujia Huang
 import sys
 import pandas as pd
 
-from .utils import add_common_figure_args, create_figure, save_figure, resolve_output_path
+from .utils import add_common_figure_args, add_style_arg, create_figure, save_figure, resolve_output_path
 
 
 def register(subparsers):
@@ -127,6 +127,9 @@ def register(subparsers):
     p.add_argument("--text-fontsize", type=int, default=12,
                    help="Font size for SNP text annotations. (default: 12)")
 
+    # --- Style ---
+    add_style_arg(p)
+
     # --- Common figure arguments ---
     add_common_figure_args(p)
 
@@ -190,6 +193,7 @@ def run(args):
         is_annotate_topsnp=args.annotate_topsnp,
         text_kws=text_kws if args.annotate_topsnp else None,
         ld_block_size=args.ld_block_size,
+        style=args.style,
         ax=ax,
     )
 

@@ -25,7 +25,7 @@ Author: Shujia Huang
 import sys
 import pandas as pd
 
-from .utils import add_common_figure_args, create_figure, save_figure, resolve_output_path
+from .utils import add_common_figure_args, add_style_arg, create_figure, save_figure, resolve_output_path
 
 
 def register(subparsers):
@@ -80,6 +80,9 @@ def register(subparsers):
                    help="Color for the y=x reference line. "
                         "Set 'none' to disable. (default: r)")
 
+    # --- Style ---
+    add_style_arg(p)
+
     # --- Common figure arguments ---
     add_common_figure_args(p)
 
@@ -123,6 +126,7 @@ def run(args):
         xlabel=args.xlabel,
         ylabel=args.ylabel,
         ablinecolor=ablinecolor,
+        style=args.style,
         ax=ax,
     )
 

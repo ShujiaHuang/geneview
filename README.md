@@ -93,6 +93,16 @@ geneview manhattan -i gwas_results.assoc -o manhattan.png \
     --annotate-topsnp
 ```
 
+Apply a journal-compliant plot style:
+
+```bash
+geneview manhattan -i gwas_results.assoc -o manhattan_nature.png \
+    --title "My GWAS" \
+    --sign-marker-p 1e-6 \
+    --annotate-topsnp \
+    --style nature
+```
+
 Plot only a specific chromosome:
 
 ```bash
@@ -121,6 +131,14 @@ geneview qq -i gwas_results.assoc -o qq.png \
     --marker "o" --figsize 6 6
 ```
 
+Apply a Science journal style:
+
+```bash
+geneview qq -i gwas_results.assoc -o qq_science.png \
+    --title "GWAS QQ Plot" \
+    --style science
+```
+
 #### Venn diagram
 
 Create a Venn diagram by comparing 2–6 gene/variant list files (one identifier per line):
@@ -139,6 +157,17 @@ geneview venn -i DEG_list1.txt DEG_list2.txt DEG_list3.txt \
     -o venn3.png
 ```
 
+Apply a Cell journal style:
+
+```bash
+geneview venn -i DEG_list1.txt DEG_list2.txt DEG_list3.txt \
+    --names "Study A" "Study B" "Study C" \
+    --palette plasma \
+    --legend-use-petal-color \
+    --style cell \
+    -o venn3_cell.png
+```
+
 #### Admixture plot
 
 Create an Admixture plot from the standard ADMIXTURE `.Q` output and a population info file:
@@ -155,6 +184,17 @@ geneview admixture -i output.5.Q -p population.txt \
     --group-order POP1 POP2 POP3 POP4 POP5 \
     --set-xticklabel-top \
     -o admixture_K5.png
+```
+
+Apply a Nature journal style:
+
+```bash
+geneview admixture -i output.5.Q -p population.txt \
+    --palette Set1 --edgewidth 2.0 \
+    --group-order POP1 POP2 POP3 POP4 POP5 \
+    --set-xticklabel-top \
+    --style nature \
+    -o admixture_K5_nature.png
 ```
 
 #### Genome tracks
@@ -178,6 +218,18 @@ geneview tracks --region chr7:26M-27M \
     -a features.bed --annotation-shape box \
     --highlight regions.bed --highlight-fill yellow \
     -o custom_tracks.png
+```
+
+Apply a journal-compliant plot style:
+
+```bash
+geneview tracks --region chr7:26490000-26720000 \
+    --ideogram \
+    -a cpg_islands.bed \
+    -g gene_models.gtf \
+    -d coverage.bedgraph \
+    --style nature \
+    -o genome_tracks_nature.png
 ```
 
 ---
@@ -343,7 +395,7 @@ _ = gv.manhattanplot(data=df,
 
 #### Plot Styles for Journal Submission
 
-geneview includes built-in styles that produce figures compliant with the requirements of **Nature**, **Science**, and **Cell**. Each style configures fonts, sizes, colour palettes, figure dimensions, and export settings automatically.
+geneview includes built-in styles that produce figures compliant with the requirements of **Nature**, **Science**, and **Cell**. Each style configures fonts, sizes, colour palettes, figure dimensions, and export settings automatically. Styles work with all plot types — including Manhattan, Q-Q, Venn, Admixture, and **Genome Tracks**.
 
 ```python
 import geneview as gv
@@ -362,6 +414,11 @@ with gv.use_style("science"):
 
 # Or set a style globally for all subsequent plots
 gv.apply_style("cell")
+
+# Genome tracks in Nature style
+from geneview.genometracks import plot_tracks, GenomeAxisTrack, IdeogramTrack, GenomicInterval
+region = GenomicInterval("chr7", 20_000_000, 60_000_000)
+axes = plot_tracks([IdeogramTrack(chromosome="chr7"), GenomeAxisTrack()], region=region, style="nature")
 ```
 
 | Style | Description | Font size | Figure width | Palette |

@@ -38,7 +38,7 @@ import sys
 import re
 import argparse
 
-from .utils import add_common_figure_args, save_figure, resolve_output_path
+from .utils import add_common_figure_args, add_style_arg, save_figure, resolve_output_path
 
 
 def register(subparsers):
@@ -140,6 +140,9 @@ def register(subparsers):
         "--data-name",
         default="Data",
         help="Track name for data tracks. (default: Data)")
+
+    # --- Style ---
+    add_style_arg(p)
 
     # --- Common figure arguments ---
     add_common_figure_args(p)
@@ -320,7 +323,7 @@ def run(args):
     figsize = args.figsize if args.figsize else (14, max(3, len(tracks) * 1.5))
 
     try:
-        axes = plot_tracks(tracks, region=region, figsize=figsize)
+        axes = plot_tracks(tracks, region=region, figsize=figsize, style=args.style)
     except Exception as e:
         sys.stderr.write(f"[ERROR] Failed to plot tracks: {e}\n")
         return 1

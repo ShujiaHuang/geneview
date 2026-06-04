@@ -29,6 +29,7 @@
     - [Style Comparison Table](#style-comparison-table)
     - [Creating a Custom Style](#creating-a-custom-style)
   - [Command-Line Interface (CLI)](#command-line-interface-cli)
+    - [Applying a Plot Style via CLI](#applying-a-plot-style-via-cli)
   - [Utilities](#utilities)
     - [Loading Built-in Datasets](#loading-built-in-datasets)
     - [Text Adjustment](#text-adjustment)
@@ -410,6 +411,11 @@ ax = gv.venn(data={"A": {1,2,3}, "B": {2,3,4}, "C": {3,4,5}}, style="nature")
 
 # Admixture plot in Cell style
 ax = gv.admixtureplot(data=admixture_dict, style="cell")
+
+# Genome tracks in Nature style
+from geneview.genometracks import plot_tracks, GenomeAxisTrack, IdeogramTrack, GenomicInterval
+region = GenomicInterval("chr7", 20_000_000, 60_000_000)
+axes = plot_tracks([IdeogramTrack(chromosome="chr7"), GenomeAxisTrack()], region=region, style="nature")
 ```
 
 Pass `style=None` (the default) to use whatever style is currently active globally.
@@ -490,6 +496,35 @@ geneview tracks --region chr7:26490000-26720000 \
     -d coverage.bedgraph \
     -o genome_tracks.png
 ```
+
+### Applying a Plot Style via CLI
+
+Every subcommand accepts the `--style` flag, which applies a built-in journal-compliant plot style to the figure:
+
+```bash
+# Manhattan plot in Nature style
+geneview manhattan -i gwas.assoc -o manhattan.png --style nature
+
+# Q-Q plot in Science style
+geneview qq -i gwas.assoc -o qq.png --style science
+
+# Venn diagram in Cell style
+geneview venn -i list1.txt list2.txt -o venn.png --style cell
+
+# Admixture plot in Nature style
+geneview admixture -i output.Q -p pop.info -o admixture.png --style nature
+
+# Genome tracks in Science style
+geneview tracks --region chr7:26490000-26720000 \
+    --ideogram \
+    -a cpg_islands.bed \
+    -g gene_models.gtf \
+    -d coverage.bedgraph \
+    --style science \
+    -o genome_tracks.png
+```
+
+The available styles are: `geneview` (default), `nature`, `science`, and `cell`.
 
 Run `geneview --help` for a full list of subcommands and options.
 

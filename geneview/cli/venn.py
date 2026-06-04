@@ -27,7 +27,7 @@ Author: Shujia Huang
 import os
 import sys
 
-from .utils import add_common_figure_args, create_figure, save_figure, resolve_output_path
+from .utils import add_common_figure_args, add_style_arg, create_figure, save_figure, resolve_output_path
 
 
 def _read_set_from_file(filepath):
@@ -91,6 +91,9 @@ def register(subparsers):
                    help="Legend location (e.g., 'upper left', 'lower right'). "
                         "If not set, labels are placed around the diagram.")
 
+    # --- Style ---
+    add_style_arg(p)
+
     # --- Common figure arguments ---
     add_common_figure_args(p)
 
@@ -147,6 +150,7 @@ def run(args):
         fontsize=args.fontsize,
         legend_use_petal_color=args.legend_use_petal_color,
         legend_loc=args.legend_loc,
+        style=args.style,
         ax=ax,
     )
 
