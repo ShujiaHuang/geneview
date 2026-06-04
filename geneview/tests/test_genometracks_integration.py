@@ -829,7 +829,7 @@ class TestColorByStrand:
 
     def test_color_by_strand_default(self):
         track = AlignmentsTrack(filepath="dummy.bam")
-        assert track.color_by_strand is False
+        assert track.color_by_strand is True
         assert track.fill_reads_fwd == "#E89E9D"
         assert track.fill_reads_rev == "#8C8FCE"
 

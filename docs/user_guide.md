@@ -298,7 +298,7 @@ from geneview.genometracks import (
 | `GenomeAxisTrack` | Genomic coordinate ruler with auto-formatted labels |
 | `IdeogramTrack` | Chromosome ideogram with cytobands (auto-loads from geneview-data) |
 | `AnnotationTrack` | Generic genomic ranges (boxes, ellipses, arrows) |
-| `GeneRegionTrack` | Gene models (exons, UTRs, introns) |
+| `GeneRegionTrack` | Gene models (CDS/UTR/introns, UCSC style, strand coloring, intron chevron arrows) |
 | `DataTrack` | Numeric data (line, histogram, heatmap, etc.) |
 | `HighlightTrack` | Cross-track highlight regions |
 | `OverlayTrack` | Overlay multiple tracks on the same panel |
@@ -693,7 +693,7 @@ fig.savefig("tracks.png", dpi=300, bbox_inches="tight")
 | `GenomeAxisTrack` | Coordinate axis |
 | `IdeogramTrack` | Chromosome ideogram (auto-loads karyotype) |
 | `AnnotationTrack` | Genomic range annotations |
-| `GeneRegionTrack` | Gene model tracks |
+| `GeneRegionTrack` | Gene models (CDS/UTR/introns, UCSC style with strand coloring) |
 | `DataTrack` | Numeric data tracks |
 | `HighlightTrack` | Cross-track highlights |
 | `OverlayTrack` | Overlay multiple tracks |

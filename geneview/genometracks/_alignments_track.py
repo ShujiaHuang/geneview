@@ -31,10 +31,10 @@ _CIGAR_P = 6   # padding
 _CIGAR_EQ = 7  # sequence match
 _CIGAR_X = 8   # sequence mismatch
 
-# Nucleotide colors (matching SequenceTrack)
+# Nucleotide colors (matching genomeview: A=blue, C=orange, G=green, T=black)
 _NUC_COLORS = {
-    "A": "#009E73", "C": "#0072B2", "G": "#E69F00", "T": "#D55E00",
-    "N": "#999999",
+    "A": "blue", "C": "orange", "G": "green", "T": "black",
+    "N": "gray",
 }
 
 
@@ -171,10 +171,10 @@ class AlignmentsTrack(StackedTrack):
         sashimi_filter: Optional[pd.DataFrame] = None,
         sashimi_filter_tolerance: int = 0,
         reverse_stacking: bool = False,
-        col_mates: str = "lightblue",
+        col_mates: str = "gray",
         col_gap: str = "lightgray",
-        col_deletion: str = "red",
-        col_insertion: str = "blue",
+        col_deletion: str = "black",
+        col_insertion: str = "purple",
         fill_coverage: str = "#5B8DB8",
         fill_reads: str = "#BDBDBD",
         alpha_reads: float = 0.8,
@@ -187,7 +187,7 @@ class AlignmentsTrack(StackedTrack):
         col_clipping: str = "cyan",
         min_indel_size: int = 0,
         show_insertion_labels: bool = False,
-        color_by_strand: bool = False,
+        color_by_strand: bool = True,
         fill_reads_fwd: str = "#E89E9D",
         fill_reads_rev: str = "#8C8FCE",
         include_secondary: bool = True,
@@ -495,6 +495,75 @@ class AlignmentsTrack(StackedTrack):
 
         aln.close()
 
+    def _draw_read_body(self, ax, read, region, x_start, x_end, y_center, h,
+                         read_color):
+        """Draw read body as a block arrow (genomeview style).
+
+        The arrow tip sits exactly at the read's alignment boundary
+        (``x_end`` for forward, ``x_start`` for reverse) and the body
+        is cut inward so the visual extent never exceeds the true
+        alignment coordinates.
+
+        The arrow depth is computed in *genomic* coordinates using the
+        axes aspect ratio so it is visually ~half the read height.
+        """
+        x_start = max(x_start, region.start)
+        x_end = min(x_end, region.end)
+        if x_end <= x_start:
+            return
+
+        width = x_end - x_start
+        half_h = h / 2
+
+        # Convert arrow depth from visual (y) to genomic (x) coordinates
+        ax_pos = ax.get_position()
+        fig = ax.get_figure()
+        fig_w, fig_h = fig.get_size_inches()
+        axes_w_inches = ax_pos.width * fig_w
+        axes_h_inches = ax_pos.height * fig_h
+        span = region.end - region.start
+        if axes_h_inches > 0 and axes_w_inches > 0:
+            genomic_per_visual = (span / axes_w_inches) / (1.0 / axes_h_inches)
+            arrow_w = h * 0.5 * genomic_per_visual
+        else:
+            arrow_w = span * 0.003
+
+        # Cap arrow depth to at most 30% of read width
+        arrow_w = min(arrow_w, width * 0.3)
+
+        if arrow_w > 0 and width > span * 0.001:
+            if not read.is_reverse:
+                # Forward: arrow tip at x_end, body cut inward
+                verts = [
+                    (x_start, y_center - half_h),
+                    (x_end - arrow_w, y_center - half_h),
+                    (x_end, y_center),
+                    (x_end - arrow_w, y_center + half_h),
+                    (x_start, y_center + half_h),
+                ]
+            else:
+                # Reverse: arrow tip at x_start, body cut inward
+                verts = [
+                    (x_start + arrow_w, y_center - half_h),
+                    (x_end, y_center - half_h),
+                    (x_end, y_center + half_h),
+                    (x_start + arrow_w, y_center + half_h),
+                    (x_start, y_center),
+                ]
+            poly = mpatches.Polygon(
+                verts, closed=True,
+                facecolor=read_color, edgecolor="none",
+                alpha=self.alpha_reads, zorder=3,
+            )
+            ax.add_patch(poly)
+        else:
+            rect = mpatches.Rectangle(
+                (x_start, y_center - half_h), width, h,
+                facecolor=read_color, edgecolor="none",
+                alpha=self.alpha_reads, zorder=3,
+            )
+            ax.add_patch(rect)
+
     def _draw_single_read(self, ax, read, region, y_center, row_height,
                           ref_seq, span, mismatch_counts=None):
         """Draw a single read with CIGAR-aware blocks, clipping, and indels."""
@@ -511,7 +580,6 @@ class AlignmentsTrack(StackedTrack):
         else:
             read_color = self.fill_reads
 
-        # Iterate over CIGAR blocks
         if read.cigartuples is None:
             return
 
@@ -520,86 +588,46 @@ class AlignmentsTrack(StackedTrack):
 
         for op, length in read.cigartuples:
             if op in (_CIGAR_M, _CIGAR_EQ, _CIGAR_X):
-                # Alignment match
-                x_start = max(ref_pos, region.start)
-                x_end = min(ref_pos + length, region.end)
-                if x_end > x_start:
-                    rect = mpatches.Rectangle(
-                        (x_start, y_center - h / 2), x_end - x_start, h,
-                        facecolor=read_color, edgecolor="none",
-                        alpha=self.alpha_reads, zorder=3,
+                self._draw_read_body(ax, read, region, ref_pos, ref_pos + length,
+                                     y_center, h, read_color)
+                if self.show_mismatches and ref_seq is not None:
+                    self._draw_mismatches(
+                        ax, read, ref_seq, ref_pos, query_pos, length,
+                        region, y_center, h,
+                        mismatch_counts=mismatch_counts,
                     )
-                    ax.add_patch(rect)
-
-                    # Mismatch coloring
-                    if self.show_mismatches and ref_seq is not None:
-                        self._draw_mismatches(
-                            ax, read, ref_seq, ref_pos, query_pos, length,
-                            region, y_center, h,
-                            mismatch_counts=mismatch_counts,
-                        )
-
                 ref_pos += length
                 query_pos += length
 
             elif op == _CIGAR_I:
-                # Insertion
                 if (self.show_indels
                         and length > self.min_indel_size
                         and region.start <= ref_pos <= region.end):
-                    ax.plot(
-                        [ref_pos, ref_pos],
-                        [y_center - h * 0.6, y_center + h * 0.6],
-                        color=self.col_insertion, linewidth=1.5, zorder=4,
-                    )
-                    # Draw insertion size label
-                    draw_label = False
-                    if self.show_insertion_labels:
-                        draw_label = True
-                    elif length >= self.min_insertion_label_size:
-                        draw_label = True
-                    if draw_label:
-                        ax.text(
-                            ref_pos, y_center + h * 0.7,
-                            str(length),
-                            ha="center", va="bottom",
-                            fontsize=4, color=self.col_insertion,
-                            fontweight="bold", zorder=5,
-                        )
+                    self._draw_insertion_gv(ax, ref_pos, y_center, h, length, region)
                 query_pos += length
 
             elif op == _CIGAR_D:
-                # Deletion
                 x_start = max(ref_pos, region.start)
                 x_end = min(ref_pos + length, region.end)
                 if (self.show_indels
                         and length > self.min_indel_size
                         and x_end > x_start):
-                    ax.plot(
-                        [x_start, x_end],
-                        [y_center, y_center],
-                        color=self.col_deletion, linewidth=2.0, zorder=4,
-                    )
+                    self._draw_deletion_gv(ax, x_start, x_end, y_center, h)
                 ref_pos += length
 
             elif op == _CIGAR_N:
-                # Skipped region (intron) — draw thin line
                 x_start = max(ref_pos, region.start)
                 x_end = min(ref_pos + length, region.end)
                 if x_end > x_start:
                     ax.plot(
-                        [x_start, x_end],
-                        [y_center, y_center],
+                        [x_start, x_end], [y_center, y_center],
                         color=self.col_gap, linewidth=0.5, zorder=2,
                     )
                 ref_pos += length
 
             elif op == _CIGAR_S:
-                # Soft clipping — draw as coloured block at read edge
                 if self.show_clipping and length >= 5:
-                    # Soft clips don't consume reference, but we can draw
-                    # a marker at the read boundary
-                    clip_x = ref_pos if query_pos == 0 else ref_pos
+                    clip_x = ref_pos
                     if region.start <= clip_x <= region.end:
                         clip_w = max(1, span / 500)
                         rect = mpatches.Rectangle(
@@ -611,7 +639,35 @@ class AlignmentsTrack(StackedTrack):
                         )
                         ax.add_patch(rect)
                 query_pos += length
-            # H, P: no consumption of reference or query
+
+    def _draw_insertion_gv(self, ax, ref_pos, y_center, h, length, region):
+        """Draw insertion in genomeview style: purple I-beam with size label."""
+        span = region.end - region.start
+        ax.plot([ref_pos, ref_pos],
+                [y_center - h * 0.6, y_center + h * 0.6],
+                color=self.col_insertion, linewidth=1.5, zorder=4)
+        cap_w = max(span * 0.0005, 1)
+        ax.plot([ref_pos - cap_w, ref_pos + cap_w],
+                [y_center - h * 0.6, y_center - h * 0.6],
+                color=self.col_insertion, linewidth=1.0, zorder=4)
+        ax.plot([ref_pos - cap_w, ref_pos + cap_w],
+                [y_center + h * 0.6, y_center + h * 0.6],
+                color=self.col_insertion, linewidth=1.0, zorder=4)
+        draw_label = self.show_insertion_labels or length >= self.min_insertion_label_size
+        if draw_label:
+            ax.text(ref_pos, y_center, str(length),
+                    ha="center", va="center", fontsize=3.5,
+                    color="white", fontweight="bold", zorder=5)
+
+    def _draw_deletion_gv(self, ax, x_start, x_end, y_center, h):
+        """Draw deletion in genomeview style: white rect + black line."""
+        width = x_end - x_start
+        rect = mpatches.Rectangle(
+            (x_start, y_center - h / 2), width, h,
+            facecolor="white", edgecolor="none", zorder=3.5)
+        ax.add_patch(rect)
+        ax.plot([x_start, x_end], [y_center, y_center],
+                color="black", linewidth=1.0, zorder=4)
 
     def _draw_mismatches(self, ax, read, ref_seq, ref_pos, query_pos,
                          length, region, y_center, h,

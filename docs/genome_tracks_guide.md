@@ -756,7 +756,7 @@ dtrack = DetailsAnnotationTrack(
 
 ## GeneRegionTrack
 
-Displays gene models with exons as thick boxes, UTRs as thin boxes, and introns as connecting lines.
+Displays gene models in UCSC Genome Browser style: CDS as thick solid blocks, UTRs as thinner blocks, introns as thin connecting lines with directional chevron arrows, and gene labels positioned to the left of transcripts. Strand-based coloring (forward: `#E89E9D`, reverse: `#8C8FCE`) is applied automatically.
 
 ### GeneRegionTrack Constructor
 
@@ -786,10 +786,12 @@ axes = plot_tracks([grtrack], region=region)
 
 ### Drawing Details
 
-- **Thick boxes**: CDS (coding sequence) features
-- **Thin boxes**: UTR features (5' UTR, 3' UTR, and other non-coding features)
-- **Lines**: Introns connecting exons
-- **Chevrons**: Small arrows inside exons indicating strand direction
+- **Thick boxes**: CDS (coding sequence) features — drawn at 70% of row height
+- **Thin boxes**: UTR features (5' UTR, 3' UTR, and other non-coding features) — drawn at 35% of row height
+- **Lines**: Introns connecting exons (thin horizontal lines with directional chevron arrows indicating strand)
+- **Labels**: Gene/transcript names positioned to the **left** of each transcript (UCSC convention)
+- **Colors**: Strand-based coloring — forward strand `#E89E9D` (warm red), reverse strand `#8C8FCE` (cool blue)
+- **Deduplication**: When GFF/GTF files contain both `exon` and `CDS`/`UTR` rows at the same coordinates, redundant `exon` rows are automatically filtered out
 
 ### Transcript Collapsing
 
@@ -828,9 +830,11 @@ grtrack = GeneRegionTrack(data, show_id=None)
 
 | Parameter | Default | Description |
 | :-----------: | :---------: | :-------------: |
-| `fill` | `"orange"` | CDS exon fill color |
-| `fill_utr` | `"#FFD699"` | UTR fill color |
-| `col_intron` | `"#808080"` | Intron line color |
+| `fill` | `"#E89E9D"` | Forward-strand fill color (CDS/exon) |
+| `fill_rev` | `"#8C8FCE"` | Reverse-strand fill color |
+| `fill_utr` | `None` | UTR fill color (None = same as CDS, just thinner) |
+| `col` | `"none"` | Edge stroke color (None = no stroke) |
+| `col_intron` | `None` | Intron line color (None = same as exon) |
 | `fontsize` | 8 | Label font size |
 | `fontcolor` | `"#333333"` | Label text color |
 | `lwd` | 0.8 | Line width |
@@ -1441,6 +1445,15 @@ aln = AlignmentsTrack(
 ```
 
 Clips shorter than 5 bp are not drawn to avoid visual noise.
+
+### Read Direction Arrows
+
+In pileup mode, each read is drawn as a block arrow indicating its alignment direction (genomeview style). The arrow tip sits exactly at the read's alignment boundary — it does not extend past the actual alignment position:
+
+- **Forward reads (`+`)**: Arrow points right, tip at the read's end position
+- **Reverse reads (`-`)**: Arrow points left, tip at the read's start position
+
+This provides a visual indication of read orientation without needing `color_by_strand`.
 
 ### Strand-Based Read Coloring
 

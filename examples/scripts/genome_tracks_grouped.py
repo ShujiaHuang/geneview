@@ -170,4 +170,39 @@ if has_pysam:
     plt.close("all")
     print(f"[INFO] Saved: genome_tracks_grouped_read_filter.png")
 
+    # -----------------------------------------------------------------------
+    # 4. Group by BAM tag (HP) — 10x Genomics data (genomeview Cell 16)
+    #    Mirrors genomeview's GroupedBAMTrack with get_group_by_tag_fn("HP")
+    # -----------------------------------------------------------------------
+    tenx_bam = os.path.join(DATA_DIR, "10x.chr14.bam")
+
+    if os.path.exists(tenx_bam):
+        region_10x = GenomicInterval("14", 66901400, 66901400 + 450)
+
+        grouped_hp = GroupedAlignmentsTrack(
+            filepath=tenx_bam,
+            keyfn=get_group_by_tag_fn("HP"),
+            is_paired=True,
+            type="pileup",
+            name="10x Grouped by HP",
+            category_label_fn=lambda x: "haplotype_{}".format(x),
+            height=5.0,
+        )
+
+        axes = plot_tracks(
+            [gtrack, grouped_hp],
+            region=region_10x,
+            figsize=(14, 10),
+            title="10x Genomics — Grouped by HP Tag (genomeview Cell 16)",
+        )
+        fig = axes[0].figure
+        fig.savefig(
+            os.path.join(FIG_DIR, "genome_tracks_grouped_hp_tag.png"),
+            dpi=150, bbox_inches="tight",
+        )
+        plt.close("all")
+        print(f"[INFO] Saved: genome_tracks_grouped_hp_tag.png")
+    else:
+        print(f"[SKIP] 10x BAM not found: {tenx_bam}")
+
 print("[INFO] Grouped alignments examples complete.")

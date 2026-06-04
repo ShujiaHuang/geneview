@@ -21,7 +21,7 @@ Some of the features that geneview offers are:
 - **Admixture plot** — Population structure visualization from ADMIXTURE output (.Q files) with hierarchical clustering.
 - **Venn diagram** — Set intersection diagrams for 2–6 datasets with customizable petal labels and colors.
 - **Karyotype plot** — Cytogenetic band visualization with G-banding color schemes.
-- **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack (line/histogram/heatmap + average/confint/smooth/horizon/grid/regression), SequenceTrack (nucleotide display), AlignmentsTrack (BAM/CRAM pileup/sashimi with strand coloring, clipping, overlap highlighting, read labels, custom color_fn), BAMCoverageTrack (standalone coverage line/fill), VCFTrack (variant display with custom coloring), GroupedAlignmentsTrack (grouped BAM reads), DetailsAnnotationTrack (detail panels), HighlightTrack, and OverlayTrack. BigBed file support included. CLI supports BAM/CRAM, VCF, and all track types directly.
+- **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack (UCSC-style gene models with strand coloring, intron chevron arrows, and left-positioned labels), DataTrack (line/histogram/heatmap + average/confint/smooth/horizon/grid/regression), SequenceTrack (nucleotide display), AlignmentsTrack (BAM/CRAM pileup/sashimi with read direction arrows, strand coloring, clipping, overlap highlighting, read labels, custom color_fn), BAMCoverageTrack (standalone coverage line/fill), VCFTrack (variant display with custom coloring), GroupedAlignmentsTrack (grouped BAM reads), DetailsAnnotationTrack (detail panels), HighlightTrack, and OverlayTrack. BigBed file support included. CLI supports BAM/CRAM, VCF, and all track types directly.
 - **Plot Styles** — Built-in journal-compliant styles (**Nature**, **Science**, **Cell**) that configure fonts, sizes, colours, and export settings in a single call.
 - **Color palettes** — Curated color schemes (XKCD RGB, Circos, matplotlib colormaps) optimized for genomics figures.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
@@ -598,7 +598,7 @@ ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_peta
 
 ### Genome Tracks
 
-The **genome tracks** module provides a Gviz-inspired track browser for visualizing genomic features along a shared coordinate axis. It supports multiple track types including IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack, SequenceTrack, AlignmentsTrack, BAMCoverageTrack, VCFTrack, GroupedAlignmentsTrack, DetailsAnnotationTrack, HighlightTrack, and OverlayTrack.
+The **genome tracks** module provides a Gviz-inspired track browser for visualizing genomic features along a shared coordinate axis. Gene models are rendered in **UCSC Genome Browser style** (thick CDS blocks, thin UTR blocks, intron lines with directional chevron arrows, strand-based coloring, and left-positioned gene labels). Read alignments show **directional block arrows** indicating each read's orientation. It supports multiple track types including IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack, DataTrack, SequenceTrack, AlignmentsTrack, BAMCoverageTrack, VCFTrack, GroupedAlignmentsTrack, DetailsAnnotationTrack, HighlightTrack, and OverlayTrack.
 
 #### IdeogramTrack — Chromosome ideogram (auto-loaded)
 
@@ -710,7 +710,7 @@ axes = plot_tracks([GenomeAxisTrack(), track],
 
 #### AlignmentsTrack — BAM/CRAM read alignments
 
-Visualize read alignments with coverage histograms, pileup diagrams, and sashimi plots (requires `pysam`):
+Visualize read alignments with coverage histograms, pileup diagrams, and sashimi plots. Each read is drawn as a directional block arrow indicating its alignment orientation (requires `pysam`):
 
 ```python
 from geneview.genometracks import AlignmentsTrack, GenomeAxisTrack, GenomicInterval, plot_tracks
