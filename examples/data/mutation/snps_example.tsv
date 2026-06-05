@@ -1,0 +1,14 @@
+chrom	start	end	score	label	fill	border
+chr1	10	11	5	rs10	#D55E00	black
+chr1	100	101	8	rs100	#0080FF	black
+chr1	105	106	3	rs105	#009E73	black
+chr1	108	109	6	rs108	#E69F00	black
+chr1	400	401	4	rs400	#CC79A7	black
+chr1	410	411	9	rs410	#0080FF	black
+chr1	420	421	2	rs420	#56B4E9	black
+chr1	600	601	7	rs600	#D55E00	black
+chr1	700	701	1	rs700	#009E73	black
+chr1	805	806	10	rs805	#E69F00	black
+chr1	840	841	5	rs840	#CC79A7	black
+chr1	1400	1401	8	rs1400	#0080FF	black
+chr1	1402	1403	3	rs1402	#56B4E9	black

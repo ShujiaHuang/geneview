@@ -31,6 +31,8 @@ The genome tracks module in geneview provides a powerful system for visualizing 
 23. [Utility Functions](#utility-functions) (match_chrom_format, is_paired_end, is_long_frag_dataset, MismatchCounts, reverse_comp, get_ticks, find_tracks)
 24. [Display Parameters Reference](#display-parameters-reference)
 25. [Complete Example](#complete-example)
+26. [LolliplotTrack](#lolliplottrack) — see also [Mutation Tracks Guide](./mutation_tracks_guide.md)
+27. [DandelionTrack](#dandeliontrack) — see also [Mutation Tracks Guide](./mutation_tracks_guide.md)
 
 ---
 
@@ -54,6 +56,8 @@ VCFTrack         ─── VCF/BCF variant display
 GroupedAlignmentsTrack ─── BAM reads split into groups
 HighlightTrack   ─── cross-track highlights
 OverlayTrack     ─── overlay multiple tracks on same axes
+LolliplotTrack   ─── lollipop-style variant/mutation plot
+DandelionTrack   ─── clustered variant plot (dandelion style)
 ```
 
 ### Track Hierarchy
@@ -66,6 +70,8 @@ Track (abstract base)
   ├── BAMCoverageTrack (standalone BAM coverage)
   ├── VCFTrack (VCF/BCF variants)
   ├── GroupedAlignmentsTrack (grouped BAM/CRAM reads)
+  ├── LolliplotTrack (lollipop variant/mutation plot)
+  ├── DandelionTrack (clustered variant plot)
   └── RangeTrack (has a DataFrame)
         ├── StackedTrack (overlapping features stacked)
         │     ├── AnnotationTrack
@@ -2907,3 +2913,58 @@ This produces a multi-panel figure showing:
 - Gene models with exons, UTRs, and introns
 - Coverage histogram
 - Yellow highlighted regions spanning all tracks
+
+---
+
+## LolliplotTrack
+
+`LolliplotTrack` draws lollipop-style variant/mutation plots: stems rising from a baseline topped by shapes (circles, pies, pins, flags, or stacked pies). It is ideal for showing point mutations, SNPs, or any score associated with discrete genomic positions.
+
+> **Full reference:** See the dedicated [Mutation Tracks Guide](./mutation_tracks_guide.md) for all shape types, per-SNP customization, tanghulu stacking, caterpillar layout, aligned labels (`jitter="label"`), legends, coordinate rescaling, and multi-layer features.
+
+```python
+from geneview.genometracks import LolliplotTrack
+import pandas as pd
+
+snps = pd.DataFrame({
+    "chrom": ["chr1"] * 5,
+    "pos":   [100, 200, 300, 400, 500],
+    "label": ["A", "B", "C", "D", "E"],
+    "score": [3, 1, 2, 4, 1],
+    "color": ["#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00"],
+})
+
+track = LolliplotTrack(
+    data=snps,
+    lollipop_type="circle",   # circle | pie | pin | flag | pie.stack
+    jitter="label",           # aligned labels with anti-overlap
+    title="Mutations",
+)
+```
+
+---
+
+## DandelionTrack
+
+`DandelionTrack` is designed for clustered variants: multiple stems fan out from a single genomic cluster, each topped with its own shape. It is suited for showing groups of nearby mutations or haplotype blocks.
+
+> **Full reference:** See the [Mutation Tracks Guide](./mutation_tracks_guide.md#dandeliontrack) for all dandelion types, per-SNP properties, rescaling, and API details.
+
+```python
+from geneview.genometracks import DandelionTrack
+import pandas as pd
+
+clusters = pd.DataFrame({
+    "chrom":    ["chr1", "chr1", "chr1", "chr1", "chr1"],
+    "pos":      [100,  110,  200,  210,  220],
+    "cluster":  [1,     1,    2,    2,    2],
+    "label":    ["A",  "B",  "C",  "D",  "E"],
+    "color":    ["#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00"],
+})
+
+track = DandelionTrack(
+    data=clusters,
+    dandelion_type="fan",   # fan | circle | pie | pin
+    title="Clusters",
+)
+```

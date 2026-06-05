@@ -28,6 +28,10 @@ GroupedAlignmentsTrack
     BAM/CRAM reads split into groups (e.g. by haplotype tag).
 VCFTrack
     VCF/BCF variant display with custom coloring.
+LolliplotTrack
+    Lollipop-style variant plot: stems + shapes on gene features.
+DandelionTrack
+    Dandelion-style clustered variant plot: fanning stems from groups.
 
 Core Functions
 --------------
@@ -43,6 +47,10 @@ GenomicInterval
     Data class representing a genomic region.
 visualize_files
     Quick convenience function: file paths -> track list.
+lolliplot
+    Convenience function for :class:`LolliplotTrack`.
+dandelion_plot
+    Convenience function for :class:`DandelionTrack`.
 
 File I/O
 --------
@@ -91,6 +99,8 @@ from ._sequence_track import SequenceTrack
 from ._alignments_track import AlignmentsTrack, BAMCoverageTrack
 from ._grouped_alignments import GroupedAlignmentsTrack, get_group_by_tag_fn
 from ._vcf_track import VCFTrack
+from ._lollipop_track import LolliplotTrack, lolliplot
+from ._dandelion_track import DandelionTrack, dandelion_plot
 from ._mismatch_counts import MismatchCounts
 from ._biomart import BiomartGeneRegionTrack
 from ._ucsc import UcscTrack
@@ -131,6 +141,8 @@ __all__ = [
     "BAMCoverageTrack",
     "GroupedAlignmentsTrack",
     "VCFTrack",
+    "LolliplotTrack",
+    "DandelionTrack",
     "BiomartGeneRegionTrack",
     "UcscTrack",
     # Core
@@ -142,6 +154,8 @@ __all__ = [
     "available_display_params",
     # Convenience
     "visualize_files",
+    "lolliplot",
+    "dandelion_plot",
     "get_group_by_tag_fn",
     # Base classes (for advanced usage)
     "Track",

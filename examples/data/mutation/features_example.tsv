@@ -1,0 +1,4 @@
+chrom	start	end	name	feature	fill	height
+chr1	1	120	Domain A	domain	#FF8833	0.06
+chr1	501	1000	Kinase Domain	domain	#51C6E6	0.05
+chr1	1001	1405	DNA Binding	domain	#DFA32D	0.07

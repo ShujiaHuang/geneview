@@ -9,6 +9,7 @@ from .popgene import admixtureplot
 from .genometracks import (
     plot_tracks, GenomeAxisTrack, AnnotationTrack,
     GeneRegionTrack, DataTrack, HighlightTrack, GenomicInterval,
+    LolliplotTrack, DandelionTrack, lolliplot, dandelion_plot,
 )
 from .plotstyle import apply_style, use_style, list_styles, PlotStyle
 

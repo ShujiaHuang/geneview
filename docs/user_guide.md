@@ -24,6 +24,9 @@
     - [Display Parameters (Gviz-Compatible API)](#display-parameters-gviz-compatible-api)
     - [Enhanced GenomeAxisTrack](#enhanced-genomeaxistrack)
     - [Embedding Tracks in Existing Figures](#embedding-tracks-in-existing-figures)
+  - [Mutation Tracks (Lolliplot \& Dandelion)](#mutation-tracks-lolliplot--dandelion)
+    - [Quick Example](#quick-example-1)
+    - [Key Features](#key-features)
   - [Plot Styles](#plot-styles)
     - [Available Styles](#available-styles)
     - [Applying a Style Globally](#applying-a-style-globally)
@@ -394,6 +397,70 @@ For a comprehensive guide with all track types, display parameters, file I/O, an
 
 ---
 
+## Mutation Tracks (Lolliplot & Dandelion)
+
+The mutation tracks module provides lollipop-style and dandelion-style visualizations for mutations, variants, and methylation sites along protein features. Ported from the R/Bioconductor [trackViewer](https://bioconductor.org/packages/trackViewer) package.
+
+```python
+from geneview.genometracks import (
+    LolliplotTrack, DandelionTrack,
+    lolliplot, dandelion_plot,
+    GenomicInterval, plot_tracks,
+)
+```
+
+| Track Type | Purpose |
+|------------|--------|
+| `LolliplotTrack` | Lollipop-style variant/mutation plot (stems + shapes: circle, pie, pin, flag, pie.stack) |
+| `DandelionTrack` | Clustered variant plot (stems fanning out from clusters: fan, circle, pie, pin) |
+
+### Quick Example
+
+```python
+import pandas as pd
+import numpy as np
+from geneview.genometracks import lolliplot, GenomicInterval
+
+# Variant data
+snp_data = pd.DataFrame({
+    "chrom": ["chr1"] * 8,
+    "start": [10, 100, 200, 400, 500, 700, 900, 1200],
+    "score": [3, 5, 2, 7, 1, 4, 6, 3],
+    "label": ["rs10", "rs100", "rs200", "rs400",
+              "rs500", "rs700", "rs900", "rs1200"],
+})
+
+# Protein domain features
+features = pd.DataFrame({
+    "chrom": ["chr1", "chr1", "chr1"],
+    "start": [1, 401, 801],
+    "end": [150, 700, 1300],
+    "name": ["Kinase", "SH2", "DNA-binding"],
+    "fill": ["#FF8833", "#51C6E6", "#DFA32D"],
+})
+
+# Basic lolliplot
+ax = lolliplot(snp_data, features=features, figsize=(12, 4))
+```
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Shape types** | `circle`, `pie`, `pin`, `flag`, `pie.stack` |
+| **Tanghulu stacking** | Stacked circles for small integer scores |
+| **Per-SNP customization** | `cex`, `node_label`, `shape`, `label_rotation`, `label_color`, `dashline_col` per row |
+| **Caterpillar layout** | `side="top"/"bottom"` for above/below baseline |
+| **Aligned labels** | `jitter="label"` places labels at top with anti-overlap + dashed connectors |
+| **Legend** | `legend={"labels": [...], "fill": [...]}` |
+| **Custom y-axis** | `yaxis=[0, 5, 10]`, `ylab="# evidences"` |
+| **Coordinate rescaling** | `rescale=[(from, to, from, to), ...]` |
+| **Multi-layer features** | `feature_layer_id` column for stacked baselines |
+
+For a comprehensive guide with all features, parameter tables, and API reference, see the [Mutation Tracks Guide](./mutation_tracks_guide.md).
+
+---
+
 ## Plot Styles
 
 geneview ships with a built-in style system that lets you produce figures compliant with the requirements of major scientific journals — **Nature**, **Science**, and **Cell** — with a single function call. Each style configures fonts, font sizes, figure dimensions, tick marks, spine visibility, colour palettes, and export settings (e.g. TrueType font embedding, DPI) so you do not have to set them manually.
@@ -697,6 +764,8 @@ fig.savefig("tracks.png", dpi=300, bbox_inches="tight")
 | `DataTrack` | Numeric data tracks |
 | `HighlightTrack` | Cross-track highlights |
 | `OverlayTrack` | Overlay multiple tracks |
+| `LolliplotTrack` | Lollipop-style variant/mutation plot |
+| `DandelionTrack` | Clustered variant plot |
 | `GenomicInterval` | Genomic region dataclass |
 
 ### File I/O
@@ -741,6 +810,7 @@ Full example scripts are available in the [`examples/scripts/`](../examples/scri
 | `genome_tracks_annotation_enhanced.py` | AnnotationTrack enhancements (just_group, overplotting, merge_groups, from_bam) |
 | `genome_tracks_gene_region_enhanced.py` | GeneRegionTrack enhancements (exon_annotation, gene_symbols, shortest) |
 | `genome_tracks_schemes.py` | Color schemes and plot_tracks params (cex, add, ylim, scheme) |
+| `mutation_lollipop_trackviewer.py` | LolliplotTrack examples (trackViewer-style, 30+ figures) |
 
 Run any example:
 
