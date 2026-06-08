@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://github.com/ShujiaHuang/geneview">
+    <img height="180" src="docs/assets/images/geneview-log.svg">
+  </a>
+</p>
+
 # geneview: A python package for visualizing genomics data
 
 [![PyPI Version](https://img.shields.io/pypi/v/geneview.svg)](https://pypi.org/project/geneview/)

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 90" width="100%" height="100%">
+    <style>
+        .font-academic {
+            /* 优先调用系统自带的优秀无衬线细体 */
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+            font-size: 52px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+    </style>
+
+    <g transform="translate(10, 5)">
+        <line x1="36" y1="36" x2="64" y2="36" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round" />
+        <circle cx="48" cy="36" r="2.0" fill="#F59E0B" /> <line x1="34" y1="44" x2="43" y2="44" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" />
+        <path d="M 43 44 Q 49 38 55 44" fill="none" stroke="#94A3B8" stroke-width="1" />
+        <line x1="55" y1="44" x2="66" y2="44" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" />
+
+        <rect x="37" y="50" width="1.5" height="3" rx="0.5" fill="#CBD5E1" />
+        <rect x="42" y="48" width="1.5" height="5" rx="0.5" fill="#CBD5E1" />
+        <rect x="47" y="45" width="1.5" height="8" rx="0.5" fill="#64748B" />
+        <rect x="52" y="49" width="1.5" height="4" rx="0.5" fill="#CBD5E1" />
+        <rect x="57" y="51" width="1.5" height="2" rx="0.5" fill="#CBD5E1" />
+
+        <circle cx="50" cy="45" r="18" fill="none" stroke="#1E293B" stroke-width="2.5" />
+        <path d="M 68 27 L 68 61 C 68 71 60 78 50 78 C 42 78 36 73 36 73" fill="none" stroke="#1E293B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+        <text y="61" class="font-academic">
+            <tspan x="74" fill="#1E293B">ene</tspan>
+            <tspan x="165" fill="#94A3B8">v</tspan>
+            <tspan x="203" fill="#94A3B8">ew</tspan>
+        </text>
+
+        <g transform="translate(0, 0)">
+            <circle cx="196" cy="25" r="3.0" fill="#F59E0B" />
+            
+            <!--
+            <line x1="196" y1="27" x2="196" y2="31" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="1.5 1.5" />
+            -->
+            
+            <path d="M 194 34
+                     A 2 2 0 0 1 198 34
+                     L 198 43
+                     C 198 45, 196.5 46.5, 196.5 47.5
+                     C 196.5 48.5, 198 50, 198 52
+                     L 198 61
+                     A 2 2 0 0 1 194 61
+                     L 194 52
+                     C 194 50, 195.5 48.5, 195.5 47.5
+                     C 195.5 46.5, 194 45, 194 43
+                     Z"
+                  fill="none" stroke="#94A3B8" stroke-width="2" />
+        </g>        
+    </g>
+
+</svg>
