@@ -28,6 +28,7 @@ Some of the features that geneview offers are:
 - **Venn diagram** — Set intersection diagrams for 2–6 datasets with customizable petal labels and colors.
 - **Karyotype plot** — Cytogenetic band visualization with G-banding color schemes.
 - **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack (four drawing styles — UCSC with backbone/stepped polygons, flybase, tssarrow, exonarrows — plus strand coloring, intron chevron arrows, and left-positioned labels), DataTrack (line/histogram/heatmap + average/confint/smooth/horizon/grid/regression), SequenceTrack (nucleotide display), AlignmentsTrack (BAM/CRAM pileup/sashimi with read direction arrows, strand coloring, clipping, overlap highlighting, read labels, custom color_fn), BAMCoverageTrack (standalone coverage line/fill), VCFTrack (variant display with custom coloring), GroupedAlignmentsTrack (grouped BAM reads), DetailsAnnotationTrack (detail panels), HighlightTrack, and OverlayTrack. BigBed file support included. CLI supports BAM/CRAM, VCF, and all track types directly.
+- **Mutation Tracks** — Lollipop- and dandelion-style visualization of mutations, variants, and methylation sites along protein/genomic features: `LolliplotTrack` (circle/pie/pin/flag/pie.stack markers, per-SNP customization, tanghulu stacking) and `DandelionTrack`.
 - **Plot Styles** — Built-in journal-compliant styles (**Nature**, **Science**, **Cell**) that configure fonts, sizes, colours, and export settings in a single call.
 - **Color palettes** — Curated color schemes (XKCD RGB, Circos, matplotlib colormaps) optimized for genomics figures.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
@@ -831,6 +832,40 @@ from geneview.genometracks import export_tracks
 export_tracks(track, "output.bed", fmt="bed")
 ```
 
+### Mutation Tracks
+
+**Mutation tracks** display variants, mutations, or methylation sites as lollipop- or dandelion-style markers along protein/genomic features. Use the high-level `lolliplot` / `dandelion_plot` helpers, or the `LolliplotTrack` / `DandelionTrack` classes for full control.
+
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+from geneview.genometracks import lolliplot
+
+snp_data = pd.DataFrame({
+    "chrom": ["chr1"] * 5,
+    "start": [10, 105, 400, 700, 1400],
+    "label": ["snp10", "snp105", "snp400", "snp700", "snp1400"],
+    "score": [3, 5, 2, 7, 4],
+})
+features = pd.DataFrame({
+    "chrom": ["chr1", "chr1", "chr1"],
+    "start": [1, 501, 1001],
+    "end": [120, 900, 1405],
+    "name": ["Domain A", "Kinase", "DNA Binding"],
+    "fill": ["#FF8833", "#51C6E6", "#DFA32D"],
+})
+
+ax = lolliplot(snp_data, features=features, figsize=(12, 4))
+plt.tight_layout()
+plt.show()
+```
+
+![mutation_lollipop_all_types.png](./examples/figures/mutation_lollipop_all_types.png)
+
+`LolliplotTrack` supports `circle`, `pie`, `pin`, `flag`, and `pie.stack` marker types, per-SNP customization (size, shape, node labels), and tanghulu stacking for integer scores. `DandelionTrack` renders dandelion-style layouts for dense variant sets.
+
+- [Mutation tracks tutorial notebook](./docs/tutorial/mutation_tracks.ipynb)
+
 ### Karyotype plot
 
 **Karyotype** plots display cytogenetic bands with standard G-banding stain colors.
@@ -852,7 +887,7 @@ Comprehensive documentation is available:
 - [User Guide](./docs/user_guide.md) — Overview of all features with examples
 - [Plot Styles](./docs/user_guide.md#plot-styles) — Journal-compliant figure styles (Nature, Science, Cell)
 - [Genome Tracks Guide](./docs/genome_tracks_guide.md) — Detailed guide for the genome tracks module
-- [Tutorial Notebooks](./docs/tutorial/) — Jupyter notebooks for GWAS, Venn, Admixture, Palettes, Genome Tracks, and Plot Styles
+- [Tutorial Notebooks](./docs/tutorial/) — Jupyter notebooks for GWAS, Venn, Admixture, Palettes, Plot Styles, Genome Tracks, and Mutation Tracks
 - [API Reference](./docs/user_guide.md#api-reference) — Function and class reference
 
 ## Dependencies

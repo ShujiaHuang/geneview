@@ -485,14 +485,20 @@ class GeneRegionTrack(StackedTrack):
                                    "five_prime_utr", "three_prime_utr",
                                    "5utr", "3utr", "ncrna", "nc_rna",
                                    "start_codon", "stop_codon"})
-        sub_ranges = set(zip(grp.loc[sub_mask, "start"], grp.loc[sub_mask, "end"]))
+        sub_intervals = list(zip(grp.loc[sub_mask, "start"], grp.loc[sub_mask, "end"]))
 
         keep = []
         for idx, row in grp.iterrows():
             feat = str(row.get("feature", "exon")).lower().strip()
             if feat == "exon":
-                # Keep exon only if no sub-feature covers this exact range
-                if (row["start"], row["end"]) not in sub_ranges:
+                # Drop the exon row if it overlaps ANY CDS/UTR sub-feature.
+                # GFF/GTF lists both the exon row and its constituent CDS/UTR
+                # parts (which tile the exon); keeping the exon would draw a
+                # full thick box on top of the sub-features, hiding the
+                # CDS/UTR distinction and doubling the glyph.
+                s, e = row["start"], row["end"]
+                overlaps = any(not (e <= ss or s >= ee) for ss, ee in sub_intervals)
+                if not overlaps:
                     keep.append(idx)
             else:
                 keep.append(idx)
@@ -1206,61 +1212,63 @@ class GeneRegionTrack(StackedTrack):
 
     def _draw_intron_arrows(self, ax, x_start, x_end, y_center, row_height,
                             strand, color, lwd, alpha, region):
-        """Draw directional chevron arrows along an intron line (genomeview style).
+        """Draw directional chevron arrows along an intron line.
 
-        Matches genomeview's arrow() SVG path geometry:
-          right: (x-2.5s, y-5s) -> (x+2.5s, y) -> (x-2.5s, y+5s)
-          left:  (x+2.5s, y-5s) -> (x-2.5s, y) -> (x+2.5s, y+5s)
-        where s = arrow_scale (= thinnest_width * 0.4 in genomeview).
-
-        Arrow vertical extent is scaled to row_height * thin_frac in visual
-        coordinates and converted to genomic coordinates via axes aspect
-        ratio.  Arrow horizontal extent follows genomeview's 2.5:5 ratio.
+        The plot uses different data units on each axis: x is genomic
+        position (spanning the view width in base pairs) while y is a
+        normalised track coordinate in ``[-0.05, 1.05]``.  A visually
+        balanced chevron cannot simply reuse one axis' units for the
+        other: the vertical extent is set as a small fraction of
+        ``row_height`` (y-data), and the horizontal extent is converted
+        from that visual height through the axes' physical aspect ratio so
+        the arrow keeps a proper ``>`` shape at any zoom level.
         """
         span = region.end - region.start
         intron_width = x_end - x_start
         if intron_width < span * 0.002:
             return
 
-        thin_frac = 0.3  # UTR height fraction — matches intron arrow extent
+        # Vertical half-height in y-data units: a small fraction of the row.
+        half_h = row_height * 0.12
 
-        # Convert arrow vertical extent from visual to genomic coordinates
+        # Convert the visual arrow height into a matching genomic half-width
+        # via the axes aspect ratio so the chevron is not stretched.
+        y0, y1 = ax.get_ylim()
+        y_range = (y1 - y0) or 1.0
         ax_pos = ax.get_position()
         fig = ax.get_figure()
         fig_w, fig_h = fig.get_size_inches()
-        axes_w_inches = ax_pos.width * fig_w
-        axes_h_inches = ax_pos.height * fig_h
-        if axes_h_inches > 0 and axes_w_inches > 0:
-            genomic_per_visual = (span / axes_w_inches) / (1.0 / axes_h_inches)
-            # Half-height in genomic coords (genomeview: 5*scale)
-            half_h_g = row_height * thin_frac * genomic_per_visual
-            # Half-width follows genomeview's 2.5:5 ratio
-            half_w_g = half_h_g * 0.5
+        axes_w_in = ax_pos.width * fig_w
+        axes_h_in = ax_pos.height * fig_h
+        arrow_aspect = 0.7  # width : height of each chevron
+        if axes_w_in > 0 and axes_h_in > 0:
+            half_w = arrow_aspect * half_h * (axes_h_in / y_range) * (span / axes_w_in)
+            step = 0.28 * span / axes_w_in  # ~0.28" between chevrons
         else:
-            half_h_g = row_height * thin_frac * span * 0.001
-            half_w_g = half_h_g * 0.5
+            half_w = span * 0.0015
+            step = span * 0.03
 
-        # Number of arrows: one per row_height*0.75 of intron length
-        n_arrows = max(1, int(round(intron_width / (row_height * 0.75))))
-        n_arrows = min(n_arrows, 20)
+        # Space arrows evenly along the intron, capped to avoid clutter
+        n_arrows = max(1, int(intron_width / max(step, half_w * 3)))
+        n_arrows = min(n_arrows, 12)
 
         for i in range(1, n_arrows + 1):
             frac = i / (n_arrows + 1)
             cx = x_start + (x_end - x_start) * frac
 
             if strand == "+":
-                # genomeview right: (x-2.5s, y-5s) -> (x+2.5s, y) -> (x-2.5s, y+5s)
+                # points right: (x-w, y-h) -> (x+w, y) -> (x-w, y+h)
                 verts = [
-                    (cx - half_w_g, y_center - half_h_g),
-                    (cx + half_w_g, y_center),
-                    (cx - half_w_g, y_center + half_h_g),
+                    (cx - half_w, y_center - half_h),
+                    (cx + half_w, y_center),
+                    (cx - half_w, y_center + half_h),
                 ]
             else:
-                # genomeview left: (x+2.5s, y-5s) -> (x-2.5s, y) -> (x+2.5s, y+5s)
+                # points left: (x+w, y-h) -> (x-w, y) -> (x+w, y+h)
                 verts = [
-                    (cx + half_w_g, y_center - half_h_g),
-                    (cx - half_w_g, y_center),
-                    (cx + half_w_g, y_center + half_h_g),
+                    (cx + half_w, y_center - half_h),
+                    (cx - half_w, y_center),
+                    (cx + half_w, y_center + half_h),
                 ]
 
             arrow = mpatches.Polygon(

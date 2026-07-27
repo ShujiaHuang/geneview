@@ -32,7 +32,7 @@ grtrack_exon = GeneRegionTrack(
 )
 axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_exon],
-    region=region, figsize=(14, 4),
+    region=region, figsize=(14, 2.4),
     title="GeneRegionTrack - Exon Annotation Labels",
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_exon_annotation.png"),
@@ -49,7 +49,7 @@ grtrack_sym = GeneRegionTrack(
 )
 axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_sym],
-    region=region, figsize=(14, 4),
+    region=region, figsize=(14, 2.4),
     title="GeneRegionTrack - Gene Symbols",
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_gene_symbols.png"),
@@ -65,7 +65,7 @@ grtrack_tx = GeneRegionTrack(
 )
 axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_tx],
-    region=region, figsize=(14, 5),
+    region=region, figsize=(14, 3.2),
     title="GeneRegionTrack - Transcript Annotation",
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_transcript_annotation.png"),
@@ -81,7 +81,7 @@ grtrack_short = GeneRegionTrack(
 )
 axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_short],
-    region=region, figsize=(14, 4),
+    region=region, figsize=(14, 2.2),
     title="GeneRegionTrack - Shortest Transcript",
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_shortest.png"),
@@ -101,7 +101,7 @@ grtrack_style_exon = GeneRegionTrack(
 )
 axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_style_exon],
-    region=region, figsize=(14, 4),
+    region=region, figsize=(14, 2.4),
     title="GeneRegionTrack - Flybase Style + Exon Annotation",
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_style_exon_annotation.png"),
@@ -120,7 +120,7 @@ grtrack_style_sym = GeneRegionTrack(
 )
 axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_style_sym],
-    region=region, figsize=(14, 4),
+    region=region, figsize=(14, 2.4),
     title="GeneRegionTrack - TSS Arrow Style + Gene Symbols",
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_style_gene_symbols.png"),

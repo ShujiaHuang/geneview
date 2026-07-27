@@ -48,7 +48,7 @@ for i, style in enumerate(styles):
     )
     axes_list = plot_tracks(
         [gtrack, grtrack],
-        region=region, figsize=(14, 3),
+        region=region, figsize=(14, 1.8),
         title=f"GeneRegionTrack  —  style='{style}'",
     )
     fig_style = axes_list[0].figure
@@ -62,7 +62,7 @@ for i, style in enumerate(styles):
 # ---------------------------------------------------------------------------
 # 2. All four styles in a single combined figure (4 panels)
 # ---------------------------------------------------------------------------
-fig_combined, axs = plt.subplots(4, 1, figsize=(14, 10))
+fig_combined, axs = plt.subplots(4, 1, figsize=(14, 6))
 plt.close(fig_combined)
 
 for i, style in enumerate(styles):
@@ -101,7 +101,7 @@ grtrack_flybase_custom = GeneRegionTrack(
 )
 axes_fb = plot_tracks(
     [GenomeAxisTrack(), grtrack_flybase_custom],
-    region=region, figsize=(14, 4),
+    region=region, figsize=(14, 2),
     title="Flybase style  —  color_utr=grey, height_utr=0.5, color_backbone=#555",
 )
 fig_fb = axes_fb[0].figure
@@ -127,7 +127,7 @@ grtrack_ea_custom = GeneRegionTrack(
 )
 axes_ea = plot_tracks(
     [GenomeAxisTrack(), grtrack_ea_custom],
-    region=region, figsize=(14, 4),
+    region=region, figsize=(14, 2),
     title="Exonarrows style  —  height_intron=0.3, arrow_interval=3, color_arrow=white",
 )
 fig_ea = axes_ea[0].figure
@@ -153,7 +153,7 @@ grtrack_tss = GeneRegionTrack(
 )
 axes_tss = plot_tracks(
     [GenomeAxisTrack(), grtrack_tss],
-    region=region, figsize=(14, 4),
+    region=region, figsize=(14, 2),
     title="TSS Arrow style  —  color_utr=#BBB, height_utr=0.6",
 )
 fig_tss = axes_tss[0].figure
@@ -174,7 +174,7 @@ grtrack_flybase_all = GeneRegionTrack(
 )
 axes_fba = plot_tracks(
     [GenomeAxisTrack(), grtrack_flybase_all],
-    region=region, figsize=(14, 5),
+    region=region, figsize=(14, 3.2),
     title="Flybase style  —  all transcripts (collapse_transcripts=False)",
 )
 fig_fba = axes_fba[0].figure

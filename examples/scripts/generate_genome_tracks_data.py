@@ -62,50 +62,53 @@ def generate_gene_models(output_dir):
 
     # Gene 1: BRCA-like gene on + strand, 2 transcripts
     gene1 = ("chr7", "+", "ENSG00001", "BRCA_L1")
+    g1c, g1s, g1id, g1n = gene1
     # Transcript 1a (3 exons)
-    _add(*gene1[:2], 26500500, 26500800, "+", gene1[2], "ENST00001a", 1, gene1[3])
-    _add(*gene1[:2], 26500500, 26500650, "+", gene1[2], "ENST00001a", 1, gene1[3])  # 5UTR
-    _add(*gene1[:2], 26500651, 26500800, "+", gene1[2], "ENST00001a", 1, gene1[3])  # CDS
-    _add(*gene1[:2], 26510000, 26510400, "+", gene1[2], "ENST00001a", 2, gene1[3])
-    _add(*gene1[:2], 26510000, 26510400, "+", gene1[2], "ENST00001a", 2, gene1[3])  # CDS
-    _add(*gene1[:2], 26520000, 26520600, "+", gene1[2], "ENST00001a", 3, gene1[3])
-    _add(*gene1[:2], 26520000, 26520400, "+", gene1[2], "ENST00001a", 3, gene1[3])  # CDS
-    _add(*gene1[:2], 26520401, 26520600, "+", gene1[2], "ENST00001a", 3, gene1[3])  # 3UTR
+    _add(g1c, "exon", 26500500, 26500800, g1s, g1id, "ENST00001a", 1, g1n)
+    _add(g1c, "5UTR", 26500500, 26500650, g1s, g1id, "ENST00001a", 1, g1n)
+    _add(g1c, "CDS",  26500651, 26500800, g1s, g1id, "ENST00001a", 1, g1n)
+    _add(g1c, "exon", 26510000, 26510400, g1s, g1id, "ENST00001a", 2, g1n)
+    _add(g1c, "CDS",  26510000, 26510400, g1s, g1id, "ENST00001a", 2, g1n)
+    _add(g1c, "exon", 26520000, 26520600, g1s, g1id, "ENST00001a", 3, g1n)
+    _add(g1c, "CDS",  26520000, 26520400, g1s, g1id, "ENST00001a", 3, g1n)
+    _add(g1c, "3UTR", 26520401, 26520600, g1s, g1id, "ENST00001a", 3, g1n)
     # Transcript 1b (2 exons, shorter)
-    _add(*gene1[:2], 26500500, 26500800, "+", gene1[2], "ENST00001b", 1, gene1[3])
-    _add(*gene1[:2], 26500651, 26500800, "+", gene1[2], "ENST00001b", 1, gene1[3])  # CDS
-    _add(*gene1[:2], 26510000, 26510400, "+", gene1[2], "ENST00001b", 2, gene1[3])
-    _add(*gene1[:2], 26510000, 26510300, "+", gene1[2], "ENST00001b", 2, gene1[3])  # CDS
-    _add(*gene1[:2], 26510301, 26510400, "+", gene1[2], "ENST00001b", 2, gene1[3])  # 3UTR
+    _add(g1c, "exon", 26500500, 26500800, g1s, g1id, "ENST00001b", 1, g1n)
+    _add(g1c, "CDS",  26500651, 26500800, g1s, g1id, "ENST00001b", 1, g1n)
+    _add(g1c, "exon", 26510000, 26510400, g1s, g1id, "ENST00001b", 2, g1n)
+    _add(g1c, "CDS",  26510000, 26510300, g1s, g1id, "ENST00001b", 2, g1n)
+    _add(g1c, "3UTR", 26510301, 26510400, g1s, g1id, "ENST00001b", 2, g1n)
 
     # Gene 2: Kinase-like gene on - strand, 2 transcripts
     gene2 = ("chr7", "-", "ENSG00002", "KIN_L1")
+    g2c, g2s, g2id, g2n = gene2
     # Transcript 2a (4 exons)
-    _add(*gene2[:2], 26600000, 26600500, "-", gene2[2], "ENST00002a", 1, gene2[3])
-    _add(*gene2[:2], 26600000, 26600200, "-", gene2[2], "ENST00002a", 1, gene2[3])  # 5UTR
-    _add(*gene2[:2], 26600201, 26600500, "-", gene2[2], "ENST00002a", 1, gene2[3])  # CDS
-    _add(*gene2[:2], 26620000, 26620600, "-", gene2[2], "ENST00002a", 2, gene2[3])
-    _add(*gene2[:2], 26620000, 26620600, "-", gene2[2], "ENST00002a", 2, gene2[3])  # CDS
-    _add(*gene2[:2], 26640000, 26640350, "-", gene2[2], "ENST00002a", 3, gene2[3])
-    _add(*gene2[:2], 26640000, 26640350, "-", gene2[2], "ENST00002a", 3, gene2[3])  # CDS
-    _add(*gene2[:2], 26660000, 26660800, "-", gene2[2], "ENST00002a", 4, gene2[3])
-    _add(*gene2[:2], 26660000, 26660500, "-", gene2[2], "ENST00002a", 4, gene2[3])  # CDS
-    _add(*gene2[:2], 26660501, 26660800, "-", gene2[2], "ENST00002a", 4, gene2[3])  # 3UTR
+    _add(g2c, "exon", 26600000, 26600500, g2s, g2id, "ENST00002a", 1, g2n)
+    _add(g2c, "5UTR", 26600000, 26600200, g2s, g2id, "ENST00002a", 1, g2n)
+    _add(g2c, "CDS",  26600201, 26600500, g2s, g2id, "ENST00002a", 1, g2n)
+    _add(g2c, "exon", 26620000, 26620600, g2s, g2id, "ENST00002a", 2, g2n)
+    _add(g2c, "CDS",  26620000, 26620600, g2s, g2id, "ENST00002a", 2, g2n)
+    _add(g2c, "exon", 26640000, 26640350, g2s, g2id, "ENST00002a", 3, g2n)
+    _add(g2c, "CDS",  26640000, 26640350, g2s, g2id, "ENST00002a", 3, g2n)
+    _add(g2c, "exon", 26660000, 26660800, g2s, g2id, "ENST00002a", 4, g2n)
+    _add(g2c, "CDS",  26660000, 26660500, g2s, g2id, "ENST00002a", 4, g2n)
+    _add(g2c, "3UTR", 26660501, 26660800, g2s, g2id, "ENST00002a", 4, g2n)
     # Transcript 2b (3 exons)
-    _add(*gene2[:2], 26600000, 26600500, "-", gene2[2], "ENST00002b", 1, gene2[3])
-    _add(*gene2[:2], 26600201, 26600500, "-", gene2[2], "ENST00002b", 1, gene2[3])  # CDS
-    _add(*gene2[:2], 26620000, 26620600, "-", gene2[2], "ENST00002b", 2, gene2[3])
-    _add(*gene2[:2], 26620000, 26620600, "-", gene2[2], "ENST00002b", 2, gene2[3])  # CDS
-    _add(*gene2[:2], 26640000, 26640350, "-", gene2[2], "ENST00002b", 3, gene2[3])
-    _add(*gene2[:2], 26640000, 26640250, "-", gene2[2], "ENST00002b", 3, gene2[3])  # CDS
-    _add(*gene2[:2], 26640251, 26640350, "-", gene2[2], "ENST00002b", 3, gene2[3])  # 3UTR
+    _add(g2c, "exon", 26600000, 26600500, g2s, g2id, "ENST00002b", 1, g2n)
+    _add(g2c, "CDS",  26600201, 26600500, g2s, g2id, "ENST00002b", 1, g2n)
+    _add(g2c, "exon", 26620000, 26620600, g2s, g2id, "ENST00002b", 2, g2n)
+    _add(g2c, "CDS",  26620000, 26620600, g2s, g2id, "ENST00002b", 2, g2n)
+    _add(g2c, "exon", 26640000, 26640350, g2s, g2id, "ENST00002b", 3, g2n)
+    _add(g2c, "CDS",  26640000, 26640250, g2s, g2id, "ENST00002b", 3, g2n)
+    _add(g2c, "3UTR", 26640251, 26640350, g2s, g2id, "ENST00002b", 3, g2n)
 
     # Gene 3: Small single-exon gene on + strand
     gene3 = ("chr7", "+", "ENSG00003", "SNRNP_L1")
-    _add(*gene3[:2], 26700000, 26700600, "+", gene3[2], "ENST00003a", 1, gene3[3])
-    _add(*gene3[:2], 26700000, 26700150, "+", gene3[2], "ENST00003a", 1, gene3[3])  # 5UTR
-    _add(*gene3[:2], 26700151, 26700450, "+", gene3[2], "ENST00003a", 1, gene3[3])  # CDS
-    _add(*gene3[:2], 26700451, 26700600, "+", gene3[2], "ENST00003a", 1, gene3[3])  # 3UTR
+    g3c, g3s, g3id, g3n = gene3
+    _add(g3c, "exon", 26700000, 26700600, g3s, g3id, "ENST00003a", 1, g3n)
+    _add(g3c, "5UTR", 26700000, 26700150, g3s, g3id, "ENST00003a", 1, g3n)
+    _add(g3c, "CDS",  26700151, 26700450, g3s, g3id, "ENST00003a", 1, g3n)
+    _add(g3c, "3UTR", 26700451, 26700600, g3s, g3id, "ENST00003a", 1, g3n)
 
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")

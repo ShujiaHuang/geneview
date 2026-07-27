@@ -10,7 +10,9 @@ This directory contains Jupyter notebook tutorials for **geneview** — a Python
 | **Admixture** | Population structure visualization from ADMIXTURE output | [admixture.ipynb](./admixture.ipynb) |
 | **Venn Diagrams** | Set intersection diagrams for 2–6 datasets | [venn.ipynb](./venn.ipynb) |
 | **Color Palettes** | Color schemes and palette customization for genomics figures | [palettes.ipynb](./palettes.ipynb) |
+| **Plot Styles** | Journal-compliant figure styles (Nature, Science, Cell) with a single function call | [plotstyle.ipynb](./plotstyle.ipynb) |
 | **Genome Tracks** | Gviz-style genome track visualization (axis, annotations, gene models, data tracks, highlights) | [genome_tracks.ipynb](./genome_tracks.ipynb) |
+| **Mutation Tracks** | Lollipop- and dandelion-style visualization of mutations, variants, and methylation sites (`LolliplotTrack`, `DandelionTrack`) | [mutation_tracks.ipynb](./mutation_tracks.ipynb) |
 
 ### Additional Documentation
 
