@@ -51,6 +51,13 @@ def main(argv=None):
         action="version",
         version="%(prog)s " + _get_version(),
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="On error, print the full Python traceback instead of a short "
+             "[ERROR] message. Useful for reporting bugs.",
+    )
 
     subparsers = parser.add_subparsers(
         dest="command",
@@ -79,12 +86,20 @@ def main(argv=None):
         return 1
 
     try:
-        args.func(args)
+        result = args.func(args)
     except Exception as e:
+        if getattr(args, "debug", False):
+            # Re-raise so the interpreter prints the full traceback; the
+            # non-zero exit code is preserved by sys.exit(main()).
+            raise
         sys.stderr.write("[ERROR] %s\n" % str(e))
+        sys.stderr.write("[HINT] Re-run with --debug to see the full traceback.\n")
         return 1
 
-    return 0
+    # Respect an explicit integer exit code returned by a subcommand's ``run``
+    # (e.g. ``tracks`` returns 1 on plotting failure); a ``None`` return means
+    # success.
+    return result if isinstance(result, int) else 0
 
 
 if __name__ == "__main__":

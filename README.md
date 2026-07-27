@@ -83,6 +83,9 @@ subcommands:
 
 Use `geneview <subcommand> --help` for detailed options of each command.
 
+> [!NOTE]
+> **Full CLI reference:** see [docs/cli.md](./docs/cli.md) for every subcommand's options, the top-SNP annotation layouts (`--annotate-layout`), and the `--set` escape hatch for advanced tuning.
+
 #### Manhattan plot
 
 Create a Manhattan plot from a PLINK2.x association output (tab-delimited, with columns `#CHROM`, `POS`, `P`):
@@ -114,6 +117,16 @@ Plot only a specific chromosome:
 
 ```bash
 geneview manhattan -i gwas_results.assoc --chr chr8 -o manhattan_chr8.png
+```
+
+Customise annotation labels and layout. `--annotate-fmt` builds each label from the fields `{snp}`, `{chrom}`, `{pos}`, `{p}`, `{log10p}`, and `--annotate-layout lane` lays the labels out tidily along the top with leader lines (`repel` is the default de-overlap engine):
+
+```bash
+geneview manhattan -i gwas_results.assoc -o manhattan_lane.png \
+    --sign-marker-p 1e-6 --annotate-topsnp \
+    --annotate-fmt '{snp}\nP={p:.1e}' \
+    --annotate-layout lane --annotate-rotation 90 \
+    --style nature
 ```
 
 Use CSV input with custom column names:

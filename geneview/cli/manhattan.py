@@ -22,6 +22,14 @@ Specify column names and add significance annotations::
         --sign-marker-p 1e-6 --annotate-topsnp \\
         -o manhattan_annotated.png
 
+Customise annotation labels and layout::
+
+    $ geneview manhattan -i gwas_results.assoc \\
+        --sign-marker-p 1e-6 --annotate-topsnp \\
+        --annotate-fmt '{snp}\nP={p:.1e}' \\
+        --annotate-layout lane --annotate-rotation 90 \\
+        -o manhattan_lane.png
+
 Plot only chromosome 8 with a custom title::
 
     $ geneview manhattan -i gwas_results.assoc \\
@@ -33,7 +41,9 @@ Author: Shujia Huang
 import sys
 import pandas as pd
 
-from .utils import add_common_figure_args, add_style_arg, create_figure, save_figure, resolve_output_path
+from .utils import (add_common_figure_args, add_style_arg, add_table_input_args,
+                    add_set_arg, create_figure, save_figure, resolve_output_path,
+                    parse_set_overrides, deep_merge)
 
 
 def register(subparsers):
@@ -60,16 +70,7 @@ def register(subparsers):
              "Must contain columns for chromosome, position, and p-value.")
 
     # --- Column name arguments ---
-    p.add_argument("--sep", default="\t",
-                   help="Column separator in the input file. (default: tab)")
-    p.add_argument("--chrom", default="#CHROM",
-                   help="Column name for chromosome. (default: #CHROM)")
-    p.add_argument("--pos", default="POS",
-                   help="Column name for position. (default: POS)")
-    p.add_argument("--pv", default="P",
-                   help="Column name for p-value. (default: P)")
-    p.add_argument("--snp", default="ID",
-                   help="Column name for SNP identifier. (default: ID)")
+    add_table_input_args(p, chrom=True, pos=True, snp=True)
 
     # --- Plot content arguments ---
     p.add_argument("--title", default=None,
@@ -124,8 +125,26 @@ def register(subparsers):
     p.add_argument("--ld-block-size", type=int, default=50000,
                    help="LD block size (bp) for top SNP annotation. "
                         "(default: 50000)")
+    p.add_argument("--annotate-fmt", default=None,
+                   help="Label content for annotations. A Python format string "
+                        "over the fields {snp}, {chrom}, {pos}, {p}, {log10p} "
+                        r"(e.g. '{snp}\nP={p:.1e}'). If omitted, the SNP id is used.")
+    p.add_argument("--annotate-layout", choices=["repel", "lane"], default="repel",
+                   help="Annotation placement strategy. 'repel' iteratively pushes "
+                        "overlapping labels apart; 'lane' lays them out tidily along "
+                        "the top with leader lines. (default: repel)")
+    p.add_argument("--annotate-rotation", type=float, default=None,
+                   help="Rotation angle (degrees) for annotation label text "
+                        "(e.g. 90 for vertical). (default: horizontal / layout default)")
+    p.add_argument("--annotate-color", default=None,
+                   help="Color for annotation label text. (default: matplotlib default)")
+    p.add_argument("--no-annotate-arrow", action="store_true", default=False,
+                   help="Do not draw connecting arrows/leader lines to annotations.")
     p.add_argument("--text-fontsize", type=int, default=12,
                    help="Font size for SNP text annotations. (default: 12)")
+
+    # --- Nested-kwarg overrides (e.g. adjust_text_kws) ---
+    add_set_arg(p)
 
     # --- Style ---
     add_style_arg(p)
@@ -149,6 +168,18 @@ def run(args):
     # --- Read input ---
     df = pd.read_csv(args.input_file, sep=args.sep)
 
+    # --- Validate the requested single chromosome exists (clear error) ---
+    if args.chromosome is not None:
+        if args.chrom not in df.columns:
+            raise ValueError("Chromosome column '%s' not found in input file. "
+                             "Available columns: %s" % (args.chrom, list(df.columns)))
+        chrom_values = set(df[args.chrom].astype(str))
+        if str(args.chromosome) not in chrom_values:
+            raise ValueError(
+                "Chromosome '%s' (from --chr) is not present in the input file. "
+                "Available chromosomes: %s"
+                % (args.chromosome, ", ".join(sorted(chrom_values))))
+
     # --- Build kwargs ---
     xtick_label_set = set(args.xtick_labels) if args.xtick_labels else None
     suggestiveline = args.suggestiveline if args.suggestiveline > 0 else None
@@ -160,10 +191,31 @@ def run(args):
 
     hline_kws = {"linestyle": args.hline_linestyle, "lw": args.hline_lw}
 
-    text_kws = {
-        "fontsize": args.text_fontsize,
-        "arrowprops": dict(arrowstyle="-", color="k", alpha=0.6),
-    }
+    # --- Decode escape sequences in --annotate-fmt ---
+    # The shell passes a literal "\n"/"\t" (backslash + letter); translate
+    # these into real newlines/tabs so multi-line labels render correctly.
+    annotate_fmt = args.annotate_fmt
+    if annotate_fmt is not None:
+        annotate_fmt = annotate_fmt.replace("\\n", "\n").replace("\\t", "\t")
+
+    # --- Build annotation label styling (text_kws) ---
+    text_kws = {"fontsize": args.text_fontsize}
+    if args.annotate_rotation is not None:
+        text_kws["rotation"] = args.annotate_rotation
+    if args.annotate_color is not None:
+        text_kws["color"] = args.annotate_color
+    if args.no_annotate_arrow:
+        text_kws["arrowprops"] = None
+    else:
+        text_kws["arrowprops"] = dict(arrowstyle="-", color="k", alpha=0.6)
+
+    # --- Apply generic --set overrides (deep-merged; later --set wins) ---
+    overrides = parse_set_overrides(args.extra_kws)
+    adjust_text_kws = overrides.pop("adjust_text_kws", None)
+    deep_merge(text_kws, overrides.pop("text_kws", {}))
+    deep_merge(hline_kws, overrides.pop("hline_kws", {}))
+    deep_merge(xticklabel_kws, overrides.pop("xticklabel_kws", {}))
+    extra_kwargs = overrides  # any remaining top-level overrides
 
     # --- Create figure ---
     fig, ax = create_figure(args, default_figsize=(12, 4))
@@ -193,8 +245,12 @@ def run(args):
         is_annotate_topsnp=args.annotate_topsnp,
         text_kws=text_kws if args.annotate_topsnp else None,
         ld_block_size=args.ld_block_size,
+        annotate_fmt=annotate_fmt,
+        annotate_layout=args.annotate_layout,
+        adjust_text_kws=adjust_text_kws,
         style=args.style,
         ax=ax,
+        **extra_kwargs,
     )
 
     # --- Save output ---

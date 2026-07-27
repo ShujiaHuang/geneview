@@ -24,6 +24,8 @@ from geneview.cli.utils import (
     add_common_figure_args,
     create_figure,
     resolve_output_path,
+    parse_set_overrides,
+    deep_merge,
 )
 
 
@@ -235,6 +237,118 @@ class TestManhattanCLI:
         ])
         assert rc == 0
         assert os.path.isfile(out)
+
+    def test_annotate_fmt_string(self, tmp_output_dir):
+        """Should accept a format string for annotation labels."""
+        out = os.path.join(tmp_output_dir, "manhattan_fmt.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--sign-marker-p", "1e-4", "--annotate-topsnp",
+            "--annotate-fmt", "{snp}\nP={p:.1e}",
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_annotate_layout_lane(self, tmp_output_dir):
+        """Should support the tidy 'lane' annotation layout."""
+        out = os.path.join(tmp_output_dir, "manhattan_lane.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--sign-marker-p", "1e-4", "--annotate-topsnp",
+            "--annotate-layout", "lane", "--annotate-rotation", "90",
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_annotate_no_arrow_and_color(self, tmp_output_dir):
+        """Should support disabling arrows and setting label color."""
+        out = os.path.join(tmp_output_dir, "manhattan_noarrow.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--sign-marker-p", "1e-4", "--annotate-topsnp",
+            "--no-annotate-arrow", "--annotate-color", "navy",
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_annotate_fmt_unknown_field_clear_error(self, tmp_output_dir):
+        """An --annotate-fmt referencing an unknown field must fail early.
+
+        Regression test: ``{gene}`` is not a valid label field, so the run
+        must abort with a clear ValueError (surfaced as rc=1) *before* the
+        plot is drawn, rather than blowing up with a cryptic KeyError.
+        """
+        out = os.path.join(tmp_output_dir, "manhattan_badfmt.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--sign-marker-p", "1e-4", "--annotate-topsnp",
+            "--annotate-fmt", "{gene}",
+        ])
+        assert rc == 1
+        assert not os.path.isfile(out)
+
+    def test_annotate_fmt_bad_spec_clear_error(self, tmp_output_dir):
+        """An --annotate-fmt with an invalid format spec must fail early."""
+        out = os.path.join(tmp_output_dir, "manhattan_badspec.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--sign-marker-p", "1e-4", "--annotate-topsnp",
+            "--annotate-fmt", "{p:qq}",
+        ])
+        assert rc == 1
+        assert not os.path.isfile(out)
+
+    def test_nonexistent_chromosome_clear_error(self, tmp_output_dir):
+        """--chr with a missing chromosome should fail with a clear message."""
+        out = os.path.join(tmp_output_dir, "manhattan_bad.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--chr", "chrDoesNotExist",
+        ])
+        assert rc == 1
+        assert not os.path.isfile(out)
+
+    def test_annotate_fmt_decodes_literal_newline(self, tmp_output_dir):
+        """A literal '\\n' typed in the shell must render as a real line break.
+
+        Regression test: single-quoted shell args keep backslash-n as two
+        characters, which would otherwise appear verbatim in the label.
+        """
+        out = os.path.join(tmp_output_dir, "manhattan_nl.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--sign-marker-p", "1e-4", "--annotate-topsnp",
+            "--annotate-fmt", r"{snp}\nP={p:.1e}",  # literal backslash-n
+        ])
+        assert rc == 0
+        texts = [t.get_text() for t in plt.gcf().axes[0].texts]
+        plt.close("all")
+        # No label may contain the literal two-character backslash-n ...
+        assert all("\\n" not in t for t in texts)
+        # ... and at least one label must contain a real newline.
+        assert any("\n" in t for t in texts)
+
+    def test_set_overrides_reach_engine(self, tmp_output_dir):
+        """--set should forward nested kwargs (e.g. adjust_text_kws, scatter s)."""
+        out = os.path.join(tmp_output_dir, "manhattan_set.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--sign-marker-p", "1e-4", "--annotate-topsnp",
+            "--set", "adjust_text_kws.lim=300",
+            "--set", "adjust_text_kws.force_text=0.5,0.8",
+            "--set", "s=25",
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_set_invalid_raises(self, tmp_output_dir):
+        """A malformed --set value should produce a non-zero exit code."""
+        out = os.path.join(tmp_output_dir, "manhattan_badset.png")
+        rc = main([
+            "manhattan", "-i", _GWAS_FILE, "-o", out,
+            "--set", "noequalsign",
+        ])
+        assert rc == 1
 
     def test_custom_figsize(self, tmp_output_dir):
         """Should accept custom figure size."""
@@ -941,3 +1055,120 @@ class TestTracksCLI:
         ])
         assert rc == 0
         assert os.path.isfile(out)
+
+
+# ===========================================================================
+# Tests for --set parsing utilities
+# ===========================================================================
+class TestParseSetOverrides:
+    """Unit tests for parse_set_overrides() and deep_merge()."""
+
+    def test_flat_key(self):
+        assert parse_set_overrides(["s=25"]) == {"s": 25}
+
+    def test_nested_dotted_key(self):
+        out = parse_set_overrides(["adjust_text_kws.lim=300"])
+        assert out == {"adjust_text_kws": {"lim": 300}}
+
+    def test_comma_list_becomes_tuple(self):
+        out = parse_set_overrides(["adjust_text_kws.force_text=0.5,0.8"])
+        assert out == {"adjust_text_kws": {"force_text": (0.5, 0.8)}}
+
+    def test_scalar_type_coercion(self):
+        out = parse_set_overrides([
+            "a=1", "b=1.5", "c=true", "d=false", "e=none", "f=hello",
+        ])
+        assert out == {"a": 1, "b": 1.5, "c": True, "d": False,
+                       "e": None, "f": "hello"}
+
+    def test_json_container(self):
+        out = parse_set_overrides(['adjust_text_kws.only_move={"points":"y"}'])
+        assert out == {"adjust_text_kws": {"only_move": {"points": "y"}}}
+
+    def test_multiple_same_root_merges(self):
+        out = parse_set_overrides([
+            "adjust_text_kws.lim=300",
+            "adjust_text_kws.precision=0.01",
+        ])
+        assert out == {"adjust_text_kws": {"lim": 300, "precision": 0.01}}
+
+    def test_missing_equals_raises(self):
+        with pytest.raises(ValueError, match="KEY=VALUE"):
+            parse_set_overrides(["noequalsign"])
+
+    def test_empty_key_raises(self):
+        with pytest.raises(ValueError, match="empty KEY"):
+            parse_set_overrides(["=5"])
+
+    def test_deep_merge_nested(self):
+        base = {"fontsize": 12, "arrowprops": {"color": "k", "lw": 0.6}}
+        deep_merge(base, {"arrowprops": {"color": "red"}, "rotation": 90})
+        assert base == {"fontsize": 12, "rotation": 90,
+                        "arrowprops": {"color": "red", "lw": 0.6}}
+
+    def test_deep_merge_overwrite_non_dict(self):
+        base = {"a": {"x": 1}}
+        deep_merge(base, {"a": 5})
+        assert base == {"a": 5}
+
+
+# ===========================================================================
+# Tests for the main() exit-code contract
+# ===========================================================================
+class TestMainReturnCode:
+    """main() must propagate a subcommand run()'s integer exit code."""
+
+    def test_run_returning_1_propagates(self, monkeypatch, tmp_output_dir):
+        """A run() that returns 1 must make main() return 1 (not 0)."""
+        import geneview.cli.tracks as tracks_mod
+        monkeypatch.setattr(tracks_mod, "run", lambda args: 1)
+        rc = main(["tracks", "--region", "chr1:1-1000",
+                   "-o", os.path.join(tmp_output_dir, "x.png")])
+        assert rc == 1
+
+    def test_run_returning_none_means_success(self, monkeypatch, tmp_output_dir):
+        """A run() that returns None must make main() return 0."""
+        import geneview.cli.tracks as tracks_mod
+        monkeypatch.setattr(tracks_mod, "run", lambda args: None)
+        rc = main(["tracks", "--region", "chr1:1-1000",
+                   "-o", os.path.join(tmp_output_dir, "x.png")])
+        assert rc == 0
+
+    def test_run_raising_returns_1(self, monkeypatch, tmp_output_dir):
+        """A run() that raises must make main() return 1."""
+        import geneview.cli.tracks as tracks_mod
+        def _boom(args):
+            raise RuntimeError("plot failed")
+        monkeypatch.setattr(tracks_mod, "run", _boom)
+        rc = main(["tracks", "--region", "chr1:1-1000",
+                   "-o", os.path.join(tmp_output_dir, "x.png")])
+        assert rc == 1
+
+
+class TestDebugFlag:
+    """The global --debug flag controls traceback vs. short-message behaviour."""
+
+    def test_debug_reraises_traceback(self, monkeypatch, tmp_output_dir):
+        """With --debug, a failing run() re-raises instead of returning 1."""
+        import geneview.cli.tracks as tracks_mod
+
+        def _boom(args):
+            raise RuntimeError("plot failed")
+        monkeypatch.setattr(tracks_mod, "run", _boom)
+        with pytest.raises(RuntimeError, match="plot failed"):
+            main(["--debug", "tracks", "--region", "chr1:1-1000",
+                  "-o", os.path.join(tmp_output_dir, "x.png")])
+
+    def test_without_debug_returns_1_and_hint(self, monkeypatch, tmp_output_dir, capsys):
+        """Without --debug, a failing run() returns 1 and prints a hint."""
+        import geneview.cli.tracks as tracks_mod
+
+        def _boom(args):
+            raise RuntimeError("plot failed")
+        monkeypatch.setattr(tracks_mod, "run", _boom)
+        rc = main(["tracks", "--region", "chr1:1-1000",
+                   "-o", os.path.join(tmp_output_dir, "x.png")])
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "[ERROR] plot failed" in err
+        assert "--debug" in err

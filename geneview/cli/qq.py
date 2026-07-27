@@ -25,7 +25,8 @@ Author: Shujia Huang
 import sys
 import pandas as pd
 
-from .utils import add_common_figure_args, add_style_arg, create_figure, save_figure, resolve_output_path
+from .utils import (add_common_figure_args, add_style_arg, add_table_input_args,
+                    create_figure, save_figure, resolve_output_path)
 
 
 def register(subparsers):
@@ -54,10 +55,7 @@ def register(subparsers):
              "Must contain a column of p-values.")
 
     # --- Column name arguments ---
-    p.add_argument("--sep", default="\t",
-                   help="Column separator in the input file. (default: tab)")
-    p.add_argument("--pv", default="P",
-                   help="Column name for p-value. (default: P)")
+    add_table_input_args(p)
 
     # --- Plot content arguments ---
     p.add_argument("--title", default=None,

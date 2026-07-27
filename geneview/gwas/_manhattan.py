@@ -10,11 +10,13 @@ Thanks for Brentp's contributions
 
 """
 from itertools import cycle
+import string
 from pandas import DataFrame
 import numpy as np
 
 from matplotlib.pyplot import subplots
 from ..utils import adjust_text
+from ..utils._adjust_text import get_renderer
 from ..plotstyle import use_style
 
 
@@ -26,6 +28,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
                   suggestiveline=1e-5, genomewideline=5e-8, sign_line_cols="#D62728,#2CA02C", hline_kws=None,
                   sign_marker_p=None, sign_marker_color="r",
                   is_annotate_topsnp=False, text_kws=None, ld_block_size=50000,
+                  annotate_fmt=None, annotate_layout="repel", adjust_text_kws=None,
                   style=None, **kwargs):
     """Creates a manhattan plot from PLINK assoc output (or any data frame with chromosome, position, and p-value).
 
@@ -115,10 +118,34 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         Annotate the top SNP or not for the significant locus.
 
     text_kws: key, value pairings, or None, optional
-        keyword arguments for plotting in`` matplotlib.axes.Axes.text(x, y, s, fontdict=None, **kwargs)``
+        keyword arguments forwarded to ``matplotlib.axes.Axes.text`` for styling
+        the annotation labels (e.g. ``fontsize``, ``color``, ``rotation``). An
+        ``arrowprops`` entry, if present, is used to draw the connecting arrows
+        rather than styling the text.
 
     ld_block_size : integer, default is 50000, optional
         Set the size of LD block which for finding top SNP. And the top SNP's annotation represent the block.
+
+    annotate_fmt : str, callable, or None, default None, optional
+        Controls the content of each top-SNP label. ``None`` shows the SNP id
+        only. A format string may reference the fields ``snp``, ``chrom``,
+        ``pos``, ``p`` and ``log10p`` (e.g. ``"{snp}\n{p:.1e}"``). A callable
+        receives those fields as keyword arguments and returns the label text.
+
+    annotate_layout : str, default "repel", optional
+        Strategy used to place the top-SNP labels:
+
+        - ``"repel"``: iteratively push labels apart with ``adjust_text`` (good
+          for a handful of labels).
+        - ``"lane"``: lay the labels out in a single non-overlapping row near
+          the top of the axes with leader lines back to each point. This is
+          O(N log N), stays tidy and is much faster when there are many
+          significant loci.
+
+    adjust_text_kws : dict or None, optional
+        Extra keyword arguments forwarded to ``adjust_text`` (only used by the
+        ``"repel"`` layout), e.g. ``force_text``, ``expand_text``, ``only_move``
+        or ``lim``. These override the sensible defaults chosen by geneview.
 
     style : str, PlotStyle, or None, optional
         Plot style to apply. Can be a registered style name (e.g. "nature",
@@ -226,6 +253,7 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
                          "NO SNP \"%s\" column found!" % snp)
     if CHR is not None and xtick_label_set is not None:
         raise ValueError("[ERROR] ``CHR`` and ``xtick_label_set`` can't be set simultaneously.")
+    _validate_annotate_fmt(annotate_fmt)  # fail fast on bad label format strings
 
     with use_style(style):
         return _manhattanplot_impl(
@@ -233,7 +261,8 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
             title, xlabel, ylabel, xtick_label_set, CHR, xticklabel_kws,
             suggestiveline, genomewideline, sign_line_cols, hline_kws,
             sign_marker_p, sign_marker_color, is_annotate_topsnp, text_kws,
-            ld_block_size, **kwargs
+            ld_block_size, annotate_fmt, annotate_layout, adjust_text_kws,
+            **kwargs
         )
 
 
@@ -242,7 +271,8 @@ def _manhattanplot_impl(
     title, xlabel, ylabel, xtick_label_set, CHR, xticklabel_kws,
     suggestiveline, genomewideline, sign_line_cols, hline_kws,
     sign_marker_p, sign_marker_color, is_annotate_topsnp, text_kws,
-    ld_block_size, **kwargs
+    ld_block_size, annotate_fmt=None, annotate_layout="repel",
+    adjust_text_kws=None, **kwargs
 ):
     """Internal implementation of manhattanplot, called within a style context."""
     data[[chrom]] = data[[chrom]].astype(str)  # make sure all the chromosome id are character.
@@ -282,7 +312,8 @@ def _manhattanplot_impl(
 
             if (snp is not None) and (sign_marker_p is not None) and (p_value <= sign_marker_p):
                 snp_id = group_data[snp].iloc[i]
-                sign_snp_sites.append([last_xpos + site, y_value, snp_id, seqid])  # x_pos, y_value, text, chrom
+                # x_pos, y_value, text, chrom, p_value, position
+                sign_snp_sites.append([last_xpos + site, y_value, snp_id, seqid, p_value, site])
 
         # ``xs_by_id`` is for setting up positions and ticks. Ticks should
         # be placed in the middle of a chromosome. The a new pos column is 
@@ -328,9 +359,8 @@ def _manhattanplot_impl(
     # Plotting the Top SNP for each significant block
     if is_annotate_topsnp:
         sign_top_snp = _find_top_snp(sign_snp_sites, ld_block_size=ld_block_size, is_get_biggest=logp)
-        if sign_top_snp:  # not empty
-            texts = [ax.text(_x, _y, _text) for _x, _y, _text in sign_top_snp]
-            adjust_text(texts, ax=ax, **text_kws)
+    else:
+        sign_top_snp = None
 
     if CHR is None:
         if xtick_label_set is not None:
@@ -348,6 +378,13 @@ def _manhattanplot_impl(
     ax.set_xlim(0, x[-1])
     ax.set_ylim(ymin=min(y), ymax=1.2 * max(y))
 
+    # Annotate the top SNPs only after the axes limits are final; the label
+    # placement works in display coordinates and needs the final dimensions.
+    if is_annotate_topsnp and sign_top_snp:
+        _annotate_top_snps(ax, sign_top_snp, logp=logp, annotate_fmt=annotate_fmt,
+                           layout=annotate_layout, text_kws=text_kws,
+                           adjust_text_kws=adjust_text_kws)
+
     if title:
         ax.set_title(title)
     if xlabel:
@@ -361,30 +398,35 @@ def _manhattanplot_impl(
 
 
 def _find_top_snp(sign_snp_data, ld_block_size, is_get_biggest=True):
-    """
-    :param sign_snp_data:  A 2D array: [[xpos1, yvalue1, text1, chrom1], [xpos2, yvalue2, text2, chrom2], ...]
+    """Pick the representative (top) SNP for each LD block.
+
+    :param sign_snp_data:  A 2D array where each row is at least
+        ``[xpos, yvalue, text]`` and may carry extra trailing fields such as
+        ``chrom, p_value, position``. The *whole* row is preserved in the
+        returned records so downstream annotation can format richer labels.
     """
     top_snp = []
     tmp_cube = []
+    current_chrom = None
     for i, item in enumerate(sign_snp_data):
-        _x, _y, text = item[0], item[1], item[2]
+        _x = item[0]
         _chrom = item[3] if len(item) > 3 else None
 
         if i == 0:
-            tmp_cube.append([_x, _y, text])
+            tmp_cube.append(item)
             current_chrom = _chrom
             continue
 
         if _chrom != current_chrom or _x > tmp_cube[-1][0] + ld_block_size:
             # Sorted by y_value in increase/decrease order and only get the first value [0], which is the TopSNP.
-            top_snp.append(sorted(tmp_cube, key=(lambda x: x[1]), reverse=is_get_biggest)[0])
+            top_snp.append(sorted(tmp_cube, key=(lambda v: v[1]), reverse=is_get_biggest)[0])
             tmp_cube = []
             current_chrom = _chrom
 
-        tmp_cube.append([_x, _y, text])
+        tmp_cube.append(item)
 
     if tmp_cube:  # deal the last one
-        top_snp.append(sorted(tmp_cube, key=(lambda x: x[1]), reverse=is_get_biggest)[0])
+        top_snp.append(sorted(tmp_cube, key=(lambda v: v[1]), reverse=is_get_biggest)[0])
 
     return top_snp
 
@@ -436,3 +478,167 @@ def _find_SNPs_which_overlap_sign_neighbour_region(sign_snp_neighbour_region, x)
 
     # return the index
     return index
+
+
+_MISSING = object()
+
+
+#: Field names that may be referenced in an ``annotate_fmt`` format string.
+_ANNOTATE_FMT_FIELDS = ("snp", "chrom", "pos", "p", "log10p")
+
+
+def _validate_annotate_fmt(annotate_fmt):
+    """Fail fast on an unusable ``annotate_fmt`` format string.
+
+    Unknown field names would otherwise surface as a cryptic ``KeyError``
+    deep inside the annotation pass, after the whole plot has been drawn;
+    invalid format specs similarly blow up late as ``ValueError``.  This
+    check turns both into a single clear ``ValueError`` at call time.
+    ``None`` and callables need no validation.
+    """
+    if annotate_fmt is None or callable(annotate_fmt):
+        return
+    if not isinstance(annotate_fmt, str):
+        raise ValueError(
+            "[ERROR] ``annotate_fmt`` must be None, a format string, or a "
+            "callable; got %s." % type(annotate_fmt).__name__)
+
+    for _, field, _, _ in string.Formatter().parse(annotate_fmt):
+        if field is None:
+            continue
+        root = field.split(".")[0].split("[")[0]
+        if root not in _ANNOTATE_FMT_FIELDS:
+            raise ValueError(
+                "[ERROR] Unknown field %r in ``annotate_fmt`` %r. Available "
+                "fields: %s."
+                % (root, annotate_fmt, ", ".join("{%s}" % f for f in _ANNOTATE_FMT_FIELDS)))
+
+    # Render once against dummy values so an invalid format spec
+    # (e.g. ``{p:xx}``) is rejected here instead of mid-plot.
+    dummy = dict(snp="rs1", chrom="1", pos=1000, p=0.001, log10p=3.0)
+    try:
+        annotate_fmt.format(**dummy)
+    except (ValueError, IndexError, KeyError) as exc:
+        raise ValueError(
+            "[ERROR] Invalid ``annotate_fmt`` %r: %s. Available fields: %s."
+            % (annotate_fmt, exc, ", ".join("{%s}" % f for f in _ANNOTATE_FMT_FIELDS)))
+
+
+def _build_label(item, logp, annotate_fmt):
+    """Turn a top-SNP record into its annotation string.
+
+    ``item`` is ``[x, y, snp, chrom, p, pos]`` with trailing fields optional.
+    ``annotate_fmt`` may be None (snp id only), a format string referencing the
+    fields ``snp/chrom/pos/p/log10p``, or a callable receiving them as kwargs.
+    """
+    snp = item[2] if len(item) > 2 else ""
+    chrom = item[3] if len(item) > 3 else None
+    p = item[4] if len(item) > 4 else None
+    position = item[5] if len(item) > 5 else None
+
+    if annotate_fmt is None:
+        return str(snp)
+
+    if p is not None and p > 0:
+        log10p = -np.log10(p)
+    else:
+        log10p = item[1] if logp else None
+
+    fields = dict(snp=snp, chrom=chrom, pos=position, p=p, log10p=log10p)
+    if callable(annotate_fmt):
+        return str(annotate_fmt(**fields))
+    return annotate_fmt.format(**fields)
+
+
+def _annotate_top_snps(ax, sign_top_snp, logp, annotate_fmt, layout, text_kws, adjust_text_kws):
+    """Place the top-SNP labels using the requested layout strategy."""
+    text_kws = dict(text_kws or {})
+    adjust_text_kws = dict(adjust_text_kws or {})
+
+    # ``arrowprops`` styles the connecting arrows, not the text; accept it from
+    # either dict for convenience. An explicit ``None`` disables the arrows.
+    arrowprops = text_kws.pop("arrowprops", _MISSING)
+    if arrowprops is _MISSING:
+        arrowprops = adjust_text_kws.pop("arrowprops", _MISSING)
+    if arrowprops is _MISSING:
+        arrowprops = dict(arrowstyle="-", color="0.5", lw=0.6, alpha=0.7)
+
+    x_pos = [item[0] for item in sign_top_snp]
+    y_pos = [item[1] for item in sign_top_snp]
+    labels = [_build_label(item, logp, annotate_fmt) for item in sign_top_snp]
+
+    if layout == "lane":
+        return _layout_top_lane(ax, x_pos, y_pos, labels, text_kws, arrowprops)
+
+    if layout != "repel":
+        raise ValueError("[ERROR] ``annotate_layout`` must be 'repel' or 'lane', "
+                         "got %r." % layout)
+
+    texts = [ax.text(xx, yy, s, **text_kws) for xx, yy, s in zip(x_pos, y_pos, labels)]
+    kws = dict(
+        only_move={"points": "y", "text": "xy", "objects": "xy"},
+        force_text=(0.3, 0.5),
+        expand_text=(1.05, 1.4),
+    )
+    kws.update(adjust_text_kws)
+    if arrowprops is not None:
+        kws["arrowprops"] = arrowprops
+    adjust_text(texts, ax=ax, **kws)
+    return texts
+
+
+def _layout_top_lane(ax, x_pos, y_pos, labels, text_kws, arrowprops):
+    """Lay labels out in a single non-overlapping row near the top of the axes.
+
+    Labels are sorted by x, then a one-dimensional sweep pushes them apart just
+    enough to remove horizontal overlaps (O(N log N)). A leader line links each
+    label back to its SNP. This stays tidy and fast even with many loci.
+    """
+    if not x_pos:
+        return []
+
+    order = sorted(range(len(x_pos)), key=lambda k: x_pos[k])
+    rotation = text_kws.pop("rotation", 90)
+    kws = dict(text_kws)
+    kws.setdefault("va", "top")
+    kws.setdefault("ha", "center")
+    kws.setdefault("clip_on", False)
+
+    ymin, ymax = ax.get_ylim()
+    y_label = ymin + (ymax - ymin) * 0.98
+
+    texts = [ax.text(x_pos[k], y_label, labels[k], rotation=rotation, **kws) for k in order]
+
+    fig = ax.get_figure()
+    fig.canvas.draw()
+    r = get_renderer(fig)
+    inv = ax.transData.inverted()
+    widths = []
+    for t in texts:
+        bb = t.get_window_extent(r)
+        (dx0, _), (dx1, _) = inv.transform([(bb.x0, 0.0), (bb.x1, 0.0)])
+        widths.append(abs(dx1 - dx0))
+
+    # Forward sweep: guarantee a minimum centre-to-centre gap between neighbours.
+    new_xs = [x_pos[k] for k in order]
+    for i in range(1, len(new_xs)):
+        min_x = new_xs[i - 1] + (widths[i - 1] + widths[i]) / 2.0 * 1.15
+        if new_xs[i] < min_x:
+            new_xs[i] = min_x
+
+    # If we ran past the right edge, clamp and sweep back to keep gaps intact.
+    xlo, xhi = ax.get_xlim()
+    if new_xs[-1] > xhi:
+        new_xs[-1] = xhi
+        for i in range(len(new_xs) - 2, -1, -1):
+            max_x = new_xs[i + 1] - (widths[i] + widths[i + 1]) / 2.0 * 1.15
+            if new_xs[i] > max_x:
+                new_xs[i] = max_x
+
+    for idx, k in enumerate(order):
+        texts[idx].set_position((new_xs[idx], y_label))
+        if arrowprops is not None:
+            ax.annotate("", xy=(x_pos[k], y_pos[k]), xytext=(new_xs[idx], y_label),
+                        arrowprops=arrowprops, annotation_clip=False)
+
+    return texts

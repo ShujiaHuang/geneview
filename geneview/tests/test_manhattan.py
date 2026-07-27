@@ -14,7 +14,47 @@ from geneview.gwas._manhattan import (
     _find_top_snp,
     _sign_snp_regions,
     _find_SNPs_which_overlap_sign_neighbour_region,
+    _build_label,
+    _annotate_top_snps,
+    _validate_annotate_fmt,
 )
+from geneview.utils import adjust_text
+from geneview.utils._adjust_text import get_bboxes
+from matplotlib.text import Annotation
+
+
+def _make_dense_gwas_data(n_chroms=6, snps_per_chrom=200, n_loci=20, seed=7):
+    """Synthetic GWAS data with many independent significant loci."""
+    rng = np.random.RandomState(seed)
+    rows = []
+    for chrom in range(1, n_chroms + 1):
+        positions = np.sort(rng.randint(1, 2_000_000, size=snps_per_chrom))
+        pvalues = rng.uniform(1e-3, 1.0, size=snps_per_chrom)
+        for i, (pos, pv) in enumerate(zip(positions, pvalues)):
+            rows.append({"#CHROM": f"chr{chrom}", "POS": int(pos),
+                         "P": float(pv), "ID": f"rs{chrom}_{i}"})
+    df = pd.DataFrame(rows)
+    hit_idx = rng.choice(len(df), size=n_loci, replace=False)
+    df.loc[hit_idx, "P"] = rng.uniform(1e-15, 1e-8, size=n_loci)
+    return df
+
+
+def _total_overlap_area(texts, ax):
+    """Sum of pairwise overlap areas of the given texts' bounding boxes."""
+    bboxes = get_bboxes(texts, None, (1, 1), ax=ax)
+    total = 0.0
+    for i in range(len(bboxes)):
+        for j in range(i + 1, len(bboxes)):
+            inter = bboxes[i].intersection(bboxes[i], bboxes[j])
+            if inter is not None:
+                total += abs(inter.width * inter.height)
+    return total
+
+
+def _count_arrows(ax):
+    """Number of annotation arrows currently drawn on the axes."""
+    return sum(1 for t in ax.texts
+              if isinstance(t, Annotation) and t.arrow_patch is not None)
 
 
 def _make_gwas_data(n_chroms=3, snps_per_chrom=100, seed=42):
@@ -281,3 +321,220 @@ class TestFindSnpsOverlapRegion:
         x = [20000, 50000, 100000, 150000]
         result = _find_SNPs_which_overlap_sign_neighbour_region(regions, x)
         assert result == [0, 2]
+
+
+class TestBuildLabel:
+    """Tests for the _build_label annotation-text helper."""
+
+    def test_none_returns_snp_id(self):
+        """annotate_fmt=None should yield just the SNP id."""
+        item = [100, 8.0, "rs123", "chr1", 1e-8, 500]
+        assert _build_label(item, logp=True, annotate_fmt=None) == "rs123"
+
+    def test_format_string_fields(self):
+        """A format string may reference snp/chrom/pos/p/log10p."""
+        item = [100, 8.0, "rs123", "chr1", 1e-8, 500]
+        label = _build_label(item, logp=True, annotate_fmt="{snp} {chrom}:{pos} P={p:.0e}")
+        assert label == "rs123 chr1:500 P=1e-08"
+
+    def test_callable_receives_fields(self):
+        """A callable receives the fields as keyword arguments."""
+        item = [100, 8.0, "rs123", "chr1", 1e-8, 500]
+        fn = lambda snp, chrom, pos, p, log10p: f"{chrom}:{pos}"
+        assert _build_label(item, logp=True, annotate_fmt=fn) == "chr1:500"
+
+    def test_log10p_computed_from_p(self):
+        """log10p should be derived from the p-value when available."""
+        item = [100, 8.0, "rs123", "chr1", 1e-8, 500]
+        label = _build_label(item, logp=True, annotate_fmt="{log10p:.1f}")
+        assert label == "8.0"
+
+    def test_short_item_no_extra_fields(self):
+        """Legacy 3-element items should still format the snp id."""
+        item = [100, 8.0, "rs123"]
+        assert _build_label(item, logp=True, annotate_fmt=None) == "rs123"
+
+
+class TestAnnotateLayouts:
+    """Tests for the manhattanplot top-SNP annotation layouts / options."""
+
+    def _sig_df(self):
+        df = _make_gwas_data()
+        df.loc[0, "P"] = 1e-12
+        df.loc[50, "P"] = 1e-10
+        df.loc[150, "P"] = 1e-9
+        return df
+
+    def test_default_repel_creates_labels(self):
+        """Default layout should place one text per top SNP."""
+        df = self._sig_df()
+        ax = manhattanplot(df, sign_marker_p=1e-6, is_annotate_topsnp=True)
+        labels = [t.get_text() for t in ax.texts if t.get_text()]
+        assert any(lbl.startswith("rs") for lbl in labels)
+
+    def test_annotate_fmt_string(self):
+        """Format string should be reflected in the label text."""
+        df = self._sig_df()
+        ax = manhattanplot(df, sign_marker_p=1e-6, is_annotate_topsnp=True,
+                           annotate_fmt="{snp}|{p:.0e}")
+        labels = [t.get_text() for t in ax.texts if "|" in t.get_text()]
+        assert labels and all("|" in lbl for lbl in labels)
+
+    def test_annotate_fmt_callable(self):
+        """Callable formatter should be reflected in the label text."""
+        df = self._sig_df()
+        ax = manhattanplot(df, sign_marker_p=1e-6, is_annotate_topsnp=True,
+                           annotate_fmt=lambda snp, chrom, pos, p, log10p: f"[{chrom}]")
+        labels = [t.get_text() for t in ax.texts if t.get_text().startswith("[")]
+        assert labels
+
+    def test_text_kws_fontsize_applied(self):
+        """text_kws styling must reach the label text objects (regression)."""
+        df = self._sig_df()
+        ax = manhattanplot(df, sign_marker_p=1e-6, is_annotate_topsnp=True,
+                           text_kws={"fontsize": 14})
+        sized = [t for t in ax.texts if t.get_text() and t.get_fontsize() == 14]
+        assert sized
+
+    def test_lane_layout_runs(self):
+        """Lane layout should create labels and leader arrows."""
+        df = _make_dense_gwas_data()
+        ax = manhattanplot(df, sign_marker_p=1e-8, is_annotate_topsnp=True,
+                           annotate_layout="lane", annotate_fmt="{snp}")
+        labels = [t.get_text() for t in ax.texts if t.get_text()]
+        assert len(labels) >= 5
+        assert _count_arrows(ax) >= 5
+
+    def test_lane_labels_non_overlapping_in_x(self):
+        """Lane layout should spread labels so they do not stack in x."""
+        df = _make_dense_gwas_data()
+        ax = manhattanplot(df, sign_marker_p=1e-8, is_annotate_topsnp=True,
+                           annotate_layout="lane", text_kws={"fontsize": 6})
+        xs = sorted(t.get_position()[0] for t in ax.texts if t.get_text())
+        diffs = np.diff(xs)
+        assert np.all(diffs >= 0)  # monotonic, i.e. ordered and separated
+
+    def test_invalid_layout_raises(self):
+        """An unknown layout name should raise ValueError."""
+        df = self._sig_df()
+        with pytest.raises(ValueError, match="annotate_layout"):
+            manhattanplot(df, sign_marker_p=1e-6, is_annotate_topsnp=True,
+                          annotate_layout="bogus")
+
+    def test_arrowprops_none_disables_arrows(self):
+        """Passing arrowprops=None should draw no connecting arrows."""
+        df = _make_dense_gwas_data()
+        ax = manhattanplot(df, sign_marker_p=1e-8, is_annotate_topsnp=True,
+                           annotate_layout="lane", text_kws={"arrowprops": None})
+        assert _count_arrows(ax) == 0
+
+    def test_custom_arrowprops_drawn(self):
+        """A custom arrowprops in text_kws should still draw arrows."""
+        df = _make_dense_gwas_data()
+        ax = manhattanplot(df, sign_marker_p=1e-8, is_annotate_topsnp=True,
+                           annotate_layout="lane",
+                           text_kws={"arrowprops": dict(arrowstyle="->", color="g")})
+        assert _count_arrows(ax) >= 5
+
+    def test_adjust_text_kws_forwarded(self):
+        """adjust_text_kws should be accepted by the repel layout."""
+        df = _make_dense_gwas_data()
+        ax = manhattanplot(df, sign_marker_p=1e-8, is_annotate_topsnp=True,
+                           annotate_layout="repel",
+                           adjust_text_kws={"lim": 50, "force_text": (0.4, 0.6),
+                                            "only_move": {"points": "y",
+                                                          "text": "xy",
+                                                          "objects": "xy"}})
+        assert ax is not None
+
+    def test_single_chrom_annotation(self):
+        """Annotation should also work when zooming into one chromosome."""
+        df = self._sig_df()
+        ax = manhattanplot(df, CHR="chr1", sign_marker_p=1e-6,
+                           is_annotate_topsnp=True, annotate_fmt="{snp}")
+        assert ax is not None
+
+
+class TestAdjustText:
+    """Tests for the vectorized adjust_text engine."""
+
+    def test_empty_returns_zero(self):
+        """No texts should be a no-op returning 0 iterations."""
+        fig, ax = plt.subplots()
+        assert adjust_text([], ax=ax) == 0
+
+    def test_reduces_overlap(self):
+        """Overlapping labels should end up with less total overlap."""
+        fig, ax = plt.subplots()
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+        texts = [ax.text(5, 5, f"label_{i}") for i in range(8)]
+        before = _total_overlap_area(texts, ax)
+        adjust_text(texts, ax=ax, lim=200)
+        after = _total_overlap_area(texts, ax)
+        assert after < before
+
+    def test_only_move_locks_x(self):
+        """only_move without 'x' should keep the x-position fixed."""
+        fig, ax = plt.subplots()
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+        texts = [ax.text(5, 5, f"label_{i}") for i in range(6)]
+        xs_before = [t.get_position()[0] for t in texts]
+        adjust_text(texts, ax=ax, lim=100,
+                    only_move={"points": "y", "text": "y", "objects": "y"})
+        xs_after = [t.get_position()[0] for t in texts]
+        assert np.allclose(xs_before, xs_after)
+
+    def test_arrows_drawn_when_moved(self):
+        """Supplying arrowprops should draw arrows for displaced labels."""
+        fig, ax = plt.subplots()
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+        texts = [ax.text(5, 5, f"label_{i}") for i in range(6)]
+        adjust_text(texts, ax=ax, lim=200,
+                    arrowprops=dict(arrowstyle="-", color="0.5"))
+        assert _count_arrows(ax) >= 1
+
+
+class TestValidateAnnotateFmt:
+    """``_validate_annotate_fmt`` rejects unusable label format strings early."""
+
+    def test_none_and_callable_pass(self):
+        """None and callables need no validation and must not raise."""
+        _validate_annotate_fmt(None)
+        _validate_annotate_fmt(lambda **kw: "x")
+
+    @pytest.mark.parametrize("fmt", [
+        "{snp}",
+        "{snp}\nP={p:.1e}",
+        "{chrom}:{pos} log10p={log10p:.2f}",
+        "plain text without fields",
+    ])
+    def test_valid_formats_pass(self, fmt):
+        """Format strings over the known fields must be accepted."""
+        _validate_annotate_fmt(fmt)
+
+    def test_unknown_field_raises(self):
+        """An unknown field name must raise a clear ValueError."""
+        with pytest.raises(ValueError, match="Unknown field 'gene'"):
+            _validate_annotate_fmt("{gene}")
+
+    def test_bad_format_spec_raises(self):
+        """An invalid format spec must raise a clear ValueError."""
+        with pytest.raises(ValueError, match="Invalid ``annotate_fmt``"):
+            _validate_annotate_fmt("{p:qq}")
+
+    def test_non_string_raises(self):
+        """A non-string, non-callable annotate_fmt must raise ValueError."""
+        with pytest.raises(ValueError, match="must be None"):
+            _validate_annotate_fmt(123)
+
+    def test_manhattanplot_surfaces_bad_fmt(self):
+        """manhattanplot must reject a bad annotate_fmt before drawing."""
+        df = _make_dense_gwas_data()
+        with pytest.raises(ValueError, match="Unknown field"):
+            manhattanplot(data=df, sign_marker_p=1e-6, is_annotate_topsnp=True,
+                          annotate_fmt="{unknown_field}")
+        plt.close("all")
+

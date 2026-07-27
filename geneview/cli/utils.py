@@ -7,6 +7,7 @@ Author: Shujia Huang
 """
 import os
 import sys
+import json
 
 import matplotlib
 matplotlib.use("Agg")  # Non-interactive backend for CLI
@@ -143,3 +144,143 @@ def resolve_output_path(args, default_name):
     if args.output is None:
         return default_name
     return args.output
+
+
+def add_table_input_args(parser, chrom=False, pos=False, snp=False):
+    """Add tabular-input column-name arguments shared by table readers.
+
+    Always adds ``--sep`` and ``--pv``; adds ``--chrom``, ``--pos`` and
+    ``--snp`` only when requested, so ``manhattan`` (all five) and ``qq``
+    (separator + p-value only) share one definition.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        The subcommand parser to augment.
+    chrom : bool, optional
+        Add a ``--chrom`` argument. Default False.
+    pos : bool, optional
+        Add a ``--pos`` argument. Default False.
+    snp : bool, optional
+        Add a ``--snp`` argument. Default False.
+    """
+    parser.add_argument("--sep", default="\t",
+                        help="Column separator in the input file. (default: tab)")
+    if chrom:
+        parser.add_argument("--chrom", default="#CHROM",
+                            help="Column name for chromosome. (default: #CHROM)")
+    if pos:
+        parser.add_argument("--pos", default="POS",
+                            help="Column name for position. (default: POS)")
+    parser.add_argument("--pv", default="P",
+                        help="Column name for p-value. (default: P)")
+    if snp:
+        parser.add_argument("--snp", default="ID",
+                            help="Column name for SNP identifier. (default: ID)")
+
+
+def add_set_arg(parser):
+    """Add a repeatable ``--set KEY=VALUE`` argument for nested plot kwargs.
+
+    This exposes the underlying ``**kwargs``-style dictionaries (e.g.
+    ``text_kws``, ``adjust_text_kws``, ``hline_kws``) that would otherwise be
+    unreachable from the command line, avoiding one-flag-per-knob explosion.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        The subcommand parser to augment.
+    """
+    parser.add_argument(
+        "--set", dest="extra_kws", action="append", default=[],
+        metavar="KEY=VALUE",
+        help="Override/extend a nested plot kwarg as a dotted KEY=VALUE pair "
+             "(repeatable). VALUE is auto-typed: int, float, true/false, "
+             "none/null, a comma list (0.5,0.8), or JSON ([..]/{..}). "
+             "Examples: --set adjust_text_kws.force_text=0.5,0.8 "
+             "--set adjust_text_kws.lim=300 --set hline_kws.lw=2. "
+             "Later --set values override the dedicated flags.")
+
+
+def _coerce_set_value(raw):
+    """Coerce a ``--set`` VALUE string into a native Python object.
+
+    Rules (first match wins): ``none``/``null``->None, ``true``/``false``->bool,
+    comma list->tuple of coerced items, ``[``/``{``/``(`` container->JSON, then
+    int, then float, else the raw string.
+    """
+    s = raw.strip()
+    low = s.lower()
+    if low in ("none", "null"):
+        return None
+    if low == "true":
+        return True
+    if low == "false":
+        return False
+    if "," in s:  # comma-separated -> tuple (good for (x, y) pairs)
+        return tuple(_coerce_set_value(p) for p in s.split(","))
+    if s[:1] in ("[", "{", "("):
+        try:
+            return json.loads(s.replace("(", "[").replace(")", "]"))
+        except ValueError:
+            return s
+    for cast in (int, float):
+        try:
+            return cast(s)
+        except ValueError:
+            continue
+    return s
+
+
+def parse_set_overrides(items):
+    """Parse a list of ``KEY=VALUE`` strings into a nested dict.
+
+    Parameters
+    ----------
+    items : list of str
+        Raw ``--set`` values, e.g. ``["adjust_text_kws.force_text=0.5,0.8"]``.
+
+    Returns
+    -------
+    dict
+        Nested mapping, e.g. ``{"adjust_text_kws": {"force_text": (0.5, 0.8)}}``.
+
+    Raises
+    ------
+    ValueError
+        If an item is not in ``KEY=VALUE`` form or has an empty key.
+    """
+    overrides = {}
+    for item in items:
+        if "=" not in item:
+            raise ValueError("Invalid --set value %r; expected KEY=VALUE." % item)
+        key, raw = item.split("=", 1)
+        key = key.strip()
+        if not key:
+            raise ValueError("Invalid --set value %r; empty KEY." % item)
+        value = _coerce_set_value(raw)
+        parts = key.split(".")
+        node = overrides
+        for part in parts[:-1]:
+            nxt = node.get(part)
+            if not isinstance(nxt, dict):
+                nxt = {}
+                node[part] = nxt
+            node = nxt
+        node[parts[-1]] = value
+    return overrides
+
+
+def deep_merge(base, override):
+    """Recursively merge ``override`` into ``base`` (in place) and return it.
+
+    Nested dicts are merged key-by-key; any non-dict value (or a dict whose
+    counterpart is not a dict) overwrites the base value.
+    """
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            deep_merge(base[key], value)
+        else:
+            base[key] = value
+    return base
+

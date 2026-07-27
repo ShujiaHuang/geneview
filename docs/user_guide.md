@@ -35,7 +35,6 @@
     - [Style Comparison Table](#style-comparison-table)
     - [Creating a Custom Style](#creating-a-custom-style)
   - [Command-Line Interface (CLI)](#command-line-interface-cli)
-    - [Applying a Plot Style via CLI](#applying-a-plot-style-via-cli)
   - [Utilities](#utilities)
     - [Loading Built-in Datasets](#loading-built-in-datasets)
     - [Text Adjustment](#text-adjustment)
@@ -596,63 +595,13 @@ ax = gv.manhattanplot(data=df, style="my_journal")
 
 ## Command-Line Interface (CLI)
 
-geneview can also be used as a command-line tool:
+After installing geneview, a `geneview` command becomes available in your terminal, so you can produce publication-quality figures **without writing any Python**. The CLI is organised into subcommands:
 
 ```bash
-# Install
-pip install geneview
-
-# Manhattan plot from PLINK output
-geneview manhattan --input gwas.assoc --output manhattan.png
-
-# Q-Q plot
-geneview qq --input gwas.assoc --output qq.png
-
-# Venn diagram from gene list files
-geneview venn --input list1.txt list2.txt list3.txt --output venn.png
-
-# Admixture plot
-geneview admixture --input output.Q --pop-file pop.info --output admixture.png
-
-# Genome tracks from BED, GFF, and bedGraph files
-geneview tracks --region chr7:26490000-26720000 \
-    --ideogram \
-    -a cpg_islands.bed \
-    -g gene_models.gtf \
-    -d coverage.bedgraph \
-    -o genome_tracks.png
+geneview --help                 # list all subcommands
+geneview <subcommand> --help    # full options for one subcommand
+geneview --version              # print the installed version
 ```
-
-### Applying a Plot Style via CLI
-
-Every subcommand accepts the `--style` flag, which applies a built-in journal-compliant plot style to the figure:
-
-```bash
-# Manhattan plot in Nature style
-geneview manhattan -i gwas.assoc -o manhattan.png --style nature
-
-# Q-Q plot in Science style
-geneview qq -i gwas.assoc -o qq.png --style science
-
-# Venn diagram in Cell style
-geneview venn -i list1.txt list2.txt -o venn.png --style cell
-
-# Admixture plot in Nature style
-geneview admixture -i output.Q -p pop.info -o admixture.png --style nature
-
-# Genome tracks in Science style
-geneview tracks --region chr7:26490000-26720000 \
-    --ideogram \
-    -a cpg_islands.bed \
-    -g gene_models.gtf \
-    -d coverage.bedgraph \
-    --style science \
-    -o genome_tracks.png
-```
-
-The available styles are: `geneview` (default), `nature`, `science`, and `cell`.
-
-Run `geneview --help` for a full list of subcommands and options.
 
 ```text
 subcommands:
@@ -660,10 +609,32 @@ subcommands:
   qq           Create a Q-Q plot from GWAS association results.
   venn         Create a Venn diagram from 2-6 input files.
   admixture    Create an Admixture plot from ADMIXTURE .Q output.
-  tracks       Create a genome track plot from BED, GFF, or bedGraph files.
+  tracks       Create a genome track plot from BED, GFF, BAM, VCF, or bedGraph files.
 ```
 
----
+Each subcommand mirrors a Python plotting function in this guide. A few quick examples:
+
+```bash
+# Manhattan plot (+ top-SNP annotation)
+geneview manhattan -i gwas.assoc --sign-marker-p 1e-6 --annotate-topsnp -o manhattan.png
+
+# Q-Q plot
+geneview qq -i gwas.assoc -o qq.png
+
+# Venn diagram from 2-6 gene/variant lists
+geneview venn -i A.txt B.txt C.txt -o venn.png
+
+# Admixture plot from an ADMIXTURE .Q file
+geneview admixture -i output.3.Q -p population.txt -o admixture.png
+
+# Genome browser-style tracks
+geneview tracks --region chr7:26490000-26720000 --ideogram \
+    -a cpg_islands.bed -g gene_models.gtf -d coverage.bedgraph -o tracks.png
+```
+
+Every subcommand accepts `--style {geneview,nature,science,cell}` to apply a journal-compliant theme, plus shared output options (`-o`, `--figsize`, `--dpi`, `--facecolor`).
+
+**For the complete per-subcommand option reference — including top-SNP annotation layouts (`--annotate-layout`), the `--set` escape hatch for nested kwargs, and exit-code behaviour — see the dedicated [Command-Line Interface reference](cli.md).**
 
 ## Utilities
 
