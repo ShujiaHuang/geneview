@@ -108,6 +108,13 @@ DEFAULT_STYLE = PlotStyle(
     tracks_linewidth=1.0,
     tracks_figsize_width=12.0,
     tracks_height_per_track=1.2,
+    # NOTE: tracks_categorical_palette / tracks_strand_*_color are left at
+    # their "off" defaults (empty / None).  The default geneview look keeps
+    # each track's historical multi-category colours; only journal styles
+    # (nature/science/cell) recolour them with a colour-blind-safe palette.
+    # NOTE: panel_label_* are left at their base defaults (12 pt bold
+    # lowercase) for comfortable on-screen composite figures; journal styles
+    # tighten these to their house conventions.
 
     # -- Export --------------------------------------------------------------
     # TrueType embedding (type 42) is required by almost all journals so

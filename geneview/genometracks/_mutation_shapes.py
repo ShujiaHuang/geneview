@@ -22,6 +22,106 @@ def _blended(ax):
     return mtransforms.blended_transform_factory(ax.transData, ax.transAxes)
 
 
+# ---------------------------------------------------------------------------
+# Style resolution
+# ---------------------------------------------------------------------------
+
+# Legacy visual constants — used when no plotstyle is active so that the
+# default (un-styled) appearance is byte-for-byte unchanged.
+_LEGACY_VISUALS = {
+    "stem_lw": 1.0,        # solid stems / protein backbone risers
+    "border_lw": 1.0,      # node (shape) edge width
+    "guide_lw": 0.8,       # dotted guide lines up to the plot top
+    "connector_lw": 0.6,   # dotted connectors for aligned labels
+    "axis_lw": 0.8,        # y-axis rule width
+    "axis_color": "gray",  # y-axis rule + tick-label colour
+    "edge_color": "black", # default node/legend edge colour
+    "guide_color": "#CCCCCC",   # dotted guide/connector colour
+    "tick_fontsize": 6.0,       # y-axis tick-label size (pt)
+    "label_fontsize": 7.0,      # feature / y-axis-label size (pt)
+    "text_color": "black",      # y-axis label / feature-label text colour
+}
+
+
+def resolve_style_visuals(style=None) -> dict:
+    """Resolve mutation-plot visual parameters from a :class:`PlotStyle`.
+
+    Centralises line widths, colours and font sizes so that node borders,
+    stems, connector/guide lines and axis rules follow the active journal
+    style instead of being hard-coded.  When ``style`` is ``None`` the legacy
+    constants are returned unchanged, keeping un-styled output identical.
+
+    Parameters
+    ----------
+    style : PlotStyle or None
+        The resolved plot style (see :mod:`geneview.plotstyle`).  Tracks store
+        this on ``self._gv_style`` when ``plot_tracks(style=...)`` is used.
+
+    Returns
+    -------
+    dict
+        Keys: ``stem_lw``, ``border_lw``, ``guide_lw``, ``connector_lw``,
+        ``axis_lw``, ``axis_color``, ``edge_color``, ``guide_color``,
+        ``tick_fontsize``, ``label_fontsize``, ``text_color``.
+    """
+    if style is None:
+        return dict(_LEGACY_VISUALS)
+    base_lw = float(getattr(style, "tracks_linewidth", 1.0))
+    axis_lw = float(getattr(style, "tracks_axis_linewidth", max(0.4, base_lw)))
+    axis_color = getattr(style, "tracks_axis_color", "gray")
+    return {
+        "stem_lw": base_lw,
+        "border_lw": base_lw,
+        "guide_lw": max(0.3, base_lw * 0.8),
+        "connector_lw": max(0.3, base_lw * 0.6),
+        "axis_lw": axis_lw,
+        "axis_color": axis_color,
+        "edge_color": "black",
+        "guide_color": "#CCCCCC",
+        "tick_fontsize": float(getattr(style, "tracks_tick_fontsize", 6.0)),
+        "label_fontsize": float(getattr(style, "tracks_feature_fontsize", 7.0)),
+        "text_color": axis_color,
+    }
+
+
+def text_data_width(ax, text, fontsize: float) -> float:
+    """Estimate the on-screen width of *text* expressed in data-x units.
+
+    Used to decide whether a feature/domain label fits inside its rectangle.
+    """
+    fig = ax.figure
+    pos = ax.get_position()
+    xlim = ax.get_xlim()
+    x_range = xlim[1] - xlim[0]
+    w_inches = pos.width * fig.get_figwidth()
+    if w_inches <= 0:
+        return 0.0
+    # ~0.6 em per character is a good average for proportional sans fonts.
+    text_px = max(len(str(text)), 1) * fontsize * 0.6
+    return text_px / (w_inches * fig.dpi) * x_range
+
+
+def line_coupled_radius(ax, cex: float = 1.0, node_size="auto",
+                        base_pt: float = 11.0) -> float:
+    """Return a node radius expressed as a fraction of the axes *height*.
+
+    When ``node_size == "auto"`` the radius is coupled to the text line height
+    (≈ half of one text line, mirroring trackViewer's ``LINEW/2``) so nodes
+    keep a sensible, panel-independent physical size regardless of how tall or
+    wide the track is.  Otherwise ``node_size`` is treated as an explicit
+    radius in axes-height fraction and multiplied by ``cex``.
+    """
+    if node_size != "auto":
+        return float(node_size) * cex
+    fig = ax.figure
+    pos = ax.get_position()
+    h_inches = pos.height * fig.get_figheight()
+    if h_inches <= 0:
+        return 0.04 * cex
+    line_inches = base_pt * cex / 72.0
+    return (line_inches / h_inches) / 2.0
+
+
 def _data_radius(ax, radius_axes: float) -> Tuple[float, float]:
     """Return (rx_data, ry_data) for a circle of *radius_axes* axes-fraction.
 
@@ -360,6 +460,35 @@ def draw_stem_bent(ax, x0, y0, x1, y1, x2, y2, color="black",
     ax.plot(
         [x0, x1, x2], [y0, y1, y2],
         color=color, linewidth=linewidth,
+        zorder=zorder, clip_on=False,
+        transform=_blended(ax),
+    )
+
+
+def draw_stem_zbend(ax, x_true, x_node, y_base, y_top, bend_frac=0.5,
+                    color="black", linewidth=1.0, linestyle="-", zorder=2):
+    """Draw a Z-bent stem rooted at the *true* genomic x, deflected to a
+    displaced node x (trackViewer-style).
+
+    The polyline (x in *data* coords, y in *axes* fraction) is::
+
+        (x_true, y_base) -> (x_true, y_riser) -> (x_node, y_diag) -> (x_node, y_top)
+
+    i.e. a short vertical riser that *roots* the stem at the variant's real
+    coordinate, a diagonal deflection toward the (possibly displaced) node
+    column, and a final vertical run up to the shape.  ``bend_frac`` controls
+    how much of the lower stem span is used to complete the bend.
+
+    When ``x_true == x_node`` all x-values coincide, so the stem degenerates
+    to a straight vertical line and non-displaced lollipops are unchanged.
+    """
+    span = y_top - y_base
+    y_riser = y_base + span * bend_frac * 0.4
+    y_diag = y_base + span * bend_frac
+    ax.plot(
+        [x_true, x_true, x_node, x_node],
+        [y_base, y_riser, y_diag, y_top],
+        color=color, linewidth=linewidth, linestyle=linestyle,
         zorder=zorder, clip_on=False,
         transform=_blended(ax),
     )

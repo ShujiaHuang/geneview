@@ -79,6 +79,110 @@ def find_tracks(track_list: Union[Track, List[Track]], name: Optional[str] = Non
     return results
 
 
+def add_panel_labels(
+    axes,
+    labels=None,
+    *,
+    fontsize=None,
+    fontweight=None,
+    uppercase=None,
+    x_offset=-18.0,
+    y_offset=6.0,
+    **text_kwargs,
+):
+    """Annotate anchor axes with sequential panel labels (a, b, c ...).
+
+    This is the journal-figure ``a/b/c`` sub-panel tagging helper.  Pass the
+    anchor axes of each sub-panel (e.g. the list returned by
+    :func:`plot_tracks`, or the list-of-lists returned by
+    :func:`plot_tracks_grid`) and each panel receives a bold letter placed
+    just outside its top-left corner.
+
+    Parameters
+    ----------
+    axes : Axes, list of Axes, or list of (list of Axes)
+        The sub-panel anchor axes.  When an element is itself a list of
+        axes (one genomic view from :func:`plot_tracks_grid`), that view's
+        first axes is used as the anchor.  A numpy array of axes is also
+        accepted.
+    labels : list of str, optional
+        Explicit labels.  When ``None`` (default), sequential letters are
+        generated (``a, b, c ...`` or ``A, B, C ...`` per *uppercase*).
+    fontsize : float, optional
+        Label font size in pt.  When ``None``, the active plot style's
+        ``panel_label_fontsize`` is used (falling back to 12).
+    fontweight : str, optional
+        Label font weight.  When ``None``, the active style's
+        ``panel_label_fontweight`` is used (falling back to ``"bold"``).
+    uppercase : bool, optional
+        Force upper/lower case for auto-generated letters.  When ``None``,
+        taken from the active style's ``panel_label_uppercase`` (default
+        lowercase, the Nature convention).
+    x_offset, y_offset : float
+        Offset of the label from each panel's top-left corner, in points.
+        A negative *x_offset* places the label to the left of the axes.
+    **text_kwargs
+        Extra keyword arguments forwarded to ``Axes.text``.
+
+    Returns
+    -------
+    list of matplotlib.text.Text
+        The created text artists, one per labelled panel.
+
+    Examples
+    --------
+    >>> axes = plot_tracks_grid([view1, view2])            # doctest: +SKIP
+    >>> add_panel_labels(axes)                             # doctest: +SKIP
+    """
+    import string
+    import matplotlib.transforms as mtransforms
+
+    # Normalise the axes argument into a flat list of anchor axes.
+    if hasattr(axes, "flat"):            # numpy ndarray of Axes
+        axes = list(axes.flat)
+    elif not isinstance(axes, (list, tuple)):
+        axes = [axes]
+
+    anchors = []
+    for item in axes:
+        if isinstance(item, (list, tuple)):
+            if len(item):
+                anchors.append(item[0])
+        elif item is not None:
+            anchors.append(item)
+
+    # Resolve styling from the active plot style unless explicitly overridden.
+    from ..plotstyle import get_active_style
+    style = get_active_style()
+    if fontsize is None:
+        fontsize = getattr(style, "panel_label_fontsize", None) if style else None
+        fontsize = fontsize if fontsize is not None else 12.0
+    if fontweight is None:
+        fontweight = getattr(style, "panel_label_fontweight", None) if style else None
+        fontweight = fontweight or "bold"
+    if uppercase is None:
+        uppercase = getattr(style, "panel_label_uppercase", None) if style else None
+        uppercase = bool(uppercase)
+
+    if labels is None:
+        letters = string.ascii_uppercase if uppercase else string.ascii_lowercase
+        labels = [letters[i % len(letters)] for i in range(len(anchors))]
+
+    ha = "right" if x_offset < 0 else "left"
+    texts = []
+    for ax, label in zip(anchors, labels):
+        trans = ax.transAxes + mtransforms.ScaledTranslation(
+            x_offset / 72.0, y_offset / 72.0, ax.figure.dpi_scale_trans
+        )
+        txt = ax.text(
+            0.0, 1.0, label, transform=trans,
+            fontsize=fontsize, fontweight=fontweight,
+            va="bottom", ha=ha, **text_kwargs,
+        )
+        texts.append(txt)
+    return texts
+
+
 def _apply_style_to_tracks(tracks, style):
     """Apply plotstyle track-parameter overrides to a list of tracks.
 
@@ -90,6 +194,9 @@ def _apply_style_to_tracks(tracks, style):
         return
     overrides = style.to_track_params()
     for track in tracks:
+        # Expose the resolved style so tracks (e.g. mutation tracks) can route
+        # their line widths / colours / font sizes through the style system.
+        setattr(track, "_gv_style", style)
         for key, value in overrides.items():
             # Only override if the track is still using its class default
             # (i.e. the user did not explicitly set this param).
@@ -303,28 +410,29 @@ def plot_tracks(
     total_size = sum(sizes)
     norm_sizes = [s / total_size for s in sizes]
 
-    # Simple mode: plotting into a provided axes or add mode
-    if ax is not None or add or panel_only:
-        if ax is None:
-            ax = plt.gca()
-        axes_list = _plot_single_ax(expanded_tracks, highlights, ax, region)
+    # Render under the resolved style so its rcParams (fonts, axes / tick
+    # styling, line widths, export settings) apply to figure creation and
+    # track drawing.  ``use_style(None)`` is a no-op, so wrapping is safe
+    # even when no style was requested.
+    with _use_style(resolved_style):
+        # Simple mode: plotting into a provided axes or add mode
+        if ax is not None or add or panel_only:
+            if ax is None:
+                ax = plt.gca()
+            axes_list = _plot_single_ax(expanded_tracks, highlights, ax, region)
+        else:
+            # Full layout mode with title panels
+            axes_list = _plot_full_layout(
+                expanded_tracks, highlights, region, norm_sizes,
+                title_width, title, figsize, fontsize_main,
+                show_title=show_title,
+                style=resolved_style,
+                margin=margin,
+                inner_margin=inner_margin,
+            )
         if reverse_strand:
             for a in axes_list:
                 a.invert_xaxis()
-        return axes_list
-
-    # Full layout mode with title panels
-    axes_list = _plot_full_layout(
-        expanded_tracks, highlights, region, norm_sizes,
-        title_width, title, figsize, fontsize_main,
-        show_title=show_title,
-        style=resolved_style,
-        margin=margin,
-        inner_margin=inner_margin,
-    )
-    if reverse_strand:
-        for a in axes_list:
-            a.invert_xaxis()
     return axes_list
 
 

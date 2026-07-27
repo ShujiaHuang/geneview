@@ -88,6 +88,14 @@ class PlotStyle:
         DPI used when saving figures.
     savefig_bbox : str
         Bounding-box strategy for ``savefig`` (``"tight"`` or ``"standard"``).
+    panel_label_fontsize : float
+        Font size (pt) for multi-panel labels (a, b, c ...) drawn by
+        ``add_panel_labels``.
+    panel_label_fontweight : str
+        Font weight for panel labels (e.g. ``"bold"``).
+    panel_label_uppercase : bool
+        When True, panel labels use uppercase letters (A, B, C ...);
+        otherwise lowercase (a, b, c ...), the Nature convention.
     rc_params : dict
         Escape hatch: arbitrary extra rcParams merged last, overriding any
         field above.
@@ -158,6 +166,28 @@ class PlotStyle:
     tracks_linewidth: float = 1.0
     tracks_figsize_width: float = 12.0
     tracks_height_per_track: float = 1.2
+
+    # -- Genome-track multi-category colours ---------------------------------
+    # Colour-blind-safe palette that genome tracks use for *categorical*
+    # colouring (unknown annotation feature types, multi-series DataTrack).
+    # Empty means "do not recolour" -- the default geneview style leaves this
+    # empty so its historical look is preserved; journal styles fill it with
+    # their accessible palette.  Consumed by tracks at draw time, not via
+    # rcParams.
+    tracks_categorical_palette: List[str] = field(default_factory=list)
+    # Forward / reverse strand read fill colours (AlignmentsTrack).  ``None``
+    # means "keep the track's historical default"; journal styles set a pair
+    # of high-contrast colour-blind-safe colours.
+    tracks_strand_fwd_color: Optional[str] = None
+    tracks_strand_rev_color: Optional[str] = None
+
+    # -- Multi-panel figure labels (a / b / c ...) ---------------------------
+    # Styling for the sequential panel labels drawn by ``add_panel_labels``
+    # on composite figures.  Journal styles set these to their house style
+    # (e.g. Nature uses 8 pt bold lowercase; Science / Cell use uppercase).
+    panel_label_fontsize: float = 12.0
+    panel_label_fontweight: str = "bold"
+    panel_label_uppercase: bool = False
 
     # -- Escape hatch --------------------------------------------------------
     rc_params: Dict = field(default_factory=dict)
@@ -324,6 +354,7 @@ def apply_style(name_or_style: Union[str, PlotStyle]) -> PlotStyle:
     """
     style = _resolve_style(name_or_style)
     matplotlib.rcParams.update(style.to_rc_params())
+    _set_active_style(style)
     return style
 
 
@@ -356,5 +387,58 @@ def use_style(name_or_style: Union[str, PlotStyle, None]):
         yield None
         return
     style = _resolve_style(name_or_style)
-    with matplotlib.rc_context(style.to_rc_params()):
-        yield style
+    prev_active = _ACTIVE_STYLE
+    _set_active_style(style)
+    try:
+        with matplotlib.rc_context(style.to_rc_params()):
+            yield style
+    finally:
+        _set_active_style(prev_active)
+
+
+# ---------------------------------------------------------------------------
+# Active-style tracking
+# ---------------------------------------------------------------------------
+
+_ACTIVE_STYLE: Optional[PlotStyle] = None
+
+
+def _set_active_style(style: Optional[PlotStyle]) -> None:
+    """Record the currently active style (internal)."""
+    global _ACTIVE_STYLE
+    _ACTIVE_STYLE = style
+
+
+def get_active_style() -> Optional[PlotStyle]:
+    """Return the currently active :class:`PlotStyle`, or ``None``.
+
+    The active style is set by :func:`set_style`/:func:`apply_style` (global)
+    or temporarily by the :func:`use_style` context manager.  Downstream
+    helpers (e.g. ``plot_tracks``, ``save_figure``) consult this so that a
+    single global ``set_style(...)`` call also styles standalone
+    ``track.draw()`` panels and figure exports.
+    """
+    return _ACTIVE_STYLE
+
+
+def set_style(name_or_style: Union[str, PlotStyle, None]) -> Optional[PlotStyle]:
+    """Set the global plot style with one call (the one-line switch).
+
+    Unlike :func:`apply_style`, this accepts ``None`` gracefully (a no-op
+    returning ``None``), which lets example scripts write
+    ``set_style(STYLE)`` where ``STYLE`` may be ``None`` for the default
+    geneview look.
+
+    Parameters
+    ----------
+    name_or_style : str, PlotStyle, or None
+        A registered style name, a ``PlotStyle`` object, or ``None``.
+
+    Returns
+    -------
+    PlotStyle or None
+        The resolved style that was applied, or ``None``.
+    """
+    if name_or_style is None:
+        return None
+    return apply_style(name_or_style)

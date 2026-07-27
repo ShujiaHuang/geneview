@@ -8,6 +8,7 @@ Ported from Gviz's DataTrack-class.R.
 """
 
 from typing import Optional, List, Dict, Any, Union, Tuple
+from itertools import cycle, islice
 
 import numpy as np
 import pandas as pd
@@ -358,13 +359,29 @@ class DataTrack(NumericTrack):
         """Get midpoint positions for data bins."""
         return (data["start"].values + data["end"].values) / 2.0
 
+    def _multi_series_colors(self, col):
+        """Return per-series colours for multi-value data.
+
+        An explicit list of colours (``col`` is a list) always wins.  For
+        multi-series data under a journal style, cycle the style's
+        colour-blind-safe categorical palette so the series are
+        distinguishable; otherwise repeat the single colour (historical
+        behaviour, preserved for the default geneview look).
+        """
+        n = len(self.value_columns)
+        if isinstance(col, list):
+            return col
+        if n > 1:
+            st = self._active_style()
+            pal = getattr(st, "tracks_categorical_palette", None) if st is not None else None
+            if pal:
+                return list(islice(cycle(pal), n))
+        return [col] * n
+
     def _draw_line(self, ax, data, region, _precomputed=None):
         """Draw data as line plot."""
         col = self.get_param("col", "#0080FF")
-        if isinstance(col, list):
-            colors = col
-        else:
-            colors = [col] * len(self.value_columns)
+        colors = self._multi_series_colors(col)
 
         lwd = self.get_param("lwd", 1.5)
         alpha = self.get_param("alpha", 1.0)
@@ -380,10 +397,7 @@ class DataTrack(NumericTrack):
         """Draw data as histogram (vertical bars)."""
         fill = self.get_param("fill_histogram", self.get_param("fill", "#808080"))
         col = self.get_param("col_histogram", self.get_param("col", "#808080"))
-        if isinstance(col, list):
-            colors = col
-        else:
-            colors = [col] * len(self.value_columns)
+        colors = self._multi_series_colors(col)
         alpha = self.get_param("alpha", 0.8)
 
         value_arrays = _precomputed if _precomputed else self._get_value_arrays(data)
@@ -414,10 +428,7 @@ class DataTrack(NumericTrack):
         """Draw data as filled polygon (area plot)."""
         fill = self.get_param("fill", "#808080")
         col = self.get_param("col", "#0080FF")
-        if isinstance(col, list):
-            colors = col
-        else:
-            colors = [col] * len(self.value_columns)
+        colors = self._multi_series_colors(col)
         alpha = self.get_param("alpha", 0.5)
         lwd = self.get_param("lwd", 1.0)
         midpoints = self._get_midpoints(data)
@@ -553,10 +564,7 @@ class DataTrack(NumericTrack):
     def _draw_points(self, ax, data, region, _precomputed=None):
         """Draw data as scatter points."""
         col = self.get_param("col", "#0080FF")
-        if isinstance(col, list):
-            colors = col
-        else:
-            colors = [col] * len(self.value_columns)
+        colors = self._multi_series_colors(col)
         alpha = self.get_param("alpha", 0.8)
         midpoints = self._get_midpoints(data)
 

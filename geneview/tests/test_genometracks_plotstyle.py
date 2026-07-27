@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 
 from geneview.genometracks import (
     plot_tracks, GenomeAxisTrack, AnnotationTrack, DataTrack,
-    GeneRegionTrack, GenomicInterval,
+    GeneRegionTrack, AlignmentsTrack, GenomicInterval,
 )
-from geneview.plotstyle import get_style, list_styles
+from geneview.plotstyle import get_style, list_styles, use_style
 
 
 # ---------------------------------------------------------------------------
@@ -303,3 +303,163 @@ class TestSingleAxesMode:
         axes = plot_tracks([track], region=region, ax=ax, style="nature")
         assert len(axes) == 1
         plt.close("all")
+
+
+# ---------------------------------------------------------------------------
+# Test: multi-category colour-blind-safe recolouring (journal styles only)
+# ---------------------------------------------------------------------------
+
+class TestPlotStyleCategoricalFields:
+    """New multi-category colour slots on PlotStyle."""
+
+    @pytest.mark.parametrize("name", ["geneview", "nature", "science", "cell"])
+    def test_fields_exist(self, name):
+        style = get_style(name)
+        assert hasattr(style, "tracks_categorical_palette")
+        assert hasattr(style, "tracks_strand_fwd_color")
+        assert hasattr(style, "tracks_strand_rev_color")
+
+    def test_default_style_off(self):
+        """Default geneview leaves the categorical slots disabled."""
+        style = get_style("geneview")
+        assert style.tracks_categorical_palette == []
+        assert style.tracks_strand_fwd_color is None
+        assert style.tracks_strand_rev_color is None
+
+    @pytest.mark.parametrize("name", ["nature", "science", "cell"])
+    def test_journal_styles_populated(self, name):
+        style = get_style(name)
+        assert style.tracks_categorical_palette  # non-empty
+        assert style.tracks_categorical_palette == style.color_palette
+        assert style.tracks_strand_fwd_color == "#0072B2"
+        assert style.tracks_strand_rev_color == "#D55E00"
+
+
+class TestPanelLabelStyleFields:
+    """Panel-label styling slots on PlotStyle."""
+
+    @pytest.mark.parametrize("name", ["geneview", "nature", "science", "cell"])
+    def test_fields_exist(self, name):
+        style = get_style(name)
+        assert hasattr(style, "panel_label_fontsize")
+        assert hasattr(style, "panel_label_fontweight")
+        assert hasattr(style, "panel_label_uppercase")
+
+    def test_default_style_lowercase(self):
+        style = get_style("geneview")
+        assert style.panel_label_uppercase is False
+        assert style.panel_label_fontsize == 12.0
+
+    def test_nature_lowercase_8pt(self):
+        style = get_style("nature")
+        assert style.panel_label_uppercase is False
+        assert style.panel_label_fontsize == 8.0
+
+    @pytest.mark.parametrize("name", ["science", "cell"])
+    def test_science_cell_uppercase(self, name):
+        style = get_style(name)
+        assert style.panel_label_uppercase is True
+        assert style.panel_label_fontsize == 8.0
+
+
+class TestAlignmentsStrandColors:
+    """AlignmentsTrack forward/reverse strand colours follow the style."""
+
+    def test_journal_strand_pair(self):
+        track = AlignmentsTrack(filepath="dummy.bam")
+        with use_style("nature"):
+            fwd, rev = track._strand_fill_colors()
+        assert fwd == "#0072B2"
+        assert rev == "#D55E00"
+
+    def test_default_keeps_historical(self):
+        track = AlignmentsTrack(filepath="dummy.bam")
+        with use_style("geneview"):
+            fwd, rev = track._strand_fill_colors()
+        assert fwd == "#E89E9D"
+        assert rev == "#8C8FCE"
+
+    def test_explicit_colors_win(self):
+        track = AlignmentsTrack(
+            filepath="dummy.bam",
+            fill_reads_fwd="red", fill_reads_rev="lime",
+        )
+        with use_style("nature"):
+            fwd, rev = track._strand_fill_colors()
+        assert fwd == "red"
+        assert rev == "lime"
+
+
+class TestDataTrackMultiSeriesColors:
+    """DataTrack multi-series colours cycle the journal palette."""
+
+    def _multi_track(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 5,
+            "start": np.arange(0, 5000, 1000),
+            "end": np.arange(1000, 6000, 1000),
+            "a": np.arange(5, dtype=float),
+            "b": np.arange(5, dtype=float),
+            "c": np.arange(5, dtype=float),
+        })
+        return DataTrack(data, value_columns=["a", "b", "c"], type="line")
+
+    def test_journal_cycles_palette(self):
+        track = self._multi_track()
+        pal = get_style("nature").tracks_categorical_palette
+        with use_style("nature"):
+            colors = track._multi_series_colors("#0080FF")
+        assert colors == list(pal[:3])
+
+    def test_default_repeats_single(self):
+        track = self._multi_track()
+        with use_style("geneview"):
+            colors = track._multi_series_colors("#0080FF")
+        assert colors == ["#0080FF", "#0080FF", "#0080FF"]
+
+    def test_explicit_list_wins(self):
+        track = self._multi_track()
+        explicit = ["red", "green", "blue"]
+        with use_style("nature"):
+            colors = track._multi_series_colors(explicit)
+        assert colors == explicit
+
+    def test_single_series_not_recoloured(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 5,
+            "start": np.arange(0, 5000, 1000),
+            "end": np.arange(1000, 6000, 1000),
+            "a": np.arange(5, dtype=float),
+        })
+        track = DataTrack(data, value_columns=["a"], type="line")
+        with use_style("nature"):
+            colors = track._multi_series_colors("#0080FF")
+        assert colors == ["#0080FF"]
+
+
+class TestAnnotationCategoricalColors:
+    """Unknown annotation feature types use the journal palette."""
+
+    def _unknown_feature_track(self):
+        data = pd.DataFrame({
+            "chrom": ["chr7"] * 3,
+            "start": [2_000_000, 2_010_000, 2_020_000],
+            "end": [2_005_000, 2_015_000, 2_025_000],
+            "strand": ["+", "-", "+"],
+            "feature": ["typeA", "typeB", "typeC"],
+        })
+        return AnnotationTrack(data)
+
+    def test_nature_uses_palette(self, region):
+        import matplotlib.colors as mcolors
+        track = self._unknown_feature_track()
+        axes = plot_tracks([GenomeAxisTrack(), track], region=region, style="nature")
+        pal = get_style("nature").tracks_categorical_palette
+        pal_rgba = {tuple(round(v, 3) for v in mcolors.to_rgba(c)) for c in pal}
+        seen = set()
+        for ax in axes:
+            for patch in ax.patches:
+                seen.add(tuple(round(v, 3) for v in patch.get_facecolor()))
+        assert seen & pal_rgba, "expected at least one feature drawn with the journal palette"
+        plt.close("all")
+

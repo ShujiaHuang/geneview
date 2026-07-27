@@ -875,3 +875,144 @@ class TestDandelionNewFeatures:
         df["dashline_col"] = "red"
         fig, ax = plt.subplots(); ax.set_xlim(0, 1500)
         DandelionTrack(df, features=_make_feature_data()).draw(ax, _make_region())
+
+
+# ---------------------------------------------------------------------------
+# trackViewer-style node de-overlap tests
+# ---------------------------------------------------------------------------
+
+from geneview.genometracks._lollipop_track import _spread_x_positions
+
+
+def _make_close_snp_data():
+    """SNPs with tight clusters that must be spread apart to stay legible."""
+    positions = [10, 100, 105, 108, 400, 410, 420, 600, 1400, 1402]
+    return pd.DataFrame({
+        "chrom": ["chr1"] * len(positions),
+        "start": positions,
+        "label": [f"snp{p}" for p in positions],
+    })
+
+
+class TestSpreadXPositions:
+    """Unit tests for the ``_spread_x_positions`` de-overlap helper."""
+
+    def test_empty_input(self):
+        out = _spread_x_positions(np.array([]), 40.0, 0.0, 1000.0)
+        assert len(out) == 0
+
+    def test_single_position_unchanged(self):
+        out = _spread_x_positions(np.array([500.0]), 40.0, 0.0, 1000.0)
+        assert out[0] == pytest.approx(500.0)
+
+    def test_distant_positions_unchanged(self):
+        pos = np.array([100.0, 400.0, 900.0])
+        out = _spread_x_positions(pos, 40.0, 0.0, 1000.0)
+        np.testing.assert_allclose(out, pos)
+
+    def test_close_cluster_spread_to_min_gap(self):
+        pos = np.array([100.0, 105.0, 108.0])
+        min_gap = 40.0
+        out = _spread_x_positions(pos, min_gap, 0.0, 1000.0)
+        diffs = np.diff(np.sort(out))
+        assert np.all(diffs >= min_gap - 1e-6)
+
+    def test_cluster_recentred_on_centroid(self):
+        pos = np.array([100.0, 105.0, 108.0])
+        out = _spread_x_positions(pos, 40.0, 0.0, 1000.0)
+        assert out.mean() == pytest.approx(pos.mean(), abs=1e-6)
+
+    def test_input_order_preserved(self):
+        pos = np.array([108.0, 100.0, 105.0])  # deliberately unsorted
+        out = _spread_x_positions(pos, 40.0, 0.0, 1000.0)
+        assert np.argmin(out) == np.argmin(pos)
+        assert np.argmax(out) == np.argmax(pos)
+
+    def test_clamp_to_lower_bound(self):
+        pos = np.array([5.0, 8.0, 11.0])
+        out = _spread_x_positions(pos, 40.0, 0.0, 1000.0)
+        assert out.min() >= 0.0 - 1e-6
+
+    def test_clamp_to_upper_bound(self):
+        pos = np.array([990.0, 993.0, 996.0])
+        out = _spread_x_positions(pos, 40.0, 0.0, 1000.0)
+        assert out.max() <= 1000.0 + 1e-6
+
+    def test_zero_min_gap_is_noop(self):
+        pos = np.array([100.0, 105.0])
+        out = _spread_x_positions(pos, 0.0, 0.0, 1000.0)
+        np.testing.assert_allclose(out, pos)
+
+
+class TestDrawTimeXlim:
+    """Regression: tracks must fix xlim at draw time so geometry-dependent
+    de-overlap / node radii use the true region width instead of the default
+    (0, 1) autoscale limits (root cause of the missing de-overlap bug)."""
+
+    def test_lolliplot_sets_xlim_without_presetting(self):
+        fig, ax = plt.subplots()  # note: xlim NOT pre-set
+        region = _make_region()
+        LolliplotTrack(_make_snp_data(),
+                       features=_make_feature_data()).draw(ax, region)
+        assert ax.get_xlim() == (region.start, region.end)
+
+    def test_dandelion_sets_xlim_without_presetting(self):
+        fig, ax = plt.subplots()  # note: xlim NOT pre-set
+        region = _make_region()
+        DandelionTrack(_make_dense_snp_data(),
+                       features=_make_feature_data()).draw(ax, region)
+        assert ax.get_xlim() == (region.start, region.end)
+
+    def test_lolliplot_via_plot_tracks_close_cluster(self):
+        """Close clusters must render without error via the plot_tracks path."""
+        ax = lolliplot(_make_close_snp_data(),
+                       features=_make_feature_data(), figsize=(12, 4))
+        lo, hi = ax.get_xlim()
+        assert hi > lo
+        plt.close("all")
+
+
+class TestNodeDeoverlapRendering:
+    """Node de-overlap should apply across all lollipop shape types."""
+
+    @pytest.mark.parametrize("shape_type", ["circle", "pie", "pin", "flag"])
+    def test_close_cluster_all_types(self, shape_type):
+        df = _make_close_snp_data().copy()
+        if shape_type == "pie":
+            df["pie_values"] = [[60, 40]] * len(df)
+            df["pie_colors"] = [["#87CEFA", "#98CE31"]] * len(df)
+        fig, ax = plt.subplots(figsize=(12, 4))
+        LolliplotTrack(df, features=_make_feature_data(),
+                       type=shape_type).draw(ax, _make_region())
+        plt.close("all")
+
+    def test_pie_stack_skips_spreading(self):
+        """pie.stack intentionally stacks multiple pies at one position."""
+        df = _make_close_snp_data().copy()
+        df["pie_values"] = [[60, 40]] * len(df)
+        df["pie_colors"] = [["#87CEFA", "#98CE31"]] * len(df)
+        fig, ax = plt.subplots(figsize=(12, 4))
+        LolliplotTrack(df, features=_make_feature_data(),
+                       type="pie.stack").draw(ax, _make_region())
+        plt.close("all")
+
+
+class TestCaterpillarLabelPlacement:
+    """Caterpillar bottom-side labels must grow downward (va='top'), clear of
+    the nodes, rather than upward into them (va='bottom')."""
+
+    def test_bottom_labels_use_top_valignment(self):
+        df = _make_snp_data().copy()
+        df["side"] = "bottom"
+        fig, ax = plt.subplots(); ax.set_xlim(0, 1500)
+        LolliplotTrack(df, features=_make_feature_data()).draw(ax, _make_region())
+        vas = [t.get_va() for t in ax.texts if t.get_text().startswith("rs")]
+        assert vas and all(v == "top" for v in vas)
+
+    def test_top_labels_use_bottom_valignment(self):
+        df = _make_snp_data().copy()
+        df["side"] = "top"
+        fig, ax = plt.subplots(); ax.set_xlim(0, 1500)
+        LolliplotTrack(df, features=_make_feature_data()).draw(ax, _make_region())
+        vas = [t.get_va() for t in ax.texts if t.get_text().startswith("rs")]
+        assert vas and all(v == "bottom" for v in vas)

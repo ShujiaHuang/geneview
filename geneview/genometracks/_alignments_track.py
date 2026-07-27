@@ -121,12 +121,16 @@ class AlignmentsTrack(StackedTrack):
         If True, colour forward-strand reads differently from reverse-
         strand reads (``fill_reads_fwd`` / ``fill_reads_rev``).
         Default is False.
-    fill_reads_fwd : str
+    fill_reads_fwd : str, optional
         Fill color for forward-strand reads when ``color_by_strand`` is
-        True.  Default is ``"#E89E9D"``.
-    fill_reads_rev : str
+        True.  When ``None`` (the default), a journal style's
+        colour-blind-safe strand colour is used if one is active, otherwise
+        the historical ``"#E89E9D"``.
+    fill_reads_rev : str, optional
         Fill color for reverse-strand reads when ``color_by_strand`` is
-        True.  Default is ``"#8C8FCE"``.
+        True.  When ``None`` (the default), a journal style's
+        colour-blind-safe strand colour is used if one is active, otherwise
+        the historical ``"#8C8FCE"``.
     include_secondary : bool
         If True (default), include secondary and supplementary alignments
         in the pileup view.  Set to False to show only primary alignments.
@@ -188,8 +192,8 @@ class AlignmentsTrack(StackedTrack):
         min_indel_size: int = 0,
         show_insertion_labels: bool = False,
         color_by_strand: bool = True,
-        fill_reads_fwd: str = "#E89E9D",
-        fill_reads_rev: str = "#8C8FCE",
+        fill_reads_fwd: Optional[str] = None,
+        fill_reads_rev: Optional[str] = None,
         include_secondary: bool = True,
         overlap_color: Optional[str] = None,
         draw_read_labels: bool = False,
@@ -564,6 +568,23 @@ class AlignmentsTrack(StackedTrack):
             )
             ax.add_patch(rect)
 
+    def _strand_fill_colors(self):
+        """Resolve (forward, reverse) strand fill colours.
+
+        Explicit constructor colours win.  When left unset (``None``), a
+        colour-blind-safe pair from the active journal style is used if one
+        is active; otherwise the historical defaults are returned.
+        """
+        fwd, rev = self.fill_reads_fwd, self.fill_reads_rev
+        if fwd is None or rev is None:
+            st = self._active_style()
+            if st is not None:
+                fwd = fwd or getattr(st, "tracks_strand_fwd_color", None)
+                rev = rev or getattr(st, "tracks_strand_rev_color", None)
+            fwd = fwd or "#E89E9D"
+            rev = rev or "#8C8FCE"
+        return fwd, rev
+
     def _draw_single_read(self, ax, read, region, y_center, row_height,
                           ref_seq, span, mismatch_counts=None):
         """Draw a single read with CIGAR-aware blocks, clipping, and indels."""
@@ -576,7 +597,8 @@ class AlignmentsTrack(StackedTrack):
             except Exception:
                 read_color = self.fill_reads
         elif self.color_by_strand:
-            read_color = self.fill_reads_rev if read.is_reverse else self.fill_reads_fwd
+            fwd, rev = self._strand_fill_colors()
+            read_color = rev if read.is_reverse else fwd
         else:
             read_color = self.fill_reads
 

@@ -104,7 +104,7 @@ from ._dandelion_track import DandelionTrack, dandelion_plot
 from ._mismatch_counts import MismatchCounts
 from ._biomart import BiomartGeneRegionTrack
 from ._ucsc import UcscTrack
-from ._track_plot import plot_tracks, find_tracks
+from ._track_plot import plot_tracks, find_tracks, add_panel_labels
 from ._io import (
     read_bed,
     read_gff,
@@ -125,6 +125,7 @@ from ._schemes import apply_scheme
 from ._utils import match_chrom_format, is_paired_end, is_long_frag_dataset, reverse_comp
 from ._convenience import visualize_files
 from ._multi_view import plot_tracks_grid, plot_tracks_multi
+from ..plotstyle import set_style, get_active_style, use_style, apply_style
 
 __all__ = [
     # Track types
@@ -150,6 +151,7 @@ __all__ = [
     "find_tracks",
     "plot_tracks_grid",
     "plot_tracks_multi",
+    "add_panel_labels",
     "GenomicInterval",
     "available_display_params",
     # Convenience
@@ -181,6 +183,11 @@ __all__ = [
     "save_figure",
     # Schemes
     "apply_scheme",
+    # Style
+    "set_style",
+    "get_active_style",
+    "use_style",
+    "apply_style",
     # Utilities
     "match_chrom_format",
     "is_paired_end",

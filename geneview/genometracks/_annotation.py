@@ -200,9 +200,15 @@ class AnnotationTrack(StackedTrack):
         has_name = "name" in sub.columns or "id" in sub.columns
         label_col = "name" if "name" in sub.columns else ("id" if "id" in sub.columns else None)
 
-        # Color cycle for unknown features (Gviz-inspired palette)
-        default_colors = ["lightblue", "#0080FF", "#DC0000", "#F8766D",
-                          "#00BA38", "#619CFF", "#FDB462", "#B79F00"]
+        # Color cycle for unknown features.  Under a journal style, use its
+        # colour-blind-safe categorical palette; otherwise keep the historical
+        # Gviz-inspired palette.
+        st = self._active_style()
+        if st is not None and getattr(st, "tracks_categorical_palette", None):
+            default_colors = list(st.tracks_categorical_palette)
+        else:
+            default_colors = ["lightblue", "#0080FF", "#DC0000", "#F8766D",
+                              "#00BA38", "#619CFF", "#FDB462", "#B79F00"]
         color_cycle = cycle(default_colors)
         # Pre-assign colors to unique features
         feature_color_map = {}

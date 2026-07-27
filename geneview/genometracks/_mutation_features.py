@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.patches as mpatches
 
+from ._mutation_shapes import _is_dark, text_data_width
+
 
 # Default colours for common feature types
 _DEFAULT_FEATURE_FILLS = {
@@ -62,6 +64,9 @@ def draw_features(
     label_fontsize: float = 7.0,
     label_on_feature: bool = False,
     rescale_map: Optional[List[Tuple]] = None,
+    baseline_lw: float = 0.8,
+    baseline_color: str = "black",
+    label_color: str = "black",
 ) -> float:
     """Draw gene-feature rectangles on a horizontal baseline.
 
@@ -83,9 +88,18 @@ def draw_features(
     label_fontsize : float
         Font size for feature labels.
     label_on_feature : bool
-        If True, draw labels centred on the rectangle; otherwise draw above.
+        If True, prefer drawing labels centred on the rectangle; otherwise
+        labels are centred inside the rectangle when they fit and moved above
+        it (externalised) when the rectangle is too narrow.
     rescale_map : list of (from_start, from_end, to_start, to_end), optional
         Coordinate remapping rules applied to feature start/end before drawing.
+    baseline_lw : float
+        Line width of the horizontal backbone / baseline.
+    baseline_color : str
+        Colour of the horizontal backbone / baseline.
+    label_color : str
+        Colour for externalised (above-rectangle) feature labels.  On-feature
+        labels pick black/white automatically for contrast with the fill.
 
     Returns
     -------
@@ -96,7 +110,7 @@ def draw_features(
     if feature_data is None or len(feature_data) == 0:
         # Always draw the baseline even with no features
         ax.axhline(
-            y=baseline_y, color="black", linewidth=0.8,
+            y=baseline_y, color=baseline_color, linewidth=baseline_lw,
             zorder=2, xmin=0.0, xmax=1.0,
         )
         return default_height + 0.01
@@ -116,6 +130,9 @@ def draw_features(
             label_fontsize=label_fontsize,
             label_on_feature=label_on_feature,
             rescale_map=rescale_map,
+            baseline_lw=baseline_lw,
+            baseline_color=baseline_color,
+            label_color=label_color,
         )
     else:
         return _draw_single_layer_features(
@@ -126,6 +143,9 @@ def draw_features(
             label_fontsize=label_fontsize,
             label_on_feature=label_on_feature,
             rescale_map=rescale_map,
+            baseline_lw=baseline_lw,
+            baseline_color=baseline_color,
+            label_color=label_color,
         )
 
 
@@ -133,11 +153,12 @@ def _draw_single_layer_features(
     ax, feats, region_start, region_end,
     baseline_y, default_height, show_labels, label_fontsize,
     label_on_feature, rescale_map,
+    baseline_lw=0.8, baseline_color="black", label_color="black",
 ) -> float:
     """Draw features on a single baseline."""
     # Always draw the baseline
     ax.axhline(
-        y=baseline_y, color="black", linewidth=0.8,
+        y=baseline_y, color=baseline_color, linewidth=baseline_lw,
         zorder=2, xmin=0.0, xmax=1.0,
     )
 
@@ -187,15 +208,25 @@ def _draw_single_layer_features(
         # Label
         name = row.get("name", "") if "name" in feats.columns else ""
         if show_labels and pd.notna(name) and str(name).strip():
-            if label_on_feature:
+            name_s = str(name)
+            # A label is drawn inside the rectangle (with automatic black/white
+            # contrast against the fill) whenever it fits; otherwise it is
+            # externalised above the rectangle so it is never overplotted by
+            # the block edge, the stems or the nodes above it.
+            block_w = abs(row["end"] - row["start"])
+            fits_inside = (
+                text_data_width(ax, name_s, label_fontsize) <= block_w * 0.9
+            )
+            if fits_inside:
                 ax.text(
                     (row["start"] + row["end"]) / 2,
                     baseline_y,
-                    str(name),
+                    name_s,
                     ha="center",
                     va="center",
                     fontsize=label_fontsize,
-                    fontweight="bold",
+                    fontweight="bold" if label_on_feature else "normal",
+                    color="white" if _is_dark(fill) else "black",
                     zorder=4,
                     clip_on=True,
                 )
@@ -203,12 +234,13 @@ def _draw_single_layer_features(
                 ax.text(
                     (row["start"] + row["end"]) / 2,
                     baseline_y + h / 2 + 0.005,
-                    str(name),
+                    name_s,
                     ha="center",
                     va="bottom",
                     fontsize=label_fontsize,
+                    color=label_color,
                     zorder=4,
-                    clip_on=True,
+                    clip_on=False,
                 )
 
         top = h / 2
@@ -222,6 +254,7 @@ def _draw_multi_layer_features(
     ax, feats, region_start, region_end,
     baseline_y, default_height, show_labels, label_fontsize,
     label_on_feature, rescale_map,
+    baseline_lw=0.8, baseline_color="black", label_color="black",
 ) -> float:
     """Draw features grouped by ``feature_layer_id`` on separate baselines."""
     layers = feats.groupby("feature_layer_id", sort=False)
@@ -239,6 +272,9 @@ def _draw_multi_layer_features(
             label_fontsize=label_fontsize,
             label_on_feature=label_on_feature,
             rescale_map=rescale_map,
+            baseline_lw=baseline_lw,
+            baseline_color=baseline_color,
+            label_color=label_color,
         )
         overall_max_top = max(overall_max_top, current_y + layer_top - baseline_y)
         current_y += layer_top + layer_gap

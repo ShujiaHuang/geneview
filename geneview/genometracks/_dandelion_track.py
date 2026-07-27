@@ -8,7 +8,7 @@ composable track inside :func:`plot_tracks` and as a standalone plot via
 :func:`dandelion_plot`.
 """
 
-from typing import Optional, Dict, Any, List, Callable, Tuple
+from typing import Optional, Dict, Any, List, Callable, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -17,9 +17,29 @@ from ._base import Track, GenomicInterval
 from ._mutation_features import draw_features, rescale_position
 from ._mutation_shapes import (
     draw_circle, draw_pie, draw_fan, draw_pin, draw_stem, draw_stem_bent,
-    _blended, _data_radius,
+    line_coupled_radius, _blended, _data_radius,
+    resolve_style_visuals,
 )
-from ._lollipop_track import _validate_snp_data, _validate_features, _snp_val
+from ._lollipop_track import (
+    _validate_snp_data, _validate_features, _snp_val,
+    _label_inches, _LINE_PT,
+)
+
+
+def _estimate_dandelion_inches(snp_df, cex: float) -> float:
+    """Estimate the vertical content height (inches) of a dandelion panel.
+
+    Dandelion stems are proportional (they already fill toward the top), so
+    the panel just needs to fit the feature, a nominal stem, the fanned nodes
+    and the labels — keeping the figure compact for standalone rendering.
+    """
+    line_in = _LINE_PT * cex / 72.0
+    if len(snp_df) == 0:
+        return 1.6
+    stem_in = 9.0 * line_in       # nominal central stem
+    fan_in = 3.0 * line_in        # fanned node spread
+    label_in = _label_inches(snp_df, cex)
+    return 0.30 + stem_in + fan_in + label_in + 0.18
 
 
 # ---------------------------------------------------------------------------
@@ -77,25 +97,55 @@ class DandelionTrack(Track):
         maxgaps: float = 1 / 50,
         height_method: Optional[Callable] = None,
         cex: float = 1.0,
+        node_size: Union[str, float] = "auto",
         show_yaxis: bool = False,
         label_on_feature: bool = False,
         rescale: Optional[list] = None,
         name: str = "Dandelion",
-        height: float = 3.0,
+        adaptive_height: bool = True,
+        height: Optional[float] = None,
         display_params: Optional[Dict[str, Any]] = None,
     ):
         if type not in self.TYPES:
             raise ValueError(f"type must be one of {self.TYPES}, got '{type}'")
-        super().__init__(name=name, height=height, display_params=display_params)
-        self.snp_data = _validate_snp_data(snp_data)
+        snp_df = _validate_snp_data(snp_data)
+        if height is None:
+            if adaptive_height:
+                content_in = _estimate_dandelion_inches(snp_df, cex)
+                resolved_height = max(1.0, min(content_in / 1.2, 6.0))
+            else:
+                resolved_height = 3.0
+        else:
+            resolved_height = height
+        super().__init__(name=name, height=resolved_height,
+                         display_params=display_params)
+        self.snp_data = snp_df
         self.features = _validate_features(features)
         self.type = type
         self.maxgaps = maxgaps
         self.height_method = height_method or len
         self.cex = cex
+        self.node_size = node_size
+        self.adaptive_height = adaptive_height
         self.show_yaxis = show_yaxis
         self.label_on_feature = label_on_feature
         self.rescale = rescale
+
+    def _figure_height_inches(self) -> float:
+        """Content-aware figure height (inches) for standalone rendering."""
+        content_in = _estimate_dandelion_inches(self.snp_data, self.cex)
+        return max(1.8, min(content_in + 0.6, 9.0))
+
+    def _label_fontsize(self, ax, cex: float = None) -> float:
+        """Panel-aware label fontsize (pt)."""
+        if cex is None:
+            cex = self.cex
+        base_pt = 5.0 * cex
+        fig = ax.figure
+        pos = ax.get_position()
+        h_inches = pos.height * fig.get_figheight()
+        max_pt = h_inches * 72.0 * 0.07
+        return min(base_pt, max(3.5, max_pt))
 
     # ------------------------------------------------------------------
     # Clustering
@@ -155,6 +205,15 @@ class DandelionTrack(Track):
         r_end = region.end
         region_width = r_end - r_start
 
+        # Resolve style-driven visuals (line widths, colours, font sizes),
+        # falling back to legacy constants when no plotstyle is active.
+        vis = resolve_style_visuals(getattr(self, "_gv_style", None))
+        self._vis = vis
+
+        # Fix the x-range up front so geometry-dependent helpers (fan spacing,
+        # node radii via ``_data_radius``) see the true region width instead of
+        # the default (0, 1) autoscale limits applied only at render time.
+        ax.set_xlim(r_start, r_end)
         ax.set_ylim(0, 1)
         ax.get_yaxis().set_visible(False)
         ax.spines["top"].set_visible(False)
@@ -168,6 +227,10 @@ class DandelionTrack(Track):
             baseline_y=baseline_y,
             label_on_feature=self.label_on_feature,
             rescale_map=self.rescale,
+            baseline_lw=vis["stem_lw"],
+            baseline_color=vis["edge_color"],
+            label_fontsize=vis["label_fontsize"],
+            label_color=vis["text_color"],
         )
 
         # ---- Filter SNPs to region ----
@@ -195,7 +258,8 @@ class DandelionTrack(Track):
         # ---- Compute layout parameters ----
         feature_top = baseline_y + feature_height
         stem_base_y = feature_top + 0.005
-        radius_axes = 0.04 * self.cex
+        radius_axes = line_coupled_radius(ax, cex=self.cex,
+                                          node_size=self.node_size)
 
         cluster_heights = []
         for cluster_idx in clusters:
@@ -224,7 +288,8 @@ class DandelionTrack(Track):
             # Draw central stem — from feature top for visual connection
             draw_stem(
                 ax, center_x, feature_top, stem_top_y,
-                color="black", linewidth=1.0, linestyle="-",
+                color=vis["edge_color"], linewidth=vis["stem_lw"],
+                linestyle="-",
             )
 
             # Fan out individual stems
@@ -242,7 +307,8 @@ class DandelionTrack(Track):
                         center_x, stem_top_y + ry + 0.005,
                         str(label),
                         ha="center", va="bottom", rotation=label_rot,
-                        fontsize=6 * snp_cex, color=label_col,
+                        fontsize=self._label_fontsize(ax, snp_cex),
+                        color=label_col,
                         zorder=6, clip_on=False,
                     )
             else:
@@ -265,7 +331,7 @@ class DandelionTrack(Track):
                         x0=center_x, y0=stem_top_y,
                         x1=center_x, y1=stem_top_y,
                         x2=x2, y2=y2,
-                        color="black", linewidth=0.8,
+                        color=vis["edge_color"], linewidth=vis["guide_lw"],
                     )
 
                     self._draw_shape(ax, x2, y2, snp, snp_r)
@@ -279,7 +345,8 @@ class DandelionTrack(Track):
                             x2, y2 + ry_s + 0.005,
                             str(label),
                             ha="center", va="bottom", rotation=label_rot,
-                            fontsize=5 * snp_cex, color=label_col,
+                            fontsize=self._label_fontsize(ax, snp_cex),
+                            color=label_col,
                             zorder=6, clip_on=False,
                         )
 
@@ -292,7 +359,7 @@ class DandelionTrack(Track):
             ax.plot(
                 [center_x, center_x],
                 [stem_top_y + ry_guide, max_stem_top + 0.05],
-                color=dash_col, linewidth=0.5, linestyle=":",
+                color=dash_col, linewidth=vis["guide_lw"], linestyle=":",
                 zorder=1, clip_on=False,
             )
 
@@ -301,12 +368,14 @@ class DandelionTrack(Track):
             ax.text(
                 -0.02, stem_base_y, "0",
                 transform=ax.transAxes,
-                ha="right", va="center", fontsize=6, color="gray",
+                ha="right", va="center",
+                fontsize=vis["tick_fontsize"], color=vis["axis_color"],
             )
             ax.text(
                 -0.02, max_stem_top, str(int(yaxis_max)),
                 transform=ax.transAxes,
-                ha="right", va="center", fontsize=6, color="gray",
+                ha="right", va="center",
+                fontsize=vis["tick_fontsize"], color=vis["axis_color"],
             )
 
     # ------------------------------------------------------------------
@@ -363,6 +432,7 @@ def dandelion_plot(
     figsize: Optional[Tuple[float, float]] = None,
     title: Optional[str] = None,
     show_title: bool = False,
+    style: Optional[str] = None,
     ax=None,
     **kwargs,
 ):
@@ -383,11 +453,16 @@ def dandelion_plot(
     region : GenomicInterval, optional
         Genomic region.  Auto-determined from data if *None*.
     figsize : tuple, optional
-        Figure size in inches.  Default ``(12, 4)``.
+        Figure size in inches.  When *None* (default), width is 12"
+        and height is auto-computed from the content.
     title : str, optional
         Plot title.
     show_title : bool
         Whether to show the track title panel.  Default ``False``.
+    style : str, optional
+        Name of a registered plot style (e.g. ``"nature"``, ``"science"``,
+        ``"cell"``).  Routes node borders, stems, connector/guide lines and
+        axis rules through the journal style.
     ax : matplotlib Axes, optional
         Draw into this axes instead of creating a new figure.
     **kwargs
@@ -400,6 +475,14 @@ def dandelion_plot(
     track = DandelionTrack(
         snp_data, features=features, type=type, **kwargs,
     )
+
+    # Resolve the requested style so standalone rendering can route its
+    # visuals through the journal style too.
+    resolved_style = None
+    if style is not None:
+        from ..plotstyle import get_style as _get_style
+        resolved_style = _get_style(style)
+        track._gv_style = resolved_style
 
     if ax is not None:
         if region is None:
@@ -431,8 +514,9 @@ def dandelion_plot(
     axes = plot_tracks(
         [track],
         region=region,
-        figsize=figsize or (12, 4),
+        figsize=figsize or (12, track._figure_height_inches()),
         title=title,
         show_title=show_title,
+        style=style,
     )
     return axes[0] if isinstance(axes, list) else axes

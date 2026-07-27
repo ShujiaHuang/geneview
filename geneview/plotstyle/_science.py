@@ -108,6 +108,19 @@ SCIENCE_STYLE = PlotStyle(
     tracks_figsize_width=5.0,   # Science double-column ≈ 127 mm
     tracks_height_per_track=0.9,
 
+    # -- Genome-track multi-category colours ---------------------------------
+    # Colour-blind-safe categorical palette (Okabe-Ito) + a high-contrast
+    # blue/vermilion pair for forward/reverse strand reads.
+    tracks_categorical_palette=_OKABE_ITO_PALETTE,
+    tracks_strand_fwd_color="#0072B2",   # blue
+    tracks_strand_rev_color="#D55E00",   # vermilion
+
+    # -- Multi-panel labels --------------------------------------------------
+    # Science: panel labels are bold uppercase (A, B, C ...).
+    panel_label_fontsize=8.0,
+    panel_label_fontweight="bold",
+    panel_label_uppercase=True,
+
     # -- Export --------------------------------------------------------------
     pdf_fonttype=42,
     ps_fonttype=42,

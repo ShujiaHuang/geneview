@@ -194,12 +194,18 @@ def _write_wig(df: pd.DataFrame, filepath: str) -> None:
 # Figure export helpers
 # ---------------------------------------------------------------------------
 
+# Formats used by the ``vector`` one-line toggle in :func:`save_figure`.
+_VECTOR_FORMATS = {"pdf", "svg", "eps", "ps"}
+_RASTER_FORMATS = {"png", "jpg", "jpeg", "tif", "tiff"}
+
+
 def save_figure(
     axes,
     filepath: str,
-    dpi: int = 150,
+    dpi: Optional[int] = None,
     fmt: Optional[str] = None,
-    bbox_inches: str = "tight",
+    bbox_inches: Optional[str] = None,
+    vector: Optional[bool] = None,
     **kwargs,
 ) -> str:
     """Save a track figure to disk with auto-detected format.
@@ -211,29 +217,74 @@ def save_figure(
     filepath : str
         Output file path.  The format is inferred from the extension
         (``.png``, ``.pdf``, ``.svg``, ``.eps``).  Override with *fmt*.
-    dpi : int
-        Resolution for raster formats (PNG, JPEG).  Default is 150.
+    dpi : int, optional
+        Resolution for raster formats (PNG, JPEG).  When ``None`` (default),
+        the active plot style's ``savefig_dpi`` is used (e.g. 300 for the
+        journal styles), falling back to 150 if no style is active.
     fmt : str, optional
         Explicit output format (``"png"``, ``"pdf"``, ``"svg"``, ``"eps"``).
-        If ``None``, inferred from *filepath* extension.
-    bbox_inches : str
-        Passed to ``Figure.savefig``.  Default is ``"tight"``.
+        If ``None``, inferred from *filepath* extension.  When *fmt* differs
+        from the path's extension, the on-disk extension is rewritten to
+        match (so ``save_figure(axes, "fig.png", fmt="pdf")`` writes
+        ``fig.pdf``).  This makes *fmt* a one-line raster/vector switch.
+    bbox_inches : str, optional
+        Passed to ``Figure.savefig``.  When ``None`` (default), the active
+        style's ``savefig_bbox`` is used, falling back to ``"tight"``.
+    vector : bool, optional
+        One-line vector toggle.  When ``True``, the figure is exported as a
+        vector format (keeping an already-vector extension, else defaulting
+        to PDF).  When ``False``, a raster format is forced (keeping a
+        raster extension, else defaulting to PNG).  When ``None`` (default),
+        *fmt* / the path extension decide.  An explicit *fmt* wins over
+        *vector*.
     **kwargs
         Additional keyword arguments passed to ``Figure.savefig``.
 
     Returns
     -------
     str
-        The path to the saved file.
+        The path to the saved file (with the extension rewritten to match
+        the resolved format when necessary).
 
     Examples
     --------
     >>> axes = plot_tracks(tracks, region=region)          # doctest: +SKIP
     >>> save_figure(axes, "output.pdf")                    # doctest: +SKIP
     'output.pdf'
+    >>> save_figure(axes, "output.png", fmt="svg")         # doctest: +SKIP
+    'output.svg'
+    >>> save_figure(axes, "output.png", vector=True)       # doctest: +SKIP
+    'output.pdf'
     """
     if not axes:
         raise ValueError("No axes provided.")
+    # Honor the active journal style for export defaults so a single
+    # ``set_style(...)`` also raises the export DPI / bbox strategy.
+    from ..plotstyle import get_active_style
+    active = get_active_style()
+    if dpi is None:
+        dpi = active.savefig_dpi if active is not None else 150
+    if bbox_inches is None:
+        bbox_inches = active.savefig_bbox if active is not None else "tight"
+
+    # Resolve the target format.  Precedence: explicit ``fmt`` > ``vector``
+    # toggle > the path's own extension > PNG.
+    root, ext = os.path.splitext(filepath)
+    ext_fmt = ext[1:].lower() if ext else None
+    if fmt is None and vector is not None:
+        if vector:
+            fmt = ext_fmt if ext_fmt in _VECTOR_FORMATS else "pdf"
+        else:
+            fmt = ext_fmt if ext_fmt in _RASTER_FORMATS else "png"
+    target_fmt = (fmt or ext_fmt or "png").lower()
+
+    # Keep the on-disk extension consistent with the actual format, but only
+    # when the path already carries a (differing) extension -- an explicit
+    # extensionless path is left untouched (the caller chose it deliberately).
+    if ext_fmt is not None and target_fmt != ext_fmt:
+        filepath = root + "." + target_fmt
+
     fig = axes[0].figure if isinstance(axes, list) else axes.figure
-    fig.savefig(filepath, dpi=dpi, bbox_inches=bbox_inches, format=fmt, **kwargs)
+    fig.savefig(filepath, dpi=dpi, bbox_inches=bbox_inches,
+                format=target_fmt, **kwargs)
     return filepath

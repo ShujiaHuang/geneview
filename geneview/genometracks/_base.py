@@ -252,6 +252,17 @@ class Track(ABC):
         """Get a display parameter value (supports Gviz-style aliases)."""
         return self._dp.get(_resolve_alias(key), default)
 
+    def _active_style(self):
+        """Return the PlotStyle currently in effect for this track, or None.
+
+        Resolution order: the per-track style injected by ``plot_tracks``
+        (``_gv_style``) first, then the global style set via
+        ``set_style``/``use_style`` (so standalone ``track.draw()`` calls are
+        also styled).  Returns ``None`` when no style is active.
+        """
+        from ..plotstyle import get_active_style
+        return getattr(self, "_gv_style", None) or get_active_style()
+
     def set_param(self, key: str, value: Any) -> None:
         """Set a display parameter value (supports Gviz-style aliases)."""
         self._dp[_resolve_alias(key)] = value

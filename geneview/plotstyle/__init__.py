@@ -37,6 +37,8 @@ from ._core import (
     get_style,
     list_styles,
     register_style,
+    set_style,
+    get_active_style,
 )
 
 # Importing each style module triggers ``register_style(...)`` at module
@@ -53,4 +55,6 @@ __all__ = [
     "get_style",
     "list_styles",
     "register_style",
+    "set_style",
+    "get_active_style",
 ]

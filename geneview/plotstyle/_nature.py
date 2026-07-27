@@ -113,6 +113,19 @@ NATURE_STYLE = PlotStyle(
     tracks_figsize_width=7.2,   # Nature double-column ≈ 183 mm
     tracks_height_per_track=0.8,
 
+    # -- Genome-track multi-category colours ---------------------------------
+    # Colour-blind-safe categorical palette (Wong) + a high-contrast
+    # blue/vermilion pair for forward/reverse strand reads.
+    tracks_categorical_palette=_WONG_PALETTE,
+    tracks_strand_fwd_color="#0072B2",   # blue
+    tracks_strand_rev_color="#D55E00",   # vermilion
+
+    # -- Multi-panel labels --------------------------------------------------
+    # Nature: panel labels are 8 pt bold lowercase (a, b, c ...).
+    panel_label_fontsize=8.0,
+    panel_label_fontweight="bold",
+    panel_label_uppercase=False,
+
     # -- Export --------------------------------------------------------------
     # TrueType embedding (type 42) – required so text stays editable.
     pdf_fonttype=42,

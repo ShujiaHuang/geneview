@@ -34,7 +34,7 @@ from geneview.genometracks._multi_view import plot_tracks_grid, plot_tracks_mult
 from geneview.genometracks._convenience import visualize_files, _normalise_ext
 from geneview.genometracks._genome_axis import GenomeAxisTrack, get_ticks
 from geneview.genometracks._io import read_bed, read_bigbed
-from geneview.genometracks._track_plot import plot_tracks, find_tracks
+from geneview.genometracks._track_plot import plot_tracks, find_tracks, add_panel_labels
 from geneview.genometracks._vcf_track import VCFTrack
 
 import pysam
@@ -830,8 +830,14 @@ class TestColorByStrand:
     def test_color_by_strand_default(self):
         track = AlignmentsTrack(filepath="dummy.bam")
         assert track.color_by_strand is True
-        assert track.fill_reads_fwd == "#E89E9D"
-        assert track.fill_reads_rev == "#8C8FCE"
+        # Strand colours default to a sentinel (None) so the track can pick a
+        # colour-blind-safe pair from an active journal style; with no journal
+        # style active they resolve to the historical defaults.
+        assert track.fill_reads_fwd is None
+        assert track.fill_reads_rev is None
+        fwd, rev = track._strand_fill_colors()
+        assert fwd == "#E89E9D"
+        assert rev == "#8C8FCE"
 
     def test_color_by_strand_enabled(self):
         track = AlignmentsTrack(
@@ -985,8 +991,173 @@ class TestSaveFigure:
         plt.close("all")
 
 
-# ===========================================================================
-# _utils.py: reverse_comp tests
+class TestSaveFigureFormatSwitch:
+    """Tests for the one-line raster/vector export switch in save_figure()."""
+
+    def test_fmt_rewrites_extension(self, tmp_path):
+        from geneview.genometracks._export import save_figure
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+        out = str(tmp_path / "fig.png")
+        result = save_figure([ax], out, fmt="pdf")
+        assert result.endswith("fig.pdf")
+        assert os.path.exists(result)
+        assert not os.path.exists(out)
+        plt.close(fig)
+
+    def test_vector_true_defaults_to_pdf(self, tmp_path):
+        from geneview.genometracks._export import save_figure
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+        result = save_figure([ax], str(tmp_path / "fig.png"), vector=True)
+        assert result.endswith("fig.pdf")
+        assert os.path.exists(result)
+        plt.close(fig)
+
+    def test_vector_true_keeps_existing_vector_ext(self, tmp_path):
+        from geneview.genometracks._export import save_figure
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+        result = save_figure([ax], str(tmp_path / "fig.svg"), vector=True)
+        assert result.endswith("fig.svg")
+        assert os.path.exists(result)
+        plt.close(fig)
+
+    def test_vector_false_forces_raster(self, tmp_path):
+        from geneview.genometracks._export import save_figure
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+        result = save_figure([ax], str(tmp_path / "fig.pdf"), vector=False)
+        assert result.endswith("fig.png")
+        assert os.path.exists(result)
+        plt.close(fig)
+
+    def test_extensionless_path_is_respected(self, tmp_path):
+        """An explicit extensionless path must not be rewritten (regression)."""
+        from geneview.genometracks._export import save_figure
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+        out = str(tmp_path / "fig_noext")
+        result = save_figure([ax], out, fmt="png")
+        assert result == out
+        assert os.path.exists(out)
+        plt.close(fig)
+
+    def test_plain_png_unchanged(self, tmp_path):
+        """No fmt / vector => behaviour identical to before (regression)."""
+        from geneview.genometracks._export import save_figure
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+        out = str(tmp_path / "fig.png")
+        result = save_figure([ax], out)
+        assert result == out
+        assert os.path.exists(out)
+        plt.close(fig)
+
+
+class TestPanelLabels:
+    """Tests for add_panel_labels() a/b/c sub-panel tagging."""
+
+    def test_auto_lowercase_letters(self):
+        fig, axs = plt.subplots(1, 3)
+        texts = add_panel_labels(list(axs))
+        assert [t.get_text() for t in texts] == ["a", "b", "c"]
+        plt.close(fig)
+
+    def test_single_axes_accepted(self):
+        fig, ax = plt.subplots()
+        texts = add_panel_labels(ax)
+        assert [t.get_text() for t in texts] == ["a"]
+        plt.close(fig)
+
+    def test_custom_labels(self):
+        fig, axs = plt.subplots(1, 2)
+        texts = add_panel_labels(list(axs), labels=["i", "ii"])
+        assert [t.get_text() for t in texts] == ["i", "ii"]
+        plt.close(fig)
+
+    def test_list_of_lists_uses_first_axes(self):
+        fig, axs = plt.subplots(2, 2)
+        views = [[axs[0, 0], axs[0, 1]], [axs[1, 0], axs[1, 1]]]
+        texts = add_panel_labels(views)
+        # One label per view (not per axes).
+        assert [t.get_text() for t in texts] == ["a", "b"]
+        assert texts[0].axes is axs[0, 0]
+        assert texts[1].axes is axs[1, 0]
+        plt.close(fig)
+
+    def test_uppercase_from_active_style(self):
+        from geneview.plotstyle import use_style
+        fig, axs = plt.subplots(1, 2)
+        with use_style("science"):
+            texts = add_panel_labels(list(axs))
+        assert [t.get_text() for t in texts] == ["A", "B"]
+        assert texts[0].get_fontsize() == 8.0
+        plt.close(fig)
+
+    def test_no_active_style_lowercase_default(self):
+        from geneview.plotstyle import use_style
+        fig, axs = plt.subplots(1, 2)
+        with use_style("nature"):
+            texts = add_panel_labels(list(axs))
+        assert [t.get_text() for t in texts] == ["a", "b"]
+        assert texts[0].get_fontsize() == 8.0
+        plt.close(fig)
+
+    def test_explicit_overrides_win(self):
+        from geneview.plotstyle import use_style
+        fig, axs = plt.subplots(1, 2)
+        with use_style("science"):
+            texts = add_panel_labels(
+                list(axs), uppercase=False, fontsize=20, fontweight="normal"
+            )
+        assert [t.get_text() for t in texts] == ["a", "b"]
+        assert texts[0].get_fontsize() == 20
+        plt.close(fig)
+
+
+class TestPlotTracksGridPanelLabels:
+    """Integration: plot_tracks_grid(panel_labels=...) adds labels."""
+
+    def _make_views(self):
+        df = pd.DataFrame({
+            "chrom": ["chr1", "chr1"],
+            "start": [100, 500],
+            "end": [300, 700],
+            "name": ["f1", "f2"],
+        })
+        region = GenomicInterval("chr1", 0, 1000)
+        view1 = [GenomeAxisTrack(), AnnotationTrack(df, name="A")]
+        view2 = [GenomeAxisTrack(), AnnotationTrack(df, name="B")]
+        return [view1, view2], [region, region]
+
+    def test_panel_labels_true_adds_letters(self):
+        views, regions = self._make_views()
+        all_axes = plot_tracks_grid(views, regions=regions, panel_labels=True)
+        anchors = [va[0] for va in all_axes]
+        texts = [t.get_text() for ax in anchors for t in ax.texts]
+        assert "a" in texts and "b" in texts
+        plt.close("all")
+
+    def test_panel_labels_default_off(self):
+        views, regions = self._make_views()
+        all_axes = plot_tracks_grid(views, regions=regions)
+        anchors = [va[0] for va in all_axes]
+        texts = [t.get_text() for ax in anchors for t in ax.texts]
+        assert "a" not in texts and "b" not in texts
+        plt.close("all")
+
+    def test_panel_labels_custom_list(self):
+        views, regions = self._make_views()
+        all_axes = plot_tracks_grid(
+            views, regions=regions, panel_labels=["I", "II"]
+        )
+        anchors = [va[0] for va in all_axes]
+        texts = [t.get_text() for ax in anchors for t in ax.texts]
+        assert "I" in texts and "II" in texts
+        plt.close("all")
+
+
 # ===========================================================================
 
 class TestReverseComp:
