@@ -35,10 +35,10 @@ check_call([sys.executable, "-m", "build"])
 
 # Validate only the artifacts for the version being released so stale files
 # from earlier builds in dist/ do not cause false failures.
-sdist = "dist/{}-{}.tar.gz".format(distname, version)
-wheel = "dist/{}-{}-py3-none-any.whl".format(distname, version)
+sdist = f"dist/{distname}-{version}.tar.gz"
+wheel = f"dist/{distname}-{version}-py3-none-any.whl"
 check_call(["twine", "check", sdist, wheel])
 
-print("\nBuilt and validated {} {}.".format(distname, version))
+print(f"\nBuilt and validated {distname} {version}.")
 print("To publish to PyPI, run:\n")
-print("    twine upload {} {}\n".format(sdist, wheel))
+print(f"    twine upload {sdist} {wheel}\n")
