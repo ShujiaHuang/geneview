@@ -95,7 +95,16 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
                                  facecolor=band_color, alpha=alpha, **band_style)
             ax.add_patch(band_rec)
 
-        max_end = max(max_end, int(kc_df["chromEnd"].max()))
+        # Draw a continuous outline spanning the whole chromosome so it does not
+        # look fragmented where white (gneg) bands blend into the background.
+        chrom_start = int(kc_df["chromStart"].min())
+        chrom_end = int(kc_df["chromEnd"].max())
+        outline = Rectangle((chrom_start, row), chrom_end - chrom_start, width,
+                            facecolor="none", edgecolor="#3f3f3f",
+                            linewidth=kwargs.get("linewidth", 0.8), zorder=3)
+        ax.add_patch(outline)
+
+        max_end = max(max_end, chrom_end)
         row += 1
 
     # Scale the x-axis to the plotted chromosome(s); fall back to the full
