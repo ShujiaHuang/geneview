@@ -729,6 +729,10 @@ class FastaGenomeSource(GenomeSource):
     sequence retrieval.  The object is picklable (the file handle is
     reopened on demand after unpickling).
 
+    The lazily opened file handle can be released explicitly with
+    :meth:`close` (it is reopened on the next access), or automatically
+    by using the object as a context manager.
+
     Parameters
     ----------
     path : str
@@ -795,6 +799,33 @@ class FastaGenomeSource(GenomeSource):
         state = self.__dict__.copy()
         state["_fasta"] = None
         return state
+
+    def close(self) -> None:
+        """Close the underlying FASTA handle if it is open.
+
+        The handle is lazily reopened on the next sequence access, so
+        calling :meth:`close` more than once is safe.
+        """
+        if self._fasta is not None:
+            try:
+                self._fasta.close()
+            finally:
+                self._fasta = None
+
+    def __enter__(self) -> "FastaGenomeSource":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        self.close()
+        return False
+
+    def __del__(self):
+        # Best-effort cleanup of the lazily opened FASTA handle so the
+        # underlying file descriptor is not leaked at garbage collection.
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
 def read_auto(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:

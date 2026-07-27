@@ -4,6 +4,11 @@ AlignmentsTrack Example
 
 Demonstrates the AlignmentsTrack for displaying BAM/CRAM read alignments
 using real test data: coverage, pileup, sashimi, and combined views.
+
+The sashimi view draws one arc per splice junction. Arcs are coloured by the
+inferred junction strand (forward / reverse / unknown, taken from the ``XS``
+tag when present) and their line width scales with the number of supporting
+reads, matching the IGV/Gviz convention.
 """
 import os
 import matplotlib
@@ -102,6 +107,11 @@ if has_pysam:
         type=["coverage", "sashimi"],
         name="Sashimi",
         sashimi_score=1,
+        # Strand-aware arc colours (defaults shown for documentation):
+        # forward = warm red, reverse = cool blue, unknown = grey.
+        col_sashimi_fwd="#D35F5F",
+        col_sashimi_rev="#5A5FA8",
+        col_sashimi_unknown="#777777",
     )
     axes = plot_tracks(
         [GenomeAxisTrack(), track_sashimi],

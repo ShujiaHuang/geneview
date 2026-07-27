@@ -127,13 +127,15 @@ class GroupedAlignmentsTrack(Track):
         import pysam
 
         aln = pysam.AlignmentFile(self.filepath, "rb")
-        chrom = match_chrom_format(region.chrom, aln.references)
+        try:
+            chrom = match_chrom_format(region.chrom, aln.references)
 
-        # Discover categories
-        categories = set()
-        for read in aln.fetch(chrom, region.start, region.end):
-            categories.add(self.keyfn(read))
-        aln.close()
+            # Discover categories
+            categories = set()
+            for read in aln.fetch(chrom, region.start, region.end):
+                categories.add(self.keyfn(read))
+        finally:
+            aln.close()
 
         categories = sorted(categories)
         self._sub_tracks = []
@@ -212,9 +214,11 @@ class GroupedAlignmentsTrack(Track):
         try:
             import pysam
             aln = pysam.AlignmentFile(self.filepath, "rb")
-            refs = aln.references
-            lengths = aln.lengths
-            aln.close()
+            try:
+                refs = aln.references
+                lengths = aln.lengths
+            finally:
+                aln.close()
             if refs:
                 return GenomicInterval(refs[0], 0, int(lengths[0]))
         except Exception:

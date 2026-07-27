@@ -7,6 +7,7 @@ plots, with optional mismatch and indel highlighting.
 Ported from Gviz's AlignmentsTrack-class.R.
 """
 
+import warnings
 from typing import Optional, List, Dict, Any, Union, Callable
 
 import numpy as np
@@ -18,6 +19,7 @@ from matplotlib.collections import PolyCollection
 
 from ._base import Track, StackedTrack, GenomicInterval
 from ._utils import match_chrom_format
+from ._sequence_track import _DEFAULT_NUC_COLORS as _NUC_COLORS
 
 
 # CIGAR operation codes (from pysam / SAM spec)
@@ -31,11 +33,10 @@ _CIGAR_P = 6   # padding
 _CIGAR_EQ = 7  # sequence match
 _CIGAR_X = 8   # sequence mismatch
 
-# Nucleotide colors (matching genomeview: A=blue, C=orange, G=green, T=black)
-_NUC_COLORS = {
-    "A": "blue", "C": "orange", "G": "green", "T": "black",
-    "N": "gray",
-}
+# Nucleotide colors for mismatch highlighting are unified with
+# SequenceTrack and the IGV / biovizBase convention (colour-blind-safe
+# Okabe-Ito palette): A=green, C=blue, G=orange, T=red, N=gray.
+# ``_NUC_COLORS`` is imported from ._sequence_track (see above).
 
 
 class AlignmentsTrack(StackedTrack):
@@ -76,13 +77,20 @@ class AlignmentsTrack(StackedTrack):
     reverse_stacking : bool
         If True, reverse the stacking order.  Default is False.
     col_mates : str
-        Color for mate-pair connectors.  Default is ``"lightblue"``.
+        Color for mate-pair connectors.  Default is ``"gray"``.
     col_gap : str
         Color for gap (intron) lines in reads.  Default is ``"lightgray"``.
     col_deletion : str
-        Color for deletion indicators.  Default is ``"red"``.
+        Color for deletion indicators.  Default is ``"black"``.
     col_insertion : str
-        Color for insertion indicators.  Default is ``"blue"``.
+        Color for insertion indicators.  Default is ``"purple"``.
+    col_sashimi_fwd, col_sashimi_rev : str
+        Arc colours for splice junctions supported predominantly by
+        forward- / reverse-strand reads (IGV-style strand colouring).
+        Defaults are ``"#D35F5F"`` and ``"#5A5FA8"``.
+    col_sashimi_unknown : str
+        Arc colour for junctions with tied or undetermined strand
+        support.  Default is ``"#777777"``.
     fill_coverage : str
         Fill color for coverage histogram.  Default is ``"#5B8DB8"``.
     fill_reads : str
@@ -179,6 +187,9 @@ class AlignmentsTrack(StackedTrack):
         col_gap: str = "lightgray",
         col_deletion: str = "black",
         col_insertion: str = "purple",
+        col_sashimi_fwd: str = "#D35F5F",
+        col_sashimi_rev: str = "#5A5FA8",
+        col_sashimi_unknown: str = "#777777",
         fill_coverage: str = "#5B8DB8",
         fill_reads: str = "#BDBDBD",
         alpha_reads: float = 0.8,
@@ -225,6 +236,9 @@ class AlignmentsTrack(StackedTrack):
         self.col_gap = col_gap
         self.col_deletion = col_deletion
         self.col_insertion = col_insertion
+        self.col_sashimi_fwd = col_sashimi_fwd
+        self.col_sashimi_rev = col_sashimi_rev
+        self.col_sashimi_unknown = col_sashimi_unknown
         self.fill_coverage = fill_coverage
         self.fill_reads = fill_reads
         self.alpha_reads = alpha_reads
@@ -274,16 +288,21 @@ class AlignmentsTrack(StackedTrack):
         """
         pysam = self._import_pysam()
         aln = pysam.AlignmentFile(self.filepath, "rb")
-        chrom = match_chrom_format(region.chrom, aln.references)
-        raw_reads = aln.fetch(chrom, region.start, region.end)
-        if self.read_filter is not None:
-            reads = [r for r in raw_reads if self.read_filter(r)]
-        else:
-            reads = list(raw_reads)
-        # Filter secondary/supplementary if requested
-        if not self.include_secondary:
-            reads = [r for r in reads
-                     if not r.is_secondary and not r.is_supplementary]
+        try:
+            chrom = match_chrom_format(region.chrom, aln.references)
+            raw_reads = aln.fetch(chrom, region.start, region.end)
+            if self.read_filter is not None:
+                reads = [r for r in raw_reads if self.read_filter(r)]
+            else:
+                reads = list(raw_reads)
+            # Filter secondary/supplementary if requested
+            if not self.include_secondary:
+                reads = [r for r in reads
+                         if not r.is_secondary and not r.is_supplementary]
+        except Exception:
+            # Never leak the open BAM/CRAM handle on failure.
+            aln.close()
+            raise
         return aln, reads
 
     def _build_mismatch_counts(self, region: GenomicInterval):
@@ -308,14 +327,16 @@ class AlignmentsTrack(StackedTrack):
         """Compute per-base coverage across the region."""
         pysam = self._import_pysam()
         aln = pysam.AlignmentFile(self.filepath, "rb")
-        chrom = match_chrom_format(region.chrom, aln.references)
-        cov = aln.count_coverage(
-            chrom, region.start, region.end,
-            quality_threshold=0,
-        )
-        # cov is (A, C, G, T) arrays; sum for total coverage
-        total = np.array(cov[0]) + np.array(cov[1]) + np.array(cov[2]) + np.array(cov[3])
-        aln.close()
+        try:
+            chrom = match_chrom_format(region.chrom, aln.references)
+            cov = aln.count_coverage(
+                chrom, region.start, region.end,
+                quality_threshold=0,
+            )
+            # cov is (A, C, G, T) arrays; sum for total coverage
+            total = np.array(cov[0]) + np.array(cov[1]) + np.array(cov[2]) + np.array(cov[3])
+        finally:
+            aln.close()
         if self.transformation is not None:
             total = self.transformation(total.astype(float))
         return total
@@ -394,9 +415,22 @@ class AlignmentsTrack(StackedTrack):
         """Draw individual reads as boxes with gaps and mismatches."""
         try:
             aln, reads = self._fetch_reads(region)
-        except Exception:
+        except Exception as exc:
+            warnings.warn(
+                f"{self.name!r} track: could not fetch reads for "
+                f"{region.chrom}:{region.start}-{region.end} ({exc}); "
+                "the pileup panel is left blank.",
+                UserWarning, stacklevel=2,
+            )
             return
 
+        try:
+            self._render_pileup(ax, region, reads)
+        finally:
+            aln.close()
+
+    def _render_pileup(self, ax, region: GenomicInterval, reads) -> None:
+        """Render the pileup panel body (reads already fetched)."""
         if not reads:
             return
 
@@ -419,7 +453,6 @@ class AlignmentsTrack(StackedTrack):
                 read_ends.append(re)
 
         if not read_starts:
-            aln.close()
             return
 
         from ._stacking import compute_stacking
@@ -496,8 +529,6 @@ class AlignmentsTrack(StackedTrack):
                         color=self.col_mates, linewidth=0.3,
                         alpha=0.5, zorder=1,
                     )
-
-        aln.close()
 
     def _draw_read_body(self, ax, read, region, x_start, x_end, y_center, h,
                          read_color):
@@ -742,64 +773,59 @@ class AlignmentsTrack(StackedTrack):
         """Draw sashimi plot (splice junction arcs with read counts)."""
         try:
             aln, reads = self._fetch_reads(region)
-        except Exception:
+        except Exception as exc:
+            warnings.warn(
+                f"{self.name!r} track: could not fetch reads for "
+                f"{region.chrom}:{region.start}-{region.end} ({exc}); "
+                "the sashimi panel is left blank.",
+                UserWarning, stacklevel=2,
+            )
             return
 
-        if not reads:
-            return
-
-        # Collect junction information from reads
-        junctions = {}  # (start, end) -> count
-
-        for read in reads:
-            if read.is_unmapped or read.cigartuples is None:
-                continue
-
-            ref_pos = read.reference_start
-            for op, length in read.cigartuples:
-                if op == _CIGAR_N and length > 0:
-                    j_start = ref_pos
-                    j_end = ref_pos + length
-                    key = (j_start, j_end)
-                    junctions[key] = junctions.get(key, 0) + 1
-                    ref_pos += length
-                elif op in (_CIGAR_M, _CIGAR_EQ, _CIGAR_X, _CIGAR_D):
-                    ref_pos += length
-
-        aln.close()
+        try:
+            junctions = self._collect_junctions(reads)
+        finally:
+            aln.close()
 
         # Apply sashimi filter if set
         if self.sashimi_filter is not None:
             filtered = {}
-            for (js, je), count in junctions.items():
+            for (js, je), rec in junctions.items():
                 for _, frow in self.sashimi_filter.iterrows():
                     tol = self.sashimi_filter_tolerance
                     if (abs(js - frow["start"]) <= tol and
                             abs(je - frow["end"]) <= tol):
-                        filtered[(js, je)] = count
+                        filtered[(js, je)] = rec
                         break
             junctions = filtered
 
         # Filter by minimum score
-        junctions = {k: v for k, v in junctions.items() if v >= self.sashimi_score}
+        junctions = {k: v for k, v in junctions.items()
+                     if v[0] >= self.sashimi_score}
 
         if not junctions:
             return
 
-        # Draw arcs
-        max_count = max(junctions.values())
+        # Draw arcs.  Colour encodes junction strand; arc height scales
+        # linearly with the supporting-read count (Gviz convention) and
+        # line width scales with its square root, which keeps highly
+        # expressed junctions readable without dwarfing rare ones.
+        max_count = max(rec[0] for rec in junctions.values())
         max_arc_height = self.sashimi_height
 
-        for (js, je), count in junctions.items():
+        for (js, je), (count, n_fwd, n_rev) in junctions.items():
             mid = (js + je) / 2
             width = je - js
-            arc_height = max_arc_height * (count / max_count)
+            frac = count / max_count
+            arc_height = max_arc_height * frac
+            arc_color = self._junction_color(n_fwd, n_rev)
+            arc_lw = 0.4 + 2.6 * np.sqrt(frac)
 
             # Draw arc
             arc = Arc(
                 (mid, 0.05), width, arc_height * 2,
                 angle=0, theta1=0, theta2=180,
-                color="#E63946", linewidth=1.0, alpha=0.7, zorder=3,
+                color=arc_color, linewidth=arc_lw, alpha=0.8, zorder=3,
             )
             ax.add_patch(arc)
 
@@ -807,17 +833,54 @@ class AlignmentsTrack(StackedTrack):
             ax.text(
                 mid, 0.05 + arc_height + 0.02, str(count),
                 ha="center", va="bottom", fontsize=5,
-                color="#E63946", zorder=5,
+                color=arc_color, zorder=5,
             )
+
+    def _collect_junctions(self, reads) -> Dict[tuple, list]:
+        """Collect splice-junction support from CIGAR N operations.
+
+        Returns ``{(start, end): [count, n_forward, n_reverse]}``.
+        Junction strand is taken from the ``XS`` tag when present
+        (stranded RNA-seq), falling back to the read's own strand.
+        """
+        junctions = {}
+        for read in reads:
+            if read.is_unmapped or read.cigartuples is None:
+                continue
+            if read.has_tag("XS"):
+                strand_idx = 1 if read.get_tag("XS") == "+" else 2
+            else:
+                strand_idx = 2 if read.is_reverse else 1
+            ref_pos = read.reference_start
+            for op, length in read.cigartuples:
+                if op == _CIGAR_N and length > 0:
+                    rec = junctions.setdefault((ref_pos, ref_pos + length),
+                                               [0, 0, 0])
+                    rec[0] += 1
+                    rec[strand_idx] += 1
+                    ref_pos += length
+                elif op in (_CIGAR_M, _CIGAR_EQ, _CIGAR_X, _CIGAR_D):
+                    ref_pos += length
+        return junctions
+
+    def _junction_color(self, n_fwd: int, n_rev: int) -> str:
+        """Sashimi arc colour from the strand balance of supporting reads."""
+        if n_fwd > n_rev:
+            return self.col_sashimi_fwd
+        if n_rev > n_fwd:
+            return self.col_sashimi_rev
+        return self.col_sashimi_unknown
 
     def get_region(self) -> Optional[GenomicInterval]:
         """Return the region covered by the BAM file (from index)."""
         try:
             pysam = self._import_pysam()
             aln = pysam.AlignmentFile(self.filepath, "rb")
-            refs = aln.references
-            lengths = aln.lengths
-            aln.close()
+            try:
+                refs = aln.references
+                lengths = aln.lengths
+            finally:
+                aln.close()
             if refs:
                 return GenomicInterval(refs[0], 0, int(lengths[0]))
         except Exception:
@@ -900,14 +963,16 @@ class BAMCoverageTrack(Track):
         """Draw coverage line or filled area."""
         pysam = self._import_pysam()
         aln = pysam.AlignmentFile(self.filepath, "rb")
-        chrom = match_chrom_format(region.chrom, aln.references)
+        try:
+            chrom = match_chrom_format(region.chrom, aln.references)
 
-        # Compute per-base coverage
-        cov = aln.count_coverage(
-            chrom, region.start, region.end, quality_threshold=0,
-        )
-        total = np.array(cov[0]) + np.array(cov[1]) + np.array(cov[2]) + np.array(cov[3])
-        aln.close()
+            # Compute per-base coverage
+            cov = aln.count_coverage(
+                chrom, region.start, region.end, quality_threshold=0,
+            )
+            total = np.array(cov[0]) + np.array(cov[1]) + np.array(cov[2]) + np.array(cov[3])
+        finally:
+            aln.close()
 
         if len(total) == 0:
             ax.set_xlim(region.start, region.end)
@@ -957,9 +1022,11 @@ class BAMCoverageTrack(Track):
         try:
             pysam = self._import_pysam()
             aln = pysam.AlignmentFile(self.filepath, "rb")
-            refs = aln.references
-            lengths = aln.lengths
-            aln.close()
+            try:
+                refs = aln.references
+                lengths = aln.lengths
+            finally:
+                aln.close()
             if refs:
                 return GenomicInterval(refs[0], 0, int(lengths[0]))
         except Exception:

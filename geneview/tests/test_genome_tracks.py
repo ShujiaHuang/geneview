@@ -34,7 +34,8 @@ from geneview.genometracks._annotation import AnnotationTrack
 from geneview.genometracks._gene_region import GeneRegionTrack
 from geneview.genometracks._data_track import DataTrack
 from geneview.genometracks._highlight import HighlightTrack
-from geneview.genometracks._io import read_bed, read_gff, read_bedgraph, read_auto
+from geneview.genometracks._io import (read_bed, read_gff, read_bedgraph,
+                                       read_auto, FastaGenomeSource)
 from geneview.genometracks._ideogram import IdeogramTrack
 
 
@@ -565,6 +566,54 @@ class TestIO:
             with pytest.raises(ValueError, match="Cannot determine"):
                 read_auto(f.name)
         os.unlink(f.name)
+
+
+class TestFastaGenomeSource:
+    """FastaGenomeSource must manage its lazily opened FASTA handle."""
+
+    @staticmethod
+    def _make_fasta(tmp_path):
+        pysam = pytest.importorskip("pysam")
+        fa_path = tmp_path / "tiny.fa"
+        fa_path.write_text(">chr1\n" + "ACGT" * 250 + "\n")  # 1000 bp
+        pysam.faidx(str(fa_path))
+        return str(fa_path)
+
+    def test_get_seq(self, tmp_path):
+        src = FastaGenomeSource(self._make_fasta(tmp_path))
+        assert src.get_seq("chr1", 0, 8) == "ACGTACGT"
+        src.close()
+
+    def test_close_and_lazy_reopen(self, tmp_path):
+        src = FastaGenomeSource(self._make_fasta(tmp_path))
+        src.get_seq("chr1", 0, 4)
+        assert src._fasta is not None
+        src.close()
+        assert src._fasta is None
+        # The handle is lazily reopened on the next access.
+        assert src.get_seq("chr1", 4, 12) == "ACGTACGT"
+        assert src._fasta is not None
+        src.close()
+
+    def test_close_idempotent(self, tmp_path):
+        src = FastaGenomeSource(self._make_fasta(tmp_path))
+        src.close()  # never opened -> no-op
+        src.get_seq("chr1", 0, 4)
+        src.close()
+        src.close()  # second close is safe
+        assert src._fasta is None
+
+    def test_context_manager(self, tmp_path):
+        with FastaGenomeSource(self._make_fasta(tmp_path)) as src:
+            assert src.get_seq("chr1", 0, 4) == "ACGT"
+            assert src._fasta is not None
+        assert src._fasta is None
+
+    def test_reverse_strand(self, tmp_path):
+        src = FastaGenomeSource(self._make_fasta(tmp_path))
+        # reverse complement of ACGTACGT is ACGTACGT (repeat unit)
+        assert src.get_seq("chr1", 0, 8, "-") == "ACGTACGT"
+        src.close()
 
 
 # =====================================================================
