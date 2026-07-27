@@ -9,11 +9,14 @@ unit-testing convenience functions.
 """
 from ._misc import is_numeric
 from ._dataset import get_dataset_names, load_dataset
+from ._karyotype_io import read_cytoband, CYTOBAND_COLUMNS
 from ._adjust_text import adjust_text
 from ._decorators import deprecate_positional_args
 
 __all__ = ["is_numeric",
            "get_dataset_names",
            "load_dataset",
+           "read_cytoband",
+           "CYTOBAND_COLUMNS",
            "adjust_text",
            "deprecate_positional_args"]

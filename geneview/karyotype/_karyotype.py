@@ -5,12 +5,11 @@ Copyright (c) Shujia Huang
 Date: 2016-02-19
 """
 import numpy as np
-from pandas import DataFrame
-import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-from ..palette import circos  # ``circos`` is a color dict
+from ..palette import get_cytoband_color
+from ..utils import read_cytoband
 
 
 def _chrom_sort_key(chrom):
@@ -72,31 +71,36 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
     if ax is None:
         ax = plt.gca()
 
-    if isinstance(data, str):
-        # suppose to be a path to the input file or a url to the file
-        data = pd.read_table(data, header=0,
-                             names=["chrom", "start", "end", "name", "gie_stain"])
-    elif isinstance(data, DataFrame):
-        # reset the columns
-        data = DataFrame(data.values, columns=["chrom", "start", "end", "name", "gie_stain"])
-    else:
-        # convert to DataFrame of pandas
-        data = DataFrame(data, columns=["chrom", "start", "end", "name", "gie_stain"])
+    # Normalize any supported input (file/URL, DataFrame, or array of rows)
+    # into the canonical chrom/chromStart/chromEnd/name/gieStain schema.
+    data = read_cytoband(data)
 
     yaxis = []
-    for i, (chrom, kc_df) in enumerate(sorted(data.groupby("chrom"), key=lambda x: _chrom_sort_key(x[0]))):
+    row = 0
+    max_end = 0
+    for chrom, kc_df in sorted(data.groupby("chrom"), key=lambda x: _chrom_sort_key(x[0])):
 
         if CHR is not None and chrom != CHR:
             continue
 
         yaxis.append(chrom)
         for _, r in kc_df.iterrows():
-            band_color = circos[r.gie_stain] if r.gie_stain in circos else color4none
-            band_rec = Rectangle((r.start, i), r.end - r.start, width,
-                                 color=band_color, **kwargs)
+            band_color = get_cytoband_color(r.gieStain, default=color4none)
+            # Use facecolor (not ``color``) so callers can override the band
+            # border via ``edgecolor``/``linewidth`` kwargs; default the edge to
+            # the fill color to keep the historical borderless appearance.
+            band_style = dict(kwargs)
+            band_style.setdefault("edgecolor", band_color)
+            band_rec = Rectangle((r.chromStart, row), r.chromEnd - r.chromStart, width,
+                                 facecolor=band_color, alpha=alpha, **band_style)
             ax.add_patch(band_rec)
 
-    xmax = data["end"].max() * 1.1
+        max_end = max(max_end, int(kc_df["chromEnd"].max()))
+        row += 1
+
+    # Scale the x-axis to the plotted chromosome(s); fall back to the full
+    # dataset if ``CHR`` matched nothing so we never divide by zero below.
+    xmax = (max_end if max_end else int(data["chromEnd"].max())) * 1.1
     xticks = np.arange(0, xmax, xmax / 10.)
     ax.set_xticks(xticks)
     ax.set_xticklabels(["{0}M".format(int(i / 10 ** 6)) for i in xticks])

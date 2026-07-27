@@ -18,33 +18,22 @@ from matplotlib.path import Path
 
 from ._base import Track, GenomicInterval
 from ..utils._dataset import load_dataset
+from ..utils import read_cytoband
+from ..palette import CYTOBAND_COLORS, get_cytoband_color
 
 
-# Cytoband colors (Gviz: biovizBase CYTOBAND palette / circos)
-_CYTOBAND_COLORS = {
-    "gneg": "#FFFFFF",
-    "gpos25": "#C8C8C8",
-    "gpos33": "#D2D2D2",
-    "gpos50": "#C8C8C8",
-    "gpos66": "#A0A0A0",
-    "gpos75": "#828282",
-    "gpos100": "#000000",
-    "gpos": "#000000",
-    "acen": "#D92F27",
-    "stalk": "#647FA4",
-    "gvar": "#DCDCDC",
-}
+# Cytoband colors and the band-color lookup are defined once in the palette
+# module (derived from the Circos karyotype palette).  These module-level
+# aliases keep the canonical definitions shared with ``karyoplot`` while
+# preserving the historical private names used throughout ``draw``.
+_CYTOBAND_COLORS = CYTOBAND_COLORS
+_get_band_color = get_cytoband_color
 
 # Default karyotype dataset names in geneview-data repo
 _KARYOTYPE_DATASETS = {
     "hg38": "karyotype_human_hg38.txt",
     "hg19": "karyotype_human_hg19.txt",
 }
-
-
-def _get_band_color(gie_stain: str) -> str:
-    """Get the color for a cytoband gieStain type."""
-    return _CYTOBAND_COLORS.get(str(gie_stain).strip(), "#C8C8C8")
 
 
 class IdeogramTrack(Track):
@@ -182,51 +171,13 @@ class IdeogramTrack(Track):
             self.name = str(self.chromosome)
 
     def _load_bands(self, bands) -> Optional[pd.DataFrame]:
-        """Load and validate cytoband data."""
+        """Load and validate cytoband data into the canonical schema."""
         if bands is None:
             return None
-
-        if isinstance(bands, str):
-            # Read tab-separated file.
-            # UCSC/Gviz karyotype files use '#chrom' as the first header line;
-            # plain TSV files use 'chrom'.  Peek at the first character to decide.
-            with open(bands) as fh:
-                first_char = fh.read(1)
-            if first_char == "#":
-                bands = pd.read_table(
-                    bands, comment="#", header=None,
-                    names=["chrom", "chromStart", "chromEnd", "name", "gieStain"],
-                )
-            else:
-                bands = pd.read_table(bands)
-
-        if not isinstance(bands, pd.DataFrame):
-            raise TypeError(f"Expected DataFrame or file path, got {type(bands)}")
-
-        # Normalize column names
-        col_map = {}
-        for c in bands.columns:
-            cl = c.lower().strip()
-            if cl in ("chrom", "chromosome", "chr"):
-                col_map[c] = "chrom"
-            elif cl in ("chromstart", "start"):
-                col_map[c] = "chromStart"
-            elif cl in ("chromend", "end"):
-                col_map[c] = "chromEnd"
-            elif cl in ("name", "band", "band_name"):
-                col_map[c] = "name"
-            elif cl in ("giestain", "gie_stain", "stain", "type"):
-                col_map[c] = "gieStain"
-        bands = bands.rename(columns=col_map)
-
-        required = {"chrom", "chromStart", "chromEnd", "name", "gieStain"}
-        missing = required - set(bands.columns)
-        if missing:
-            raise ValueError(f"Missing required columns: {missing}")
-
-        bands["chromStart"] = bands["chromStart"].astype(int)
-        bands["chromEnd"] = bands["chromEnd"].astype(int)
-        return bands
+        # Shared loader handles UCSC '#chrom' headers, plain TSV, DataFrames,
+        # and array-like inputs, returning canonical
+        # chrom/chromStart/chromEnd/name/gieStain columns.
+        return read_cytoband(bands)
 
     def get_region(self) -> Optional[GenomicInterval]:
         """Return the full extent of the chromosome."""
