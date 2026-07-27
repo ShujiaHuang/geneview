@@ -13,6 +13,7 @@ The **mutation tracks** module in geneview provides lollipop-style and dandelion
     - [Data Format](#data-format)
   - [LolliplotTrack](#lolliplottrack)
     - [Basic Usage](#basic-usage)
+    - [Automatic Node De-overlap](#automatic-node-de-overlap)
     - [Shape Types](#shape-types)
     - [Per-SNP Customization](#per-snp-customization)
     - [Tanghulu Stacking](#tanghulu-stacking)
@@ -132,6 +133,48 @@ axes[0].figure.savefig("lolliplot_basic.png", dpi=300, bbox_inches="tight")
 | `ylab` | `None` | Y-axis label text |
 | `rescale` | `None` | Coordinate remapping rules |
 
+### Automatic Node De-overlap
+
+Following trackViewer's `lolliplot()`, `LolliplotTrack` **automatically spreads
+nodes apart** when variants sit closer together than one node diameter. Without
+this, dense clusters would render as a pile of overlapping shapes with unreadable
+labels.
+
+The behaviour is fully automatic — no parameters required:
+
+```python
+# Three tight clusters (100/105/108, 400/410/420, 1400/1402) plus
+# isolated variants. The clusters spread; the isolated variants do not move.
+snp_dense = pd.DataFrame({
+    "chrom": ["chr1"] * 13,
+    "start": [10, 100, 105, 108, 400, 410, 420,
+              600, 700, 805, 840, 1400, 1402],
+    "label": ["snp10", "snp100", "snp105", "snp108", "snp400", "snp410",
+              "snp420", "snp600", "snp700", "snp805", "snp840",
+              "snp1400", "snp1402"],
+})
+
+ax = lolliplot(snp_dense, features=features, figsize=(12, 4))
+```
+
+Key properties of the spreading algorithm:
+
+- **Cluster-local**: only nodes closer than one diameter are displaced; distant
+  nodes keep their true genomic coordinate.
+- **Centroid-preserving**: each cluster is re-centred on its own centroid, so the
+  group stays visually anchored to its real location.
+- **Bounds-clamped**: displaced nodes are kept inside the visible region.
+- **Guide lines**: a thin dashed line connects each displaced node back to its
+  true position on the baseline.
+
+Spreading is applied for all shape types except `pie.stack`, where stacking
+multiple pies at a single position is the intended behaviour.
+
+> **Note.** The node radius that drives spacing depends on the plotted region
+> width, so the track fixes its x-range at draw time. When calling `draw()`
+> directly on your own axes, set `ax.set_xlim(region.start, region.end)` first
+> (the `lolliplot()` / `plot_tracks()` helpers do this for you).
+
 ### Shape Types
 
 | Type | Description |
@@ -227,7 +270,7 @@ snp_cat["side"] = ["top", "bottom", "top", "bottom",
 track = LolliplotTrack(snp_cat, features=features)
 ```
 
-When `side` is detected, the feature baseline is centered vertically (at ~0.45) to leave room on both sides.
+When `side` is detected, the feature baseline is centered vertically (at ~0.45) to leave room on both sides. Node de-overlap is applied independently on each side, and labels grow **away** from the baseline — top-side labels extend upward, bottom-side labels extend downward — so text never overlaps its own nodes.
 
 ### Multiple Shapes in Tanghulu
 
