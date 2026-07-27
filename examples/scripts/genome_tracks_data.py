@@ -17,6 +17,10 @@ from geneview.genometracks import (
     GenomeAxisTrack, DataTrack, GenomicInterval, plot_tracks, read_bedgraph,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 BEDGRAPH_FILE = os.path.join(DATA_DIR, "coverage.bedgraph")
 
@@ -37,6 +41,7 @@ for ptype in plot_types:
     axes = plot_tracks(
         [gtrack, dtrack], region=region,
         title=f"DataTrack: {ptype}", figsize=(12, 4),
+        style=STYLE,
     )
     figs.append(axes[0].figure)
 
@@ -62,6 +67,7 @@ dtrack_heat = DataTrack(heat_data, type="heatmap", name="Heatmap",
 axes_heat = plot_tracks(
     [gtrack, dtrack_heat], region=region,
     title="DataTrack: heatmap (4 samples)", figsize=(12, 5),
+    style=STYLE,
 )
 figs.append(axes_heat[0].figure)
 
@@ -73,6 +79,7 @@ dtrack_ylim = DataTrack(cov_data, type="line", name="Custom YLim",
 axes_ylim = plot_tracks(
     [gtrack, dtrack_ylim], region=region,
     title="DataTrack: custom ylim=(-5, 5)", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes_ylim[0].figure)
 
@@ -84,6 +91,7 @@ dtrack_log = DataTrack(cov_data, type="line", name="log2 Transform",
 axes_log = plot_tracks(
     [gtrack, dtrack_log], region=region,
     title="DataTrack: transformation=np.log2", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes_log[0].figure)
 
@@ -95,6 +103,7 @@ dtrack_win = DataTrack(cov_data, type="line", name="Window=50",
 axes_win = plot_tracks(
     [gtrack, dtrack_win], region=region,
     title="DataTrack: window=50 (50 bins, mean aggregation)", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes_win[0].figure)
 
@@ -106,6 +115,7 @@ dtrack_grid = DataTrack(cov_data, type="line", name="With Grid",
 axes_grid = plot_tracks(
     [gtrack, dtrack_grid], region=region,
     title="DataTrack: grid=True", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes_grid[0].figure)
 

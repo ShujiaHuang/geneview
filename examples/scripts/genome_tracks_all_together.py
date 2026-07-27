@@ -47,6 +47,10 @@ from geneview.genometracks import (
     save_figure,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 # =========================================================================
 # 1. "All Together" — PacBio + Illumina + BED on chr1 (genomeview Cell 18)
 # =========================================================================
@@ -93,7 +97,7 @@ if os.path.exists(ILLUMINA_CHR1):
     ))
 
 if len(tracks) > 1:
-    axes = plot_tracks(tracks, region=region_chr1, figsize=(14, 14))
+    axes = plot_tracks(tracks, region=region_chr1, figsize=(14, 14), style=STYLE)
     save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_all_together.png"))
     plt.close("all")
     print("  → genome_tracks_all_together.png")
@@ -137,7 +141,7 @@ if os.path.exists(PACBIO_CHR14):
     ))
 
 if len(tracks_vcf) > 1:
-    axes = plot_tracks(tracks_vcf, region=region_chr14, figsize=(14, 12))
+    axes = plot_tracks(tracks_vcf, region=region_chr14, figsize=(14, 12), style=STYLE)
     save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_all_together_vcf.png"))
     plt.close("all")
     print("  → genome_tracks_all_together_vcf.png")
@@ -190,7 +194,7 @@ if os.path.exists(PACBIO_CHR14):
     ))
 
 if len(tracks_full) > 2:
-    axes = plot_tracks(tracks_full, region=region_wide, figsize=(14, 18))
+    axes = plot_tracks(tracks_full, region=region_wide, figsize=(14, 18), style=STYLE)
     save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_all_together_full.png"))
     plt.close("all")
     print("  → genome_tracks_all_together_full.png")

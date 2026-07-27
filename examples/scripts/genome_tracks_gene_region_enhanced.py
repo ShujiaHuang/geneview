@@ -15,6 +15,13 @@ from geneview.genometracks import (
     plot_tracks, GenomeAxisTrack, GeneRegionTrack, GenomicInterval, read_gff,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look).
+#     NOTE: the upper-case STYLE below is the *journal theme* passed to
+#     plot_tracks(); the lower-case `style=` on GeneRegionTrack is the
+#     unrelated gene *drawing* style (UCSC / flybase / tssarrow / ...). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 
@@ -34,6 +41,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_exon],
     region=region, figsize=(14, 2.4),
     title="GeneRegionTrack - Exon Annotation Labels",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_exon_annotation.png"),
             dpi=150, bbox_inches="tight")
@@ -51,6 +59,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_sym],
     region=region, figsize=(14, 2.4),
     title="GeneRegionTrack - Gene Symbols",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_gene_symbols.png"),
             dpi=150, bbox_inches="tight")
@@ -67,6 +76,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_tx],
     region=region, figsize=(14, 3.2),
     title="GeneRegionTrack - Transcript Annotation",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_transcript_annotation.png"),
             dpi=150, bbox_inches="tight")
@@ -83,6 +93,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_short],
     region=region, figsize=(14, 2.2),
     title="GeneRegionTrack - Shortest Transcript",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_shortest.png"),
             dpi=150, bbox_inches="tight")
@@ -103,6 +114,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_style_exon],
     region=region, figsize=(14, 2.4),
     title="GeneRegionTrack - Flybase Style + Exon Annotation",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_style_exon_annotation.png"),
             dpi=150, bbox_inches="tight")
@@ -122,6 +134,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), grtrack_style_sym],
     region=region, figsize=(14, 2.4),
     title="GeneRegionTrack - TSS Arrow Style + Gene Symbols",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_gene_region_style_gene_symbols.png"),
             dpi=150, bbox_inches="tight")

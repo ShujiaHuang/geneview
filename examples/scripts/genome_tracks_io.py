@@ -36,6 +36,10 @@ from geneview.genometracks import (
     read_auto,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
@@ -60,6 +64,7 @@ atrack = AnnotationTrack(bed_data, name="BED (test.bed)")
 axes = plot_tracks(
     [gtrack, atrack], region=region_bed,
     title="read_bed: test.bed (chr7:127.47M)", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("io_bed")
@@ -77,6 +82,7 @@ dtrack_bg = DataTrack(bg_data, type="histogram", name="bedGraph (test.bedGraph)"
 axes = plot_tracks(
     [gtrack, dtrack_bg], region=region_bg,
     title="read_bedgraph: test.bedGraph (chr19:49.3M)", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("io_bedgraph")
@@ -86,6 +92,7 @@ dtrack_bg_line = DataTrack(bg_data, type="line", name="bedGraph line")
 axes = plot_tracks(
     [gtrack, dtrack_bg_line], region=region_bg,
     title="read_bedgraph: line plot", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("io_bedgraph_line")
@@ -105,6 +112,7 @@ try:
     axes = plot_tracks(
         [gtrack, dtrack_bw], region=region_bg,
         title="read_bigwig: test.bw (chr19:49.3M)", figsize=(12, 4),
+        style=STYLE,
     )
     figs.append(axes[0].figure)
     labels.append("io_bigwig")
@@ -128,6 +136,7 @@ try:
     axes = plot_tracks(
         [gtrack, dtrack_bam], region=region_bam,
         title="read_bam_coverage: test.bam (chr1:189.89M)", figsize=(12, 4),
+        style=STYLE,
     )
     figs.append(axes[0].figure)
     labels.append("io_bam")
@@ -154,6 +163,7 @@ grtrack_gtf = GeneRegionTrack(gtf_data, name="GTF (test.gtf)")
 axes = plot_tracks(
     [gtrack, grtrack_gtf], region=region_gene,
     title="read_gff: test.gtf (chr1:67M, SGIP1)", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("io_gtf")
@@ -163,6 +173,7 @@ grtrack_gff3 = GeneRegionTrack(gff3_data, name="GFF3 (test.gff3)")
 axes = plot_tracks(
     [gtrack, grtrack_gff3], region=region_gene,
     title="read_gff: test.gff3 (chr1:67M, SGIP1)", figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("io_gff3")
@@ -173,6 +184,7 @@ axes = plot_tracks(
     region=region_gene,
     title="GTF vs GFF3 — same gene, different formats",
     figsize=(12, 6),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("io_gtf_vs_gff3")
@@ -208,6 +220,7 @@ axes = plot_tracks(
     region=region_bg,
     title="Combined: bedGraph polygon",
     figsize=(12, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("io_combined")

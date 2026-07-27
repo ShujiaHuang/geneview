@@ -43,6 +43,10 @@ from geneview.genometracks import (
     save_figure,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 # =========================================================================
 # 1. Pre-render: shaded region overlay before drawing tracks
 # =========================================================================
@@ -59,7 +63,7 @@ tracks = [
 ]
 
 # Render the tracks first
-axes = plot_tracks(tracks, region=region, figsize=(14, 6))
+axes = plot_tracks(tracks, region=region, figsize=(14, 6), style=STYLE)
 
 # Now draw custom overlays (post-render on the returned axes)
 # Highlight a specific region with a green shading
@@ -98,7 +102,7 @@ tracks_zoom = [
     ),
 ]
 
-axes = plot_tracks(tracks_zoom, region=region_zoom, figsize=(14, 7))
+axes = plot_tracks(tracks_zoom, region=region_zoom, figsize=(14, 7), style=STYLE)
 
 # Add post-render annotations on the pileup axes (last axis)
 pileup_ax = axes[-1]
@@ -145,7 +149,7 @@ tracks_combo = [
     ),
 ]
 
-axes = plot_tracks(tracks_combo, region=region, figsize=(14, 10))
+axes = plot_tracks(tracks_combo, region=region, figsize=(14, 10), style=STYLE)
 
 # Pre-render style: add background shading to all axes
 region_a_start = start + 500
@@ -221,6 +225,7 @@ all_axes = plot_tracks_grid(
     columns=2,
     figsize=(16, 6),
     title="Side-by-Side Modular Views (genomeview Cell 12 style)",
+    style=STYLE,
 )
 
 # Add custom post-render annotations on each view

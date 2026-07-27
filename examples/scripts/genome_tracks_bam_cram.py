@@ -29,6 +29,10 @@ from geneview.genometracks import (
     GenomicInterval, plot_tracks, read_bed,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -110,6 +114,7 @@ axes1 = plot_tracks(
     title="BAM vs CRAM Coverage (histogram)"
           + (" — real test.bam" if real_bam else " — synthetic"),
     figsize=(14, 6),
+    style=STYLE,
 )
 fig1 = axes1[0].figure
 fig1.savefig(os.path.join(OUT_DIR, "genome_tracks_bam_cram_histogram.png"),
@@ -130,6 +135,7 @@ axes2 = plot_tracks(
     title="BAM vs CRAM Coverage (line overlay)"
           + (" — real test.bam" if real_bam else " — synthetic"),
     figsize=(14, 5),
+    style=STYLE,
 )
 fig2 = axes2[0].figure
 fig2.savefig(os.path.join(OUT_DIR, "genome_tracks_bam_cram_line.png"),
@@ -162,6 +168,7 @@ axes3 = plot_tracks(
     title="Annotation + BAM Coverage with Highlighted Regions",
     figsize=(14, 7),
     extend_left=0.03, extend_right=0.03,
+    style=STYLE,
 )
 fig3 = axes3[0].figure
 fig3.savefig(os.path.join(OUT_DIR, "genome_tracks_bam_cram_combined.png"),

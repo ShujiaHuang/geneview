@@ -16,6 +16,10 @@ from geneview.genometracks import (
     plot_tracks, GenomeAxisTrack, DetailsAnnotationTrack, GenomicInterval,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 
 # Create annotation data
@@ -38,6 +42,7 @@ axes = plot_tracks(
     region=region,
     figsize=(12, 4),
     title="DetailsAnnotationTrack - Default Details",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_details_default.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
@@ -64,6 +69,7 @@ axes = plot_tracks(
     region=region,
     figsize=(12, 4),
     title="DetailsAnnotationTrack - Custom Function",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_details_custom.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
@@ -83,6 +89,7 @@ axes = plot_tracks(
     region=region,
     figsize=(12, 4),
     title="DetailsAnnotationTrack - Selective",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_details_selective.png"), dpi=150, bbox_inches="tight")
 plt.close("all")

@@ -13,6 +13,19 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from geneview.genometracks import LolliplotTrack, lolliplot, GenomicInterval
+from geneview.plotstyle import get_style
+
+# ---------------------------------------------------------------------------
+# Journal style switch -- change this ONE line to render every figure below
+# in a journal-compliant theme.  Node borders, stems, connector/guide lines,
+# axis rules and font sizes are all routed through the chosen style.
+#   "nature"  -> Nature Research guidelines (thin 0.4pt rules, compact fonts)
+#   "science" -> Science / AAAS guidelines
+#   "cell"    -> Cell Press guidelines
+#   None      -> default geneview look (thicker rules, larger fonts)
+# ---------------------------------------------------------------------------
+STYLE = "nature"
+_STYLE_OBJ = get_style(STYLE) if STYLE else None
 
 # ---------------------------------------------------------------------------
 # Locate example data
@@ -31,7 +44,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # 1. Basic circle lolliplot (standalone via convenience function)
 # ---------------------------------------------------------------------------
 ax = lolliplot(snps, features=feats, type="circle",
-               figsize=(12, 4), title="Lolliplot (circle)")
+               title="Lolliplot (circle)", style=STYLE)
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_lollipop_circle.png"),
                   dpi=150, bbox_inches="tight")
 print("[INFO] Saved mutation_lollipop_circle.png")
@@ -41,7 +54,7 @@ plt.close("all")
 # 2. Pie chart lolliplot
 # ---------------------------------------------------------------------------
 ax = lolliplot(snps, features=feats, type="pie",
-               figsize=(12, 4), title="Lolliplot (pie)")
+               title="Lolliplot (pie)", style=STYLE)
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_lollipop_pie.png"),
                   dpi=150, bbox_inches="tight")
 print("[INFO] Saved mutation_lollipop_pie.png")
@@ -51,7 +64,7 @@ plt.close("all")
 # 3. Pin lolliplot
 # ---------------------------------------------------------------------------
 ax = lolliplot(snps, features=feats, type="pin",
-               figsize=(12, 4), title="Lolliplot (pin)")
+               title="Lolliplot (pin)", style=STYLE)
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_lollipop_pin.png"),
                   dpi=150, bbox_inches="tight")
 print("[INFO] Saved mutation_lollipop_pin.png")
@@ -61,7 +74,7 @@ plt.close("all")
 # 4. Flag lolliplot
 # ---------------------------------------------------------------------------
 ax = lolliplot(snps, features=feats, type="flag",
-               figsize=(12, 4), title="Lolliplot (flag)")
+               title="Lolliplot (flag)", style=STYLE)
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_lollipop_flag.png"),
                   dpi=150, bbox_inches="tight")
 print("[INFO] Saved mutation_lollipop_flag.png")
@@ -75,6 +88,7 @@ ax = lolliplot(
     cex=1.5, dashline_col="#AAAAAA",
     label_on_feature=True,
     figsize=(14, 5), title="Lolliplot (customised, cex=1.5)",
+    style=STYLE,
 )
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_lollipop_custom.png"),
                   dpi=150, bbox_inches="tight")
@@ -88,6 +102,7 @@ fig, axes = plt.subplots(4, 1, figsize=(12, 14))
 region = GenomicInterval("chr1", 0, 1500)
 for ax_i, t in zip(axes, ["circle", "pie", "pin", "flag"]):
     track = LolliplotTrack(snps, features=feats, type=t, name=f"Type: {t}")
+    track._gv_style = _STYLE_OBJ
     ax_i.set_xlim(region.start, region.end)
     track.draw(ax_i, region)
     ax_i.set_title(f"Type: {t}", fontsize=10, fontweight="bold")

@@ -18,8 +18,15 @@ import matplotlib.pyplot as plt
 
 from geneview.genometracks import (
     plot_tracks, GenomeAxisTrack, AlignmentsTrack, GenomicInterval,
-    save_figure, reverse_comp,
+    save_figure, reverse_comp, set_style,
 )
+
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+# Apply globally so the standalone track.draw() panels below match too
+# (the plot_tracks() figures also honor STYLE via their own style= argument).
+set_style(STYLE)
 
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
@@ -85,6 +92,7 @@ axes = plot_tracks(
     region=region_chr1,
     figsize=(14, 5),
     title="Custom Strand Colors (fwd=#FF6B6B, rev=#4ECDC4)",
+    style=STYLE,
 )
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_strand_custom_colors.png"))
 plt.close("all")
@@ -105,6 +113,7 @@ axes = plot_tracks(
     region=region_chr1,
     figsize=(14, 5),
     title="Soft Clipping Visualization",
+    style=STYLE,
 )
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_clipping.png"))
 plt.close("all")
@@ -180,6 +189,7 @@ axes = plot_tracks(
     region=region_indels,
     figsize=(14, 5),
     title="Combined: Clipping + Strand Color + Indel Filter + Labels",
+    style=STYLE,
 )
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_combined_features.png"))
 plt.close("all")

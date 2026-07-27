@@ -15,6 +15,10 @@ from geneview.genometracks import (
     plot_tracks, GenomeAxisTrack, AnnotationTrack, GenomicInterval,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 
@@ -43,6 +47,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), track_just],
     region=region, figsize=(12, 3),
     title="AnnotationTrack - Group Label Justification",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_annotation_just_group.png"),
             dpi=150, bbox_inches="tight")
@@ -60,6 +65,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), track_col],
     region=region, figsize=(12, 3),
     title="AnnotationTrack - Custom Connector Lines",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_annotation_col_line.png"),
             dpi=150, bbox_inches="tight")
@@ -86,6 +92,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), track_over],
     region=region_over, figsize=(12, 3),
     title="AnnotationTrack - Overplotting Indicator",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_annotation_overplotting.png"),
             dpi=150, bbox_inches="tight")
@@ -105,6 +112,7 @@ axes = plot_tracks(
     [GenomeAxisTrack(), track_merge],
     region=region, figsize=(12, 3),
     title="AnnotationTrack - Merge Groups",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_annotation_merge_groups.png"),
             dpi=150, bbox_inches="tight")
@@ -125,6 +133,7 @@ try:
         [GenomeAxisTrack(), track_from_bam],
         region=bam_region, figsize=(12, 4),
         title="AnnotationTrack.from_bam()",
+        style=STYLE,
     )
     plt.savefig(os.path.join(FIG_DIR, "genome_tracks_annotation_from_bam.png"),
                 dpi=150, bbox_inches="tight")

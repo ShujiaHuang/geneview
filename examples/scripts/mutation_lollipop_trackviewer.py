@@ -59,7 +59,7 @@ def _save(fig, name):
 # 1. Basic lolliplot  (vignette §Lolliplot)
 # ===================================================================
 ax = lolliplot(sample_df, features=features_df,
-               figsize=(12, 4), title="Basic Lolliplot")
+               title="Basic Lolliplot")
 _save(ax.figure, "mutation_tv_01_basic.png")
 
 # ===================================================================
@@ -68,7 +68,7 @@ _save(ax.figure, "mutation_tv_01_basic.png")
 region_zoom = GenomicInterval("chr1", 104, 109)
 ax = lolliplot(sample_df, features=features_df,
                region=region_zoom,
-               figsize=(12, 4), title="Lolliplot — Zoomed to 104-109")
+               title="Lolliplot — Zoomed to 104-109")
 _save(ax.figure, "mutation_tv_02_range.png")
 
 # ===================================================================
@@ -77,7 +77,7 @@ _save(ax.figure, "mutation_tv_02_range.png")
 features_colored = features_df.copy()
 features_colored["fill"] = ["#FF8833", "#51C6E6", "#DFA32D"]
 ax = lolliplot(sample_df, features=features_colored,
-               figsize=(12, 4), title="Custom Feature Colors")
+               title="Custom Feature Colors")
 _save(ax.figure, "mutation_tv_03_feature_colors.png")
 
 # ===================================================================
@@ -91,7 +91,7 @@ sample_color["fill"] = [palette[i % len(palette)] for i in range(len(SNP))]
 sample_color["border"] = np.random.choice(["#CCCCCC", "#4D4D4D"], len(SNP))
 sample_color["alpha"] = np.random.uniform(0.4, 1.0, len(SNP))
 ax = lolliplot(sample_color, features=features_colored,
-               figsize=(12, 4), title="Custom SNP Colors & Opacity")
+               title="Custom SNP Colors & Opacity")
 _save(ax.figure, "mutation_tv_04_snp_colors.png")
 
 # ===================================================================
@@ -100,7 +100,7 @@ _save(ax.figure, "mutation_tv_04_snp_colors.png")
 features_height = features_colored.copy()
 features_height["height"] = [0.03, 0.06, 0.09]
 ax = lolliplot(sample_color, features=features_height,
-               figsize=(12, 4), title="Custom Feature Heights")
+               title="Custom Feature Heights")
 _save(ax.figure, "mutation_tv_05_feature_height.png")
 
 # ===================================================================
@@ -111,7 +111,7 @@ np.random.seed(42)
 sample_score = sample_df.copy()
 sample_score["score"] = np.random.randint(1, 6, len(SNP))
 ax = lolliplot(sample_score, features=features_colored,
-               figsize=(12, 4), title="Score-based Height (Tanghulu)")
+               title="Score-based Height (Tanghulu)")
 _save(ax.figure, "mutation_tv_06_score_tanghulu.png")
 
 # ===================================================================
@@ -119,7 +119,7 @@ _save(ax.figure, "mutation_tv_06_score_tanghulu.png")
 # ===================================================================
 track = LolliplotTrack(sample_score, features=features_colored,
                        show_yaxis=False)
-axes = plot_tracks([track], region=region_full, figsize=(12, 4),
+axes = plot_tracks([track], region=region_full,
                    title="Lolliplot — No Y-axis")
 _save(axes[0].figure, "mutation_tv_07_no_yaxis.png")
 
@@ -130,13 +130,13 @@ np.random.seed(42)
 sample_big = sample_df.copy()
 sample_big["score"] = np.random.randint(1, 16, len(SNP))
 ax = lolliplot(sample_big, features=features_colored,
-               figsize=(12, 4), title="Large Scores (Non-Tanghulu)")
+               title="Large Scores (Non-Tanghulu)")
 _save(ax.figure, "mutation_tv_08_score_large.png")
 
 # Increase the switch limit so Tanghulu is still used
 ax = lolliplot(sample_big, features=features_colored,
                lollipop_style_switch_limit=20,
-               figsize=(12, 4), title="Large Scores (Tanghulu, limit=20)")
+               title="Large Scores (Tanghulu, limit=20)")
 _save(ax.figure, "mutation_tv_08b_score_limit20.png")
 
 # ===================================================================
@@ -156,7 +156,7 @@ _save(axes[0].figure, "mutation_tv_09_xaxis.png")
 # ===================================================================
 ax = lolliplot(sample_score, features=features_colored,
                label_on_feature=True,
-               figsize=(12, 4), title="Labels on Features")
+               title="Labels on Features")
 _save(ax.figure, "mutation_tv_10_label_on_feature.png")
 
 # ===================================================================
@@ -165,7 +165,7 @@ _save(ax.figure, "mutation_tv_10_label_on_feature.png")
 sample_pin = sample_color.copy()
 sample_pin["score"] = np.random.randint(1, 6, len(SNP))
 ax = lolliplot(sample_pin, features=features_colored,
-               type="pin", figsize=(12, 4), title="Lolliplot (pin)")
+               type="pin", title="Lolliplot (pin)")
 _save(ax.figure, "mutation_tv_11_pin.png")
 
 # ===================================================================
@@ -187,14 +187,14 @@ sample_pie["pie_values"] = [[int(v), 100 - int(v)] for v in x]
 sample_pie["pie_colors"] = [["#87CEFA", "#98CE31"]] * len(SNP)
 sample_pie["border"] = "#4D4D4D"
 ax = lolliplot(sample_pie, features=features_colored,
-               type="pie", figsize=(12, 4), title="Lolliplot (pie)")
+               type="pie", title="Lolliplot (pie)")
 _save(ax.figure, "mutation_tv_13_pie.png")
 
 # ===================================================================
 # 14. Change the node size  (vignette: cex)
 # ===================================================================
 ax = lolliplot(sample_score, features=features_colored,
-               cex=0.5, figsize=(12, 4), title="Lolliplot (cex=0.5)")
+               cex=0.5, title="Lolliplot (cex=0.5)")
 _save(ax.figure, "mutation_tv_14_cex_small.png")
 
 ax = lolliplot(sample_score, features=features_colored,
@@ -313,7 +313,7 @@ sample_nl["node_label_color"] = "white"
 sample_nl["node_label_size"] = 5
 sample_nl["fill"] = [palette[i % len(palette)] for i in range(len(SNP))]
 ax = lolliplot(sample_nl, features=features_colored,
-               figsize=(12, 4), title="Node Labels Inside Circles")
+               title="Node Labels Inside Circles")
 _save(ax.figure, "mutation_tv_19_node_labels.png")
 
 # ===================================================================
@@ -324,7 +324,7 @@ sample_pcex["score"] = np.random.randint(1, 6, len(SNP))
 sample_pcex["cex"] = np.linspace(0.4, 2.0, len(SNP))
 sample_pcex["fill"] = [palette[i % len(palette)] for i in range(len(SNP))]
 ax = lolliplot(sample_pcex, features=features_colored,
-               figsize=(12, 4), title="Per-SNP cex Variation")
+               title="Per-SNP cex Variation")
 _save(ax.figure, "mutation_tv_20_per_snp_cex.png")
 
 # ===================================================================
@@ -355,7 +355,7 @@ sample_ms = pd.DataFrame({
               ["triangle_point_down", "triangle_point_up"]],
 })
 ax = lolliplot(sample_ms, features=features_colored,
-               figsize=(12, 4), title="Multi-shape Tanghulu Stack")
+               title="Multi-shape Tanghulu Stack")
 _save(ax.figure, "mutation_tv_22_multi_shape_tanghulu.png")
 
 # ===================================================================
@@ -366,7 +366,7 @@ sample_leg["score"] = np.random.randint(1, 6, len(SNP))
 sample_leg["fill"] = ["#87CEFA" if i % 2 == 0 else "#98CE31" for i in range(len(SNP))]
 legend = {"labels": ["Wild Type", "Mutant"], "fill": ["#87CEFA", "#98CE31"]}
 ax = lolliplot(sample_leg, features=features_colored,
-               legend=legend, figsize=(12, 4), title="Lolliplot with Legend")
+               legend=legend, title="Lolliplot with Legend")
 _save(ax.figure, "mutation_tv_23_legend.png")
 
 # ===================================================================
@@ -379,7 +379,7 @@ sample_jit["fill"] = [palette[i % len(palette)] for i in range(len(SNP))]
 # Per-SNP dashline colour (matches trackViewer: sample.gr$dashline.col <- sample.gr$color)
 sample_jit["dashline_col"] = [palette[i % len(palette)] for i in range(len(SNP))]
 ax = lolliplot(sample_jit, features=features_colored,
-               jitter="label", figsize=(12, 4),
+               jitter="label",
                title="Aligned Labels with Anti-overlap (jitter='label')")
 _save(ax.figure, "mutation_tv_24_jitter.png")
 
@@ -390,7 +390,7 @@ sample_ya = sample_df.copy()
 sample_ya["score"] = np.random.randint(1, 11, len(SNP))
 ax = lolliplot(sample_ya, features=features_colored,
                yaxis=[0, 5, 10], ylab="# evidences",
-               figsize=(12, 4), title="Custom Y-axis + ylab")
+               title="Custom Y-axis + ylab")
 _save(ax.figure, "mutation_tv_25_yaxis_ylab.png")
 
 # ===================================================================
@@ -406,7 +406,7 @@ sample_ps = pd.DataFrame({
     "label": ["a", "b", "c", "d", "e", "f"],
 })
 ax = lolliplot(sample_ps, type="pie.stack",
-               figsize=(12, 4), title="pie.stack Type")
+               title="pie.stack Type")
 _save(ax.figure, "mutation_tv_26_pie_stack.png")
 
 # ===================================================================
@@ -427,7 +427,7 @@ feats_rs = pd.DataFrame({
 })
 rescale_map = [(0, 500, 0, 250), (500, 1000, 300, 600)]
 ax = lolliplot(sample_rs, features=feats_rs, rescale=rescale_map,
-               figsize=(12, 4), title="Rescale Coordinate Mapping")
+               title="Rescale Coordinate Mapping")
 _save(ax.figure, "mutation_tv_27_rescale.png")
 
 # ===================================================================
@@ -457,7 +457,7 @@ sample_sh["shape"] = ["circle", "square", "diamond",
                       "circle", "square", "diamond"]
 sample_sh["fill"] = [palette[i % len(palette)] for i in range(len(SNP))]
 ax = lolliplot(sample_sh, features=features_colored,
-               figsize=(12, 4), title="Different Shapes Per SNP")
+               title="Different Shapes Per SNP")
 _save(ax.figure, "mutation_tv_29_shapes.png")
 
 # ===================================================================
@@ -471,7 +471,7 @@ sample_lr["label_color"] = ["red", "blue", "green", "orange", "purple",
                             "red", "blue", "green"]
 sample_lr["fill"] = [palette[i % len(palette)] for i in range(len(SNP))]
 ax = lolliplot(sample_lr, features=features_colored,
-               figsize=(12, 4), title="Per-SNP Label Rotation & Color")
+               title="Per-SNP Label Rotation & Color")
 _save(ax.figure, "mutation_tv_30_label_rotation.png")
 
 print("[INFO] All new-feature figures generated successfully.")

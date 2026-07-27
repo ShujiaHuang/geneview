@@ -28,6 +28,10 @@ from geneview.genometracks import (
     get_group_by_tag_fn,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 os.makedirs(FIG_DIR, exist_ok=True)
@@ -67,6 +71,7 @@ if has_pysam:
         region=region_pb,
         figsize=(14, 8),
         title="PacBio Pileup — No Consensus Filter",
+        style=STYLE,
     )
     fig = axes[0].figure
     fig.savefig(
@@ -90,6 +95,7 @@ if has_pysam:
         region=region_pb,
         figsize=(14, 8),
         title="PacBio Pileup — Quick Consensus (threshold=0.2)",
+        style=STYLE,
     )
     fig = axes[0].figure
     fig.savefig(
@@ -128,6 +134,7 @@ if has_pysam:
         region=region_test,
         figsize=(14, 6),
         title="Grouped Alignments — Reads by Mapping Quality",
+        style=STYLE,
     )
     fig = axes[0].figure
     fig.savefig(
@@ -161,6 +168,7 @@ if has_pysam:
         region=region_test,
         figsize=(14, 8),
         title="read_filter — Primary Alignments Only",
+        style=STYLE,
     )
     fig = axes[0].figure
     fig.savefig(
@@ -194,6 +202,7 @@ if has_pysam:
             region=region_10x,
             figsize=(14, 10),
             title="10x Genomics — Grouped by HP Tag (genomeview Cell 16)",
+            style=STYLE,
         )
         fig = axes[0].figure
         fig.savefig(

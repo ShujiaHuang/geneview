@@ -22,6 +22,10 @@ from geneview.genometracks import (
     match_chrom_format,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 os.makedirs(FIG_DIR, exist_ok=True)
@@ -39,7 +43,7 @@ tracks = visualize_files(
 )
 
 axes = plot_tracks(tracks, region=region, figsize=(14, 4),
-                   title="visualize_files() — BED File")
+                   title="visualize_files() — BED File", style=STYLE)
 fig = axes[0].figure
 fig.savefig(
     os.path.join(FIG_DIR, "genome_tracks_convenience_bed.png"),
@@ -61,7 +65,7 @@ try:
         region=region_bg,
     )
     axes = plot_tracks(tracks, region=region_bg, figsize=(14, 6),
-                       title="visualize_files() — BedGraph + BED")
+                       title="visualize_files() — BedGraph + BED", style=STYLE)
     fig = axes[0].figure
     fig.savefig(
         os.path.join(FIG_DIR, "genome_tracks_convenience_multi.png"),
@@ -91,7 +95,7 @@ if has_pysam:
         region=region_bam,
     )
     axes = plot_tracks(tracks, region=region_bam, figsize=(14, 5),
-                       title="visualize_files() — BAM (auto-detect PE)")
+                       title="visualize_files() — BAM (auto-detect PE)", style=STYLE)
     fig = axes[0].figure
     fig.savefig(
         os.path.join(FIG_DIR, "genome_tracks_convenience_bam.png"),
@@ -108,7 +112,7 @@ if has_pysam:
         region=region_bam,
     )
     axes = plot_tracks(tracks, region=region_bam, figsize=(14, 6),
-                       title="visualize_files() — Dict with Custom Names")
+                       title="visualize_files() — Dict with Custom Names", style=STYLE)
     fig = axes[0].figure
     fig.savefig(
         os.path.join(FIG_DIR, "genome_tracks_convenience_dict.png"),

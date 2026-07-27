@@ -25,6 +25,10 @@ from geneview.genometracks import (
     read_bed, read_bedgraph, read_gff,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -51,6 +55,7 @@ axes1 = plot_tracks(
     [gtrack, atrack_styled], region=region,
     title="Constructor kwargs as Display Parameters",
     figsize=(14, 4),
+    style=STYLE,
 )
 fig1 = axes1[0].figure
 fig1.savefig(os.path.join(OUT_DIR, "genome_tracks_kwargs_api.png"),
@@ -74,9 +79,9 @@ atrack_alias2 = AnnotationTrack(
 
 fig_aliases, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 5))
 plt.close(fig_aliases)
-plot_tracks([atrack_alias1], region=region, figsize=(14, 2.5), ax=ax1)
+plot_tracks([atrack_alias1], region=region, figsize=(14, 2.5), ax=ax1, style=STYLE)
 ax1.set_title('Using "col.title" (dot notation)', fontsize=10)
-plot_tracks([atrack_alias2], region=region, figsize=(14, 2.5), ax=ax2)
+plot_tracks([atrack_alias2], region=region, figsize=(14, 2.5), ax=ax2, style=STYLE)
 ax2.set_title('Using col_title (snake_case)', fontsize=10)
 fig_aliases.tight_layout()
 fig_aliases.savefig(os.path.join(OUT_DIR, "genome_tracks_alias_comparison.png"),
@@ -115,6 +120,7 @@ axes4 = plot_tracks(
     region=region,
     title="GenomeAxisTrack: exponent and ticks_at",
     figsize=(14, 5),
+    style=STYLE,
 )
 fig4 = axes4[0].figure
 fig4.savefig(os.path.join(OUT_DIR, "genome_tracks_axis_enhanced.png"),
@@ -149,6 +155,7 @@ axes5a = plot_tracks(
     [GenomeAxisTrack(), htrack_bg], region=region,
     title="HighlightTrack: in_background=True (behind)",
     figsize=(14, 4),
+    style=STYLE,
 )
 fig5a = axes5a[0].figure
 fig5a.savefig(os.path.join(OUT_DIR, "genome_tracks_highlight_background.png"),
@@ -160,6 +167,7 @@ axes5b = plot_tracks(
     [GenomeAxisTrack(), htrack_fg], region=region,
     title="HighlightTrack: in_background=False (foreground)",
     figsize=(14, 4),
+    style=STYLE,
 )
 fig5b = axes5b[0].figure
 fig5b.savefig(os.path.join(OUT_DIR, "genome_tracks_highlight_foreground.png"),
@@ -183,6 +191,7 @@ atrack_reversed = AnnotationTrack(
 axes6a = plot_tracks(
     [GenomeAxisTrack(), atrack_normal], region=region,
     title="Normal Stacking Order", figsize=(14, 4),
+    style=STYLE,
 )
 fig6a = axes6a[0].figure
 fig6a.savefig(os.path.join(OUT_DIR, "genome_tracks_stacking_normal.png"),
@@ -193,6 +202,7 @@ plt.close("all")
 axes6b = plot_tracks(
     [GenomeAxisTrack(), atrack_reversed], region=region,
     title="Reversed Stacking Order", figsize=(14, 4),
+    style=STYLE,
 )
 fig6b = axes6b[0].figure
 fig6b.savefig(os.path.join(OUT_DIR, "genome_tracks_stacking_reversed.png"),
@@ -230,6 +240,7 @@ axes7 = plot_tracks(
     region=region,
     title="DataTrack-Specific Parameters (col_mountain, fill_mountain, col_baseline)",
     figsize=(14, 6),
+    style=STYLE,
 )
 fig7 = axes7[0].figure
 fig7.savefig(os.path.join(OUT_DIR, "genome_tracks_data_specific_params.png"),
@@ -249,8 +260,8 @@ dtrack = DataTrack(cov_data, type="histogram", name="Coverage")
 atrack = AnnotationTrack(cpg_data, name="CpG Islands")
 
 # Plot into existing axes using panel_only
-plot_tracks([gaxis, dtrack], region=region, panel_only=True, ax=axes8[0])
-plot_tracks([gaxis, atrack], region=region, panel_only=True, ax=axes8[1])
+plot_tracks([gaxis, dtrack], region=region, panel_only=True, ax=axes8[0], style=STYLE)
+plot_tracks([gaxis, atrack], region=region, panel_only=True, ax=axes8[1], style=STYLE)
 
 fig8.suptitle("panel_only=True: Embedding Tracks in Existing GridSpec", fontsize=14)
 fig8.tight_layout()
@@ -267,6 +278,7 @@ axes9 = plot_tracks(
     figsize=(14, 6),
     margin=12,
     inner_margin=6,
+    style=STYLE,
 )
 fig9 = axes9[0].figure
 fig9.savefig(os.path.join(OUT_DIR, "genome_tracks_custom_margins.png"),

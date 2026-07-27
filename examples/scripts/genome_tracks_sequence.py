@@ -14,6 +14,10 @@ from geneview.genometracks import (
     plot_tracks, GenomeAxisTrack, SequenceTrack, GenomicInterval,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 
 # ---------------------------------------------------------------------------
@@ -28,6 +32,7 @@ axes = plot_tracks(
     region=region,
     figsize=(12, 3),
     title="SequenceTrack - Letters",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_sequence_letters.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
@@ -44,6 +49,7 @@ axes = plot_tracks(
     region=region_medium,
     figsize=(12, 3),
     title="SequenceTrack - Boxes",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_sequence_boxes.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
@@ -60,6 +66,7 @@ axes = plot_tracks(
     region=region_large,
     figsize=(12, 3),
     title="SequenceTrack - Line",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_sequence_line.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
@@ -79,6 +86,7 @@ axes = plot_tracks(
     region=region_small,
     figsize=(12, 3),
     title="SequenceTrack - Complement & Direction",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_sequence_complement.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
@@ -101,6 +109,7 @@ axes = plot_tracks(
     region=region,
     figsize=(12, 3),
     title="SequenceTrack - Custom Colors",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_sequence_custom.png"), dpi=150, bbox_inches="tight")
 plt.close("all")

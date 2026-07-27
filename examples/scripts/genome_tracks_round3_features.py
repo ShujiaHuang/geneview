@@ -44,7 +44,15 @@ from geneview.genometracks import (
     get_ticks,
     find_tracks,
     save_figure,
+    set_style,
 )
+
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+# Apply globally so the standalone track.draw() panels below match too
+# (the plot_tracks() figures also honor STYLE via their own style= argument).
+set_style(STYLE)
 
 # =========================================================================
 # 1. BAMCoverageTrack — line and fill modes
@@ -95,7 +103,7 @@ axis = GenomeAxisTrack()
 cov_track = BAMCoverageTrack(filepath=BAM_CHR1, type="fill", col="#5B8DB8",
                               name="BAM Coverage")
 
-axes = plot_tracks([axis, cov_track], region=region_chr1, figsize=(14, 4))
+axes = plot_tracks([axis, cov_track], region=region_chr1, figsize=(14, 4), style=STYLE)
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_bam_coverage_multi.png"))
 plt.close("all")
 print("  → genome_tracks_bam_coverage_multi.png")

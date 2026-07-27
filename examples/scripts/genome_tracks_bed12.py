@@ -28,6 +28,10 @@ from geneview.genometracks import (
     read_gff,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 os.makedirs(FIG_DIR, exist_ok=True)
@@ -73,6 +77,7 @@ axes = plot_tracks(
     region=region,
     figsize=(14, 4),
     title="BED12 Transcript Rendering",
+    style=STYLE,
 )
 fig = axes[0].figure
 fig.savefig(
@@ -95,6 +100,7 @@ axes = plot_tracks(
     region=region,
     figsize=(14, 5),
     title="BED12 with Feature Labels",
+    style=STYLE,
 )
 fig = axes[0].figure
 fig.savefig(
@@ -124,6 +130,7 @@ axes = plot_tracks(
     region=region,
     figsize=(14, 4),
     title="BED12 with feature_filter (CDS only)",
+    style=STYLE,
 )
 fig = axes[0].figure
 fig.savefig(
@@ -148,6 +155,7 @@ axes = plot_tracks(
     region=GenomicInterval("chr1", 8_000, 32_000),
     figsize=(14, 6),
     title="BED vs BED12 Comparison",
+    style=STYLE,
 )
 fig = axes[0].figure
 fig.savefig(

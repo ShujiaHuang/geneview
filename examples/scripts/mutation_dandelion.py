@@ -14,6 +14,19 @@ import pandas as pd
 import numpy as np
 
 from geneview.genometracks import DandelionTrack, dandelion_plot, GenomicInterval
+from geneview.plotstyle import get_style
+
+# ---------------------------------------------------------------------------
+# Journal style switch -- change this ONE line to render every figure below
+# in a journal-compliant theme.  Node borders, stems, connector/guide lines,
+# axis rules and font sizes are all routed through the chosen style.
+#   "nature"  -> Nature Research guidelines (thin 0.4pt rules, compact fonts)
+#   "science" -> Science / AAAS guidelines
+#   "cell"    -> Cell Press guidelines
+#   None      -> default geneview look (thicker rules, larger fonts)
+# ---------------------------------------------------------------------------
+STYLE = "nature"
+_STYLE_OBJ = get_style(STYLE) if STYLE else None
 
 # ---------------------------------------------------------------------------
 # Locate example data
@@ -33,7 +46,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # ---------------------------------------------------------------------------
 ax = dandelion_plot(
     snps, features=feats, type="fan",
-    figsize=(12, 4), title="Dandelion Plot (fan)",
+    title="Dandelion Plot (fan)", style=STYLE,
 )
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_dandelion_fan.png"),
                   dpi=150, bbox_inches="tight")
@@ -45,7 +58,7 @@ plt.close("all")
 # ---------------------------------------------------------------------------
 ax = dandelion_plot(
     snps, features=feats, type="circle",
-    figsize=(12, 4), title="Dandelion Plot (circle)",
+    title="Dandelion Plot (circle)", style=STYLE,
 )
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_dandelion_circle.png"),
                   dpi=150, bbox_inches="tight")
@@ -57,7 +70,7 @@ plt.close("all")
 # ---------------------------------------------------------------------------
 ax = dandelion_plot(
     snps, features=feats, type="pin",
-    figsize=(12, 4), title="Dandelion Plot (pin)",
+    title="Dandelion Plot (pin)", style=STYLE,
 )
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_dandelion_pin.png"),
                   dpi=150, bbox_inches="tight")
@@ -70,7 +83,7 @@ plt.close("all")
 ax = dandelion_plot(
     snps, features=feats, type="fan",
     maxgaps=0.05,
-    figsize=(12, 4), title="Dandelion Plot (maxgaps=0.05)",
+    title="Dandelion Plot (maxgaps=0.05)", style=STYLE,
 )
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_dandelion_maxgaps.png"),
                   dpi=150, bbox_inches="tight")
@@ -83,7 +96,7 @@ plt.close("all")
 ax = dandelion_plot(
     snps, features=feats, type="fan",
     height_method=lambda scores: sum(scores),
-    figsize=(12, 4), title="Dandelion Plot (height=sum of scores)",
+    title="Dandelion Plot (height=sum of scores)", style=STYLE,
 )
 ax.figure.savefig(os.path.join(OUT_DIR, "mutation_dandelion_height_sum.png"),
                   dpi=150, bbox_inches="tight")
@@ -97,6 +110,7 @@ fig, axes = plt.subplots(4, 1, figsize=(12, 14))
 region = GenomicInterval("chr1", 0, 1500)
 for ax_i, t in zip(axes, ["fan", "circle", "pie", "pin"]):
     track = DandelionTrack(snps, features=feats, type=t, name=f"Type: {t}")
+    track._gv_style = _STYLE_OBJ
     ax_i.set_xlim(region.start, region.end)
     track.draw(ax_i, region)
     ax_i.set_title(f"Type: {t}", fontsize=10, fontweight="bold")

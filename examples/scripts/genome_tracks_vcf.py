@@ -42,7 +42,15 @@ from geneview.genometracks import (
     GenomicInterval,
     read_bed,
     save_figure,
+    set_style,
 )
+
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+# Apply globally so the standalone track.draw() panels below match too
+# (the plot_tracks() figures also honor STYLE via their own style= argument).
+set_style(STYLE)
 
 # Check data availability
 if not os.path.exists(VCF_FILE):
@@ -159,7 +167,7 @@ if os.path.exists(PACBIO_BAM):
         color_fn=lambda read: "lightgray",
     ))
 
-axes = plot_tracks(tracks, region=region, figsize=(14, 12))
+axes = plot_tracks(tracks, region=region, figsize=(14, 12), style=STYLE)
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_vcf_with_bam.png"))
 plt.close("all")
 print("  → genome_tracks_vcf_with_bam.png")
@@ -198,7 +206,7 @@ if os.path.exists(ILLUMINA_BAM):
         color_fn=lambda r: "lightgray",
     ))
 
-axes = plot_tracks(tracks_wide, region=region_wide, figsize=(14, 14))
+axes = plot_tracks(tracks_wide, region=region_wide, figsize=(14, 14), style=STYLE)
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_vcf_comprehensive.png"))
 plt.close("all")
 print("  → genome_tracks_vcf_comprehensive.png")

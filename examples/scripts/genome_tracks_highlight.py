@@ -18,6 +18,10 @@ from geneview.genometracks import (
     read_bedgraph,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 
 # Load data
@@ -53,6 +57,7 @@ axes1 = plot_tracks(
     region=region,
     title="Highlight: Two Regions (yellow)",
     figsize=(14, 7),
+    style=STYLE,
 )
 fig1 = axes1[0].figure
 
@@ -79,6 +84,7 @@ axes2 = plot_tracks(
     region=region,
     title="Multiple Highlight Tracks (green + pink)",
     figsize=(14, 7),
+    style=STYLE,
 )
 fig2 = axes2[0].figure
 
@@ -102,6 +108,7 @@ axes3 = plot_tracks(
     region=region,
     title="Per-Region Colors (red / green / blue)",
     figsize=(14, 7),
+    style=STYLE,
 )
 fig3 = axes3[0].figure
 

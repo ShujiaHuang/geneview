@@ -39,6 +39,10 @@ from geneview.genometracks import (
     save_figure,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 # Check data availability
 if not os.path.exists(PACBIO_BAM) or not os.path.exists(ILLUMINA_BAM):
     missing = []
@@ -72,6 +76,7 @@ axes = plot_tracks(
     ],
     region=region,
     figsize=(14, 8),
+    style=STYLE,
 )
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_bam_basic_pacbio.png"))
 plt.close("all")
@@ -94,6 +99,7 @@ axes = plot_tracks(
     ],
     region=region,
     figsize=(14, 8),
+    style=STYLE,
 )
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_bam_basic_illumina.png"))
 plt.close("all")
@@ -122,6 +128,7 @@ axes = plot_tracks(
     ],
     region=region,
     figsize=(14, 12),
+    style=STYLE,
 )
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_bam_basic_combined.png"))
 plt.close("all")
@@ -145,6 +152,7 @@ axes = plot_tracks(
     ],
     region=region,
     figsize=(14, 10),
+    style=STYLE,
 )
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_bam_basic_coverage.png"))
 plt.close("all")

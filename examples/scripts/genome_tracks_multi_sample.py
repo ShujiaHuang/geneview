@@ -20,6 +20,10 @@ from geneview.genometracks import (
     plot_tracks,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
@@ -61,6 +65,7 @@ axes = plot_tracks(
     [gtrack, dtrack_heat], region=region,
     title="Multi-sample heatmap (6 samples, ctrl | treat)",
     figsize=(14, 5),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("multi_heatmap")
@@ -77,6 +82,7 @@ dtrack_ctrl = DataTrack(
 axes = plot_tracks(
     [gtrack, dtrack_ctrl], region=region,
     title="Control samples heatmap", figsize=(14, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("multi_heatmap_ctrl")
@@ -96,6 +102,7 @@ dtrack_overlay = DataTrack(
 axes = plot_tracks(
     [gtrack, dtrack_overlay], region=region,
     title="Overlay: control mean vs treatment mean", figsize=(14, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("multi_overlay_mean")
@@ -110,6 +117,7 @@ dtrack_all = DataTrack(
 axes = plot_tracks(
     [gtrack, dtrack_all], region=region,
     title="All 6 samples — line overlay", figsize=(14, 5),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("multi_all_lines")
@@ -131,6 +139,7 @@ axes = plot_tracks(
     sizes=[0.2, 1.5, 1.0],
     title="Heatmap + mean signal (stacked)",
     figsize=(14, 7),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("multi_heatmap_mean")
@@ -145,6 +154,7 @@ dtrack_poly = DataTrack(
 axes = plot_tracks(
     [gtrack, dtrack_poly], region=region,
     title="Polygon overlay: control vs treatment", figsize=(14, 4),
+    style=STYLE,
 )
 figs.append(axes[0].figure)
 labels.append("multi_polygon_overlay")

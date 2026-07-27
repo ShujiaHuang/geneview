@@ -16,6 +16,10 @@ from geneview.genometracks import (
     plot_tracks, GenomeAxisTrack, DataTrack, GenomicInterval,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 
 # Create multi-sample data
@@ -37,7 +41,7 @@ region = GenomicInterval("chr7", 1000, 2050)
 # 1. Average (type "a")
 # ---------------------------------------------------------------------------
 dt_avg = DataTrack(data, type="a", name="Average", col="#3C5488")
-axes = plot_tracks([GenomeAxisTrack(), dt_avg], region=region, figsize=(10, 3))
+axes = plot_tracks([GenomeAxisTrack(), dt_avg], region=region, figsize=(10, 3), style=STYLE)
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_data_average.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
 
@@ -45,7 +49,7 @@ plt.close("all")
 # 2. Confidence Interval (type "confint")
 # ---------------------------------------------------------------------------
 dt_ci = DataTrack(data, type="confint", name="Conf. Interval", col="#00A087")
-axes = plot_tracks([GenomeAxisTrack(), dt_ci], region=region, figsize=(10, 3))
+axes = plot_tracks([GenomeAxisTrack(), dt_ci], region=region, figsize=(10, 3), style=STYLE)
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_data_confint.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
 
@@ -53,7 +57,7 @@ plt.close("all")
 # 3. Smooth/Loess (type "smooth")
 # ---------------------------------------------------------------------------
 dt_smooth = DataTrack(data, type="smooth", name="Smooth", smooth_span=0.3)
-axes = plot_tracks([GenomeAxisTrack(), dt_smooth], region=region, figsize=(10, 3))
+axes = plot_tracks([GenomeAxisTrack(), dt_smooth], region=region, figsize=(10, 3), style=STYLE)
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_data_smooth.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
 
@@ -67,7 +71,7 @@ for col in ["sample_A", "sample_B", "sample_C"]:
     data_hz[col] = data_hz[col] - mean_vals.mean()
 
 dt_horizon = DataTrack(data_hz, type="horizon", name="Horizon", baseline=0)
-axes = plot_tracks([GenomeAxisTrack(), dt_horizon], region=region, figsize=(10, 3))
+axes = plot_tracks([GenomeAxisTrack(), dt_horizon], region=region, figsize=(10, 3), style=STYLE)
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_data_horizon.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
 
@@ -75,7 +79,7 @@ plt.close("all")
 # 5. Grid type (type "g")
 # ---------------------------------------------------------------------------
 dt_grid = DataTrack(data, type="g", name="Grid")
-axes = plot_tracks([GenomeAxisTrack(), dt_grid], region=region, figsize=(10, 3))
+axes = plot_tracks([GenomeAxisTrack(), dt_grid], region=region, figsize=(10, 3), style=STYLE)
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_data_grid_type.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
 
@@ -83,7 +87,7 @@ plt.close("all")
 # 6. Regression line (type "r")
 # ---------------------------------------------------------------------------
 dt_reg = DataTrack(data, type="r", name="Regression")
-axes = plot_tracks([GenomeAxisTrack(), dt_reg], region=region, figsize=(10, 3))
+axes = plot_tracks([GenomeAxisTrack(), dt_reg], region=region, figsize=(10, 3), style=STYLE)
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_data_regression.png"), dpi=150, bbox_inches="tight")
 plt.close("all")
 
@@ -99,6 +103,7 @@ axes = plot_tracks(
     region=region,
     figsize=(10, 4),
     title="Composite: boxplot + average + grid",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_data_composite.png"), dpi=150, bbox_inches="tight")
 plt.close("all")

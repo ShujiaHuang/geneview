@@ -24,6 +24,13 @@ from geneview.genometracks import (
     GenomicInterval, read_gff,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look).
+#     NOTE: the upper-case STYLE below is the *journal theme* passed to
+#     plot_tracks(); the lower-case `style=` on GeneRegionTrack is the
+#     unrelated gene *drawing* style (UCSC / flybase / tssarrow / ...). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 os.makedirs(FIG_DIR, exist_ok=True)
@@ -50,6 +57,7 @@ for i, style in enumerate(styles):
         [gtrack, grtrack],
         region=region, figsize=(14, 1.8),
         title=f"GeneRegionTrack  —  style='{style}'",
+        style=STYLE,
     )
     fig_style = axes_list[0].figure
     fig_style.savefig(
@@ -75,6 +83,7 @@ for i, style in enumerate(styles):
         [grtrack], region=region,
         ax=axs[i], add=True,
         title=f"style='{style}'",
+        style=STYLE,
     )
 
 axs[0].set_title("GeneRegionTrack Drawing Styles (longest transcript)", fontsize=12)
@@ -103,6 +112,7 @@ axes_fb = plot_tracks(
     [GenomeAxisTrack(), grtrack_flybase_custom],
     region=region, figsize=(14, 2),
     title="Flybase style  —  color_utr=grey, height_utr=0.5, color_backbone=#555",
+    style=STYLE,
 )
 fig_fb = axes_fb[0].figure
 fig_fb.savefig(
@@ -129,6 +139,7 @@ axes_ea = plot_tracks(
     [GenomeAxisTrack(), grtrack_ea_custom],
     region=region, figsize=(14, 2),
     title="Exonarrows style  —  height_intron=0.3, arrow_interval=3, color_arrow=white",
+    style=STYLE,
 )
 fig_ea = axes_ea[0].figure
 fig_ea.savefig(
@@ -155,6 +166,7 @@ axes_tss = plot_tracks(
     [GenomeAxisTrack(), grtrack_tss],
     region=region, figsize=(14, 2),
     title="TSS Arrow style  —  color_utr=#BBB, height_utr=0.6",
+    style=STYLE,
 )
 fig_tss = axes_tss[0].figure
 fig_tss.savefig(
@@ -176,6 +188,7 @@ axes_fba = plot_tracks(
     [GenomeAxisTrack(), grtrack_flybase_all],
     region=region, figsize=(14, 3.2),
     title="Flybase style  —  all transcripts (collapse_transcripts=False)",
+    style=STYLE,
 )
 fig_fba = axes_fba[0].figure
 fig_fba.savefig(

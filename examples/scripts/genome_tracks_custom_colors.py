@@ -36,7 +36,15 @@ from geneview.genometracks import (
     BAMCoverageTrack,
     GenomicInterval,
     save_figure,
+    set_style,
 )
+
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+# Apply globally so the standalone track.draw() panels below match too
+# (the plot_tracks() figure also honors STYLE via its own style= argument).
+set_style(STYLE)
 
 # Check data availability
 if not os.path.exists(ILLUMINA_BAM):
@@ -204,6 +212,7 @@ axes = plot_tracks(
     ],
     region=region,
     figsize=(14, 8),
+    style=STYLE,
 )
 save_figure(axes, os.path.join(FIG_DIR, "genome_tracks_color_fn_combined.png"))
 plt.close("all")

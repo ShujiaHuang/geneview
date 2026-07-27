@@ -15,6 +15,13 @@ from geneview.genometracks import (
     GenomicInterval, plot_tracks, read_gff,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look).
+#     NOTE: the upper-case STYLE below is the *journal theme* passed to
+#     plot_tracks(); the lower-case `style=` on GeneRegionTrack is the
+#     unrelated gene *drawing* style (UCSC / flybase / tssarrow / ...). ---
+STYLE = "nature"
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 GTF_FILE = os.path.join(DATA_DIR, "gene_models.gtf")
 
@@ -30,7 +37,7 @@ grtrack_all = GeneRegionTrack(gene_data, name="All Transcripts")
 figs = []
 
 axes1 = plot_tracks([gtrack, grtrack_all], region=region,
-                    title="All Transcripts", figsize=(14, 3.5))
+                    title="All Transcripts", figsize=(14, 3.5), style=STYLE)
 figs.append(axes1[0].figure)
 
 # ---------------------------------------------------------------------------
@@ -39,7 +46,7 @@ figs.append(axes1[0].figure)
 grtrack_gene = GeneRegionTrack(gene_data, name="Gene Level",
                                collapse_transcripts="gene")
 axes2 = plot_tracks([gtrack, grtrack_gene], region=region,
-                    title="Collapsed to Gene Level", figsize=(14, 2.2))
+                    title="Collapsed to Gene Level", figsize=(14, 2.2), style=STYLE)
 figs.append(axes2[0].figure)
 
 # ---------------------------------------------------------------------------
@@ -48,7 +55,7 @@ figs.append(axes2[0].figure)
 grtrack_long = GeneRegionTrack(gene_data, name="Longest",
                                collapse_transcripts="longest")
 axes3 = plot_tracks([gtrack, grtrack_long], region=region,
-                    title="Longest Transcript Only", figsize=(14, 2.2))
+                    title="Longest Transcript Only", figsize=(14, 2.2), style=STYLE)
 figs.append(axes3[0].figure)
 
 # ---------------------------------------------------------------------------
@@ -58,7 +65,7 @@ grtrack_meta = GeneRegionTrack(gene_data, name="Meta-transcript",
                                collapse_transcripts="meta")
 axes4 = plot_tracks([gtrack, grtrack_meta], region=region,
                     title="Meta-transcript (union of all exons)",
-                    figsize=(14, 2.2))
+                    figsize=(14, 2.2), style=STYLE)
 figs.append(axes4[0].figure)
 
 # ---------------------------------------------------------------------------
@@ -73,6 +80,7 @@ axes5 = plot_tracks(
     region=region,
     title="Gene Models + CpG Islands",
     figsize=(14, 3.5),
+    style=STYLE,
 )
 figs.append(axes5[0].figure)
 
@@ -93,6 +101,7 @@ for i, style in enumerate(styles):
         [grtrack_s], region=region,
         ax=axs6[i], add=True,
         title=f"style='{style}'",
+        style=STYLE,
     )
 
 axs6[0].set_title("GeneRegionTrack Drawing Styles (longest transcript)", fontsize=12)
@@ -127,6 +136,7 @@ axes7 = plot_tracks(
     region=region,
     title="Customised Drawing Styles",
     figsize=(14, 4),
+    style=STYLE,
 )
 figs.append(axes7[0].figure)
 

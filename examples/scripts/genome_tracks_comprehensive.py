@@ -20,6 +20,10 @@ from geneview.genometracks import (
     read_bed, read_gff, read_bedgraph,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 
 # ---------------------------------------------------------------------------
@@ -88,6 +92,7 @@ axes = plot_tracks(
     figsize=(16, 12),
     extend_left=0.05,
     extend_right=0.05,
+    style=STYLE,
 )
 fig = axes[0].figure
 plt.suptitle("geneview Genome Tracks — Full Showcase",

@@ -27,6 +27,10 @@ from geneview.genometracks import (
     read_bed, read_gff, read_bedgraph,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -69,6 +73,7 @@ gtrack = GenomeAxisTrack()
 axes1 = plot_tracks(
     [gtrack, otrack], region=region,
     title="OverlayTrack: Two Signals on Same Axes", figsize=(14, 5),
+    style=STYLE,
 )
 fig1 = axes1[0].figure
 fig1.savefig(os.path.join(OUT_DIR, "genome_tracks_overlay.png"),
@@ -84,6 +89,7 @@ atrack = AnnotationTrack(cpg_data, name="CpG Islands")
 axes2 = plot_tracks(
     [gtrack_53, atrack], region=region,
     title="GenomeAxisTrack with 5'->3' Direction Arrow", figsize=(14, 4),
+    style=STYLE,
 )
 fig2 = axes2[0].figure
 fig2.savefig(os.path.join(OUT_DIR, "genome_tracks_direction_53.png"),
@@ -110,7 +116,7 @@ plt.close(fig_shapes)
 for idx, shape in enumerate(["arrow", "fixedArrow", "smallArrow"]):
     at = AnnotationTrack(arrow_data, shape=shape, name=f"Shape: {shape}",
                          show_label=True)
-    ax_list = plot_tracks([at], region=region, figsize=(14, 2.5))
+    ax_list = plot_tracks([at], region=region, figsize=(14, 2.5), style=STYLE)
     fig_s = ax_list[0].figure
     fig_s.savefig(os.path.join(OUT_DIR, f"genome_tracks_shape_{shape}.png"),
                   dpi=150, bbox_inches="tight")
@@ -130,6 +136,7 @@ axes4 = plot_tracks(
     region=gene_region,
     title="All Transcripts vs Meta-transcript",
     figsize=(14, 6),
+    style=STYLE,
 )
 fig4 = axes4[0].figure
 fig4.savefig(os.path.join(OUT_DIR, "genome_tracks_meta_collapse.png"),
@@ -148,6 +155,7 @@ axes5a = plot_tracks(
     show_title=False,
     title="Compact Layout (no title panels)",
     figsize=(14, 5),
+    style=STYLE,
 )
 fig5a = axes5a[0].figure
 fig5a.savefig(os.path.join(OUT_DIR, "genome_tracks_no_title.png"),
@@ -161,6 +169,7 @@ axes5b = plot_tracks(
     reverse_strand=True,
     title="Reverse Strand (3' on left)",
     figsize=(14, 5),
+    style=STYLE,
 )
 fig5b = axes5b[0].figure
 fig5b.savefig(os.path.join(OUT_DIR, "genome_tracks_reverse_strand.png"),
@@ -205,6 +214,7 @@ axes6 = plot_tracks(
     region=region,
     title="IdeogramTrack + Annotation + Coverage",
     figsize=(14, 6),
+    style=STYLE,
 )
 fig6 = axes6[0].figure
 fig6.savefig(os.path.join(OUT_DIR, "genome_tracks_ideogram.png"),
@@ -222,6 +232,7 @@ axes6b = plot_tracks(
     region=region,
     title="IdeogramTrack (circle centromere)",
     figsize=(14, 3),
+    style=STYLE,
 )
 fig6b = axes6b[0].figure
 fig6b.savefig(os.path.join(OUT_DIR, "genome_tracks_ideogram_circle.png"),
@@ -240,6 +251,7 @@ axes7 = plot_tracks(
     region=region,
     title="GenomeAxisTrack: exponent and ticks_at",
     figsize=(14, 5),
+    style=STYLE,
 )
 fig7 = axes7[0].figure
 fig7.savefig(os.path.join(OUT_DIR, "genome_tracks_axis_enhanced.png"),
@@ -269,6 +281,7 @@ htrack_fg = HighlightTrack(
 axes8a = plot_tracks(
     [GenomeAxisTrack(), htrack_bg], region=region,
     title="HighlightTrack: in_background=True (behind)", figsize=(14, 4),
+    style=STYLE,
 )
 fig8a = axes8a[0].figure
 fig8a.savefig(os.path.join(OUT_DIR, "genome_tracks_highlight_background.png"),
@@ -278,6 +291,7 @@ print(f"[INFO] Saved genome_tracks_highlight_background.png")
 axes8b = plot_tracks(
     [GenomeAxisTrack(), htrack_fg], region=region,
     title="HighlightTrack: in_background=False (foreground)", figsize=(14, 4),
+    style=STYLE,
 )
 fig8b = axes8b[0].figure
 fig8b.savefig(os.path.join(OUT_DIR, "genome_tracks_highlight_foreground.png"),

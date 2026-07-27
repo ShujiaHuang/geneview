@@ -14,6 +14,10 @@ from geneview.genometracks import (
     plot_tracks, GenomeAxisTrack, AlignmentsTrack, GenomicInterval,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 
@@ -42,6 +46,7 @@ if has_pysam:
         region=region_cov,
         figsize=(12, 4),
         title="AlignmentsTrack - Coverage",
+        style=STYLE,
     )
     plt.savefig(os.path.join(FIG_DIR, "genome_tracks_alignments_coverage.png"),
                 dpi=150, bbox_inches="tight")
@@ -61,6 +66,7 @@ if has_pysam:
         region=region_cov,
         figsize=(12, 6),
         title="AlignmentsTrack - Pileup",
+        style=STYLE,
     )
     plt.savefig(os.path.join(FIG_DIR, "genome_tracks_alignments_pileup.png"),
                 dpi=150, bbox_inches="tight")
@@ -79,6 +85,7 @@ if has_pysam:
         region=region_cov,
         figsize=(12, 6),
         title="AlignmentsTrack - Combined",
+        style=STYLE,
     )
     plt.savefig(os.path.join(FIG_DIR, "genome_tracks_alignments_combined.png"),
                 dpi=150, bbox_inches="tight")
@@ -101,6 +108,7 @@ if has_pysam:
         region=region_sashimi,
         figsize=(14, 6),
         title="AlignmentsTrack - Sashimi (Splice Junctions)",
+        style=STYLE,
     )
     plt.savefig(os.path.join(FIG_DIR, "genome_tracks_alignments_sashimi.png"),
                 dpi=150, bbox_inches="tight")
@@ -123,6 +131,7 @@ if has_pysam:
         region=region_indels,
         figsize=(14, 6),
         title="AlignmentsTrack - Indels",
+        style=STYLE,
     )
     plt.savefig(os.path.join(FIG_DIR, "genome_tracks_alignments_indels.png"),
                 dpi=150, bbox_inches="tight")

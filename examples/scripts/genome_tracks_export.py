@@ -13,6 +13,10 @@ from geneview.genometracks import (
     AnnotationTrack, DataTrack, GenomicInterval, export_tracks,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
 # ---------------------------------------------------------------------------
 # 1. Export AnnotationTrack to BED
 # ---------------------------------------------------------------------------
@@ -100,7 +104,7 @@ FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 ann_track2 = AnnotationTrack(ann_data, name="Export Demo")
 region = GenomicInterval("chr7", 500, 4000)
 axes = plot_tracks([GenomeAxisTrack(), ann_track2], region=region,
-                   figsize=(12, 4))
+                   figsize=(12, 4), style=STYLE)
 
 # Save using save_figure (auto-detects format from extension)
 png_path = os.path.join(FIG_DIR, "genome_tracks_save_figure.png")

@@ -22,6 +22,17 @@ from geneview.genometracks import (
 )
 
 # ---------------------------------------------------------------------------
+# Journal style switch -- change this ONE line to render every figure below
+# in a journal-compliant theme.  Node borders, stems, connector/guide lines,
+# axis rules and font sizes are all routed through the chosen style.
+#   "nature"  -> Nature Research guidelines (thin 0.4pt rules, compact fonts)
+#   "science" -> Science / AAAS guidelines
+#   "cell"    -> Cell Press guidelines
+#   None      -> default geneview look (thicker rules, larger fonts)
+# ---------------------------------------------------------------------------
+STYLE = "nature"
+
+# ---------------------------------------------------------------------------
 # Locate example data
 # ---------------------------------------------------------------------------
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "mutation")
@@ -44,7 +55,7 @@ tracks = [
     LolliplotTrack(snps, features=feats, type="circle", name="Lollipop"),
 ]
 axes = plot_tracks(tracks, region=region, figsize=(12, 5),
-                   title="LolliplotTrack + GenomeAxis")
+                   title="LolliplotTrack + GenomeAxis", style=STYLE)
 plt.savefig(os.path.join(OUT_DIR, "mutation_combined_lollipop_axis.png"),
             dpi=150, bbox_inches="tight")
 print("[INFO] Saved mutation_combined_lollipop_axis.png")
@@ -58,7 +69,7 @@ tracks = [
     LolliplotTrack(snps, features=feats, type="circle", name="Lollipop"),
 ]
 axes = plot_tracks(tracks, region=region, figsize=(12, 6),
-                   title="Annotation + LolliplotTrack")
+                   title="Annotation + LolliplotTrack", style=STYLE)
 plt.savefig(os.path.join(OUT_DIR, "mutation_combined_annotation_lollipop.png"),
             dpi=150, bbox_inches="tight")
 print("[INFO] Saved mutation_combined_annotation_lollipop.png")
@@ -74,7 +85,7 @@ tracks = [
     DandelionTrack(snps, features=feats, type="fan", name="Dandelion"),
 ]
 axes = plot_tracks(tracks, region=region, figsize=(12, 9),
-                   title="All Mutation Tracks Combined")
+                   title="All Mutation Tracks Combined", style=STYLE)
 plt.savefig(os.path.join(OUT_DIR, "mutation_combined_all_tracks.png"),
             dpi=150, bbox_inches="tight")
 print("[INFO] Saved mutation_combined_all_tracks.png")
@@ -90,7 +101,7 @@ tracks = [
     LolliplotTrack(snps, features=feats, type="flag", name="Flags"),
 ]
 axes = plot_tracks(tracks, region=region, figsize=(12, 9),
-                   title="LolliplotTrack — Multiple Shape Types")
+                   title="LolliplotTrack — Multiple Shape Types", style=STYLE)
 plt.savefig(os.path.join(OUT_DIR, "mutation_combined_multi_shape.png"),
             dpi=150, bbox_inches="tight")
 print("[INFO] Saved mutation_combined_multi_shape.png")

@@ -7,6 +7,9 @@ Demonstrates the new multi-view layout functions ported from genomeview:
     - ``plot_tracks_multi`` — stack sections from different regions vertically
 
 Useful for comparing loci, samples, or conditions in a single figure.
+The grid figures also show two journal touches: automatic ``a/b/c`` panel
+labels (``panel_labels=True``) and the one-line raster/vector export switch
+(``FMT``) via :func:`save_figure`.
 
 Run:  python examples/scripts/genome_tracks_multi_view.py
 """
@@ -25,9 +28,19 @@ from geneview.genometracks import (
     plot_tracks,
     plot_tracks_grid,
     plot_tracks_multi,
+    add_panel_labels,
+    save_figure,
     read_bed,
     read_bedgraph,
 )
+
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look). ---
+STYLE = "nature"
+
+# --- Output format: change this ONE line to switch raster <-> vector export.
+#     Options: "png" | "pdf" | "svg" (vector formats stay editable in AI). ---
+FMT = "png"
 
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
@@ -63,14 +76,14 @@ axes = plot_tracks_grid(
     columns=2,
     figsize=(20, 6),
     title="Side-by-Side Comparison: Two Regions on chr7",
+    style=STYLE,
+    panel_labels=True,   # auto a/b sub-panel tags (case/size follow STYLE)
 )
-fig = plt.gcf()
-fig.savefig(
-    os.path.join(FIG_DIR, "genome_tracks_multi_view_grid.png"),
-    dpi=150, bbox_inches="tight",
-)
+out = save_figure(axes[0][0],
+                  os.path.join(FIG_DIR, "genome_tracks_multi_view_grid.png"),
+                  fmt=FMT)
 plt.close("all")
-print(f"[INFO] Saved: genome_tracks_multi_view_grid.png")
+print(f"[INFO] Saved: {os.path.basename(out)}")
 
 
 # ---------------------------------------------------------------------------
@@ -97,14 +110,14 @@ axes = plot_tracks_grid(
     columns=2,
     figsize=(20, 12),
     title="2×2 Grid: Four chr7 Regions",
+    style=STYLE,
+    panel_labels=True,   # auto a/b/c/d sub-panel tags
 )
-fig = plt.gcf()
-fig.savefig(
-    os.path.join(FIG_DIR, "genome_tracks_multi_view_grid2x2.png"),
-    dpi=150, bbox_inches="tight",
-)
+out = save_figure(axes[0][0],
+                  os.path.join(FIG_DIR, "genome_tracks_multi_view_grid2x2.png"),
+                  fmt=FMT)
 plt.close("all")
-print(f"[INFO] Saved: genome_tracks_multi_view_grid2x2.png")
+print(f"[INFO] Saved: {os.path.basename(out)}")
 
 
 # ---------------------------------------------------------------------------
@@ -127,6 +140,7 @@ sections = [
 axes = plot_tracks_multi(
     sections,
     title="Multi-Region Stacked View",
+    style=STYLE,
 )
 fig = plt.gcf()
 fig.savefig(
@@ -166,6 +180,7 @@ if has_bedgraph:
         columns=2,
         figsize=(20, 8),
         title="Mixed Track Types in Grid Layout",
+        style=STYLE,
     )
     fig = plt.gcf()
     fig.savefig(

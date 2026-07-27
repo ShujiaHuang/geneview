@@ -18,6 +18,12 @@ from geneview.genometracks import (
     DataTrack, GenomicInterval, apply_scheme, read_gff, read_bed,
 )
 
+# --- Journal style: change this ONE line to restyle every figure below.
+#     Options: "nature" | "science" | "cell" | None (default geneview look).
+#     NOTE: the journal STYLE below is orthogonal to the color `scheme=`
+#     argument used in some calls (which assigns per-gene/per-transcript hues). ---
+STYLE = "nature"
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "genome_tracks")
 
@@ -35,6 +41,7 @@ axes = plot_tracks(
     region=region, figsize=(14, 4),
     scheme="genes",
     title="Color Scheme: genes",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_scheme_genes.png"),
             dpi=150, bbox_inches="tight")
@@ -49,6 +56,7 @@ axes = plot_tracks(
     region=region, figsize=(14, 5),
     scheme="transcripts",
     title="Color Scheme: transcripts",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_scheme_transcripts.png"),
             dpi=150, bbox_inches="tight")
@@ -64,6 +72,7 @@ axes = plot_tracks(
     region=region, figsize=(14, 5),
     cex=1.5,
     title="Font Scaling: cex=1.5",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_cex.png"),
             dpi=150, bbox_inches="tight")
@@ -88,6 +97,7 @@ axes = plot_tracks(
     region=region, figsize=(14, 5),
     ylim=(-10, 10),
     title="Global ylim=(-10, 10)",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_ylim.png"),
             dpi=150, bbox_inches="tight")
@@ -101,6 +111,7 @@ dtrack = DataTrack(d1, type="histogram", name="Added Track")
 axes = plot_tracks(
     [dtrack], region=region, add=True, ax=ax,
     title="Plot into existing axes (add=True)",
+    style=STYLE,
 )
 plt.savefig(os.path.join(FIG_DIR, "genome_tracks_add.png"),
             dpi=150, bbox_inches="tight")
