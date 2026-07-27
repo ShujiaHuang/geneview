@@ -1049,6 +1049,88 @@ class TestHeatmapEnhancements:
         from geneview.genometracks._data_track import _HEATMAP_CMAP
         assert _HEATMAP_CMAP == "Blues"
 
+    # --- coordinate accuracy & y-range regression tests -------------------
+
+    def _irregular_data(self):
+        """Two samples, non-uniform bins with a gap between 3000 and 7000."""
+        return pd.DataFrame({
+            "chrom": ["chr1"] * 5,
+            "start": [1000, 2000, 7000, 8000, 9000],
+            "end":   [2000, 3000, 8000, 9000, 10000],
+            "s1": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "s2": [5.0, 4.0, 3.0, 2.0, 1.0],
+        })
+
+    def _cell_left_edges(self, ax):
+        paths = ax.collections[0].get_paths()
+        return sorted({round(p.vertices[:, 0].min()) for p in paths})
+
+    def test_heatmap_cells_at_true_coordinates(self):
+        """Cells must be drawn at their real genomic [start, end], not stretched
+        uniformly across the region (regression for imshow extent bug)."""
+        data = self._irregular_data()
+        dt = DataTrack(data, type="heatmap")
+        fig, ax = plt.subplots()
+        dt.draw(ax, GenomicInterval("chr1", 1000, 10000))
+        # 5 bins x 2 samples = 10 cells
+        assert len(ax.collections[0].get_paths()) == 10
+        assert self._cell_left_edges(ax) == [1000, 2000, 7000, 8000, 9000]
+        plt.close("all")
+
+    def test_heatmap_gap_not_filled(self):
+        """The empty 3000-7000 region must not receive a cell."""
+        data = self._irregular_data()
+        dt = DataTrack(data, type="heatmap")
+        fig, ax = plt.subplots()
+        dt.draw(ax, GenomicInterval("chr1", 1000, 10000))
+        # no cell should start inside the gap
+        assert 3000 not in self._cell_left_edges(ax)
+        plt.close("all")
+
+    def test_heatmap_unsorted_input(self):
+        """Unsorted rows must still map to correct coordinates (regression for
+        starts[0]/ends[-1] extent bug)."""
+        data = self._irregular_data().iloc[[2, 0, 4, 1, 3]].reset_index(drop=True)
+        dt = DataTrack(data, type="heatmap")
+        fig, ax = plt.subplots()
+        dt.draw(ax, GenomicInterval("chr1", 1000, 10000))
+        assert self._cell_left_edges(ax) == [1000, 2000, 7000, 8000, 9000]
+        plt.close("all")
+
+    def test_heatmap_yrange_is_row_based(self):
+        """y-range must span the sample rows, not the value range (regression
+        for the squished-heatmap bug)."""
+        data = self._make_heatmap_data()  # 3 samples
+        dt = DataTrack(data, type="heatmap")
+        fig, ax = plt.subplots()
+        dt.draw(ax, GenomicInterval("chr7", 2000000, 2050000))
+        assert ax.get_ylim() == (0.0, 3.0)
+        plt.close("all")
+
+    def test_gradient_cells_at_true_coordinates(self):
+        """Gradient bins must also be placed at their real genomic interval."""
+        data = self._irregular_data()
+        dt = DataTrack(data, type="gradient")
+        fig, ax = plt.subplots()
+        dt.draw(ax, GenomicInterval("chr1", 1000, 10000))
+        assert self._cell_left_edges(ax) == [1000, 2000, 7000, 8000, 9000]
+        assert ax.get_ylim() == (0.0, 1.0)
+        plt.close("all")
+
+    def test_heatmap_yrange_restored_for_line_after_heatmap(self):
+        """Row-based y-range must not leak into a subsequent value-based draw."""
+        data = self._make_heatmap_data()
+        region = GenomicInterval("chr7", 2000000, 2050000)
+        dt = DataTrack(data, type="heatmap")
+        fig, ax = plt.subplots()
+        dt.draw(ax, region)
+        # re-draw the same track as a line: y-range must revert to values
+        dt2 = DataTrack(data, type="line")
+        fig2, ax2 = plt.subplots()
+        dt2.draw(ax2, region)
+        assert ax2.get_ylim() != (0.0, 3.0)
+        plt.close("all")
+
 
 # =============================================================================
 # AnnotationTrack transparent edge tests

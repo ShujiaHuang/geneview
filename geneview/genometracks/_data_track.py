@@ -13,8 +13,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.collections import PolyCollection
+from matplotlib.colors import LinearSegmentedColormap, Normalize
+from matplotlib.collections import PolyCollection, PatchCollection
 
 from ._base import NumericTrack, GenomicInterval
 
@@ -194,6 +194,9 @@ class DataTrack(NumericTrack):
         self.aggregation = aggregation
         self.legend = legend
         self.smooth_span = smooth_span
+        # When set (by heatmap/gradient), the track owns a row-based y-range and
+        # ``_format_y_axis`` must not override it with the value range.
+        self._row_ylim = None
 
     def get_ylim(self) -> Tuple[float, float]:
         """Get y-axis limits, using user-provided or auto-computed."""
@@ -211,6 +214,7 @@ class DataTrack(NumericTrack):
         region : GenomicInterval
             The genomic region to display.
         """
+        self._row_ylim = None
         sub = self.subset(region)
         if sub is None or len(sub) == 0:
             ax.set_xlim(region.start, region.end)
@@ -267,8 +271,12 @@ class DataTrack(NumericTrack):
 
     def _format_y_axis(self, ax):
         """Format the y-axis with appropriate labels."""
-        ylim = self.get_ylim()
-        ax.set_ylim(ylim)
+        if self._row_ylim is not None:
+            # heatmap / gradient encode values as color, not height, and manage
+            # their own row-based y-range, so don't override with the value range.
+            ax.set_ylim(*self._row_ylim)
+        else:
+            ax.set_ylim(self.get_ylim())
 
         # Show y-axis with a few tick marks
         ax.spines["left"].set_visible(True)
@@ -276,7 +284,8 @@ class DataTrack(NumericTrack):
         ax.spines["left"].set_linewidth(0.5)
         ax.spines["bottom"].set_visible(False)
 
-        ax.yaxis.set_major_locator(plt.MaxNLocator(3))
+        if self._row_ylim is None:
+            ax.yaxis.set_major_locator(plt.MaxNLocator(3))
         ax.tick_params(axis="y", labelsize=7, colors=self.get_param("col_axis", "#666666"))
         ax.set_xticklabels([])
 
@@ -427,9 +436,12 @@ class DataTrack(NumericTrack):
     def _draw_heatmap(self, ax, data, region):
         """Draw data as a heatmap.
 
-        Matches Gviz: uses a sequential Blues gradient by default,
-        draws individual colored cells per sample/position, and supports
-        a separator parameter for spacing between rows.
+        Matches Gviz: uses a sequential Blues gradient by default and draws
+        one colored cell per sample/position.  Each cell is placed at its true
+        genomic ``[start, end]`` interval so that non-uniform bin widths, gaps
+        between bins, and unsorted input all map to the correct x coordinate
+        (a plain ``imshow`` would instead stretch every column to an equal
+        width and hide gaps).
         """
         cmap_name = self.get_param("heatmap_cmap", _HEATMAP_CMAP)
         cmap = plt.get_cmap(cmap_name)
@@ -438,25 +450,42 @@ class DataTrack(NumericTrack):
         if not value_arrays:
             return
 
+        # Sort by genomic start so rows/columns follow coordinate order and the
+        # bounds stay correct even when the input DataFrame is unsorted.
+        order = np.argsort(data["start"].values, kind="stable")
+        starts = data["start"].values[order]
+        ends = data["end"].values[order]
+
         # Build 2D array (samples x positions)
-        matrix = np.array([vals for _, vals in value_arrays])
+        matrix = np.array([vals[order] for _, vals in value_arrays])
 
         # Normalize to 0-1 for colormap (Gviz: .z2icol approach)
         vmin = np.nanmin(matrix)
         vmax = np.nanmax(matrix)
         if vmin == vmax:
             vmax = vmin + 1
+        norm = Normalize(vmin=vmin, vmax=vmax)
 
         n_samples = matrix.shape[0]
         n_positions = matrix.shape[1]
 
-        # Draw as image with sequential Blues colormap
-        starts = data["start"].values
-        ends = data["end"].values
-        extent = [starts[0], ends[-1], 0, n_samples]
+        # Draw each cell as a rectangle at its real genomic interval.
+        rects = []
+        for row in range(n_samples):
+            for j in range(n_positions):
+                val = matrix[row, j]
+                if np.isnan(val):
+                    continue
+                rects.append(mpatches.Rectangle(
+                    (starts[j], row), ends[j] - starts[j], 1.0,
+                    facecolor=cmap(norm(val)), edgecolor="none"))
+        if rects:
+            ax.add_collection(
+                PatchCollection(rects, match_original=True, zorder=3))
 
-        ax.imshow(matrix, aspect="auto", cmap=cmap, vmin=vmin, vmax=vmax,
-                  extent=extent, origin="lower", interpolation="nearest", zorder=3)
+        # The heatmap owns a row-based y-range (values map to color, not height).
+        self._row_ylim = (0, n_samples)
+        ax.set_ylim(0, n_samples)
 
         # Draw separator lines between rows if requested
         if self.separator > 0 and n_samples > 1:
@@ -479,7 +508,9 @@ class DataTrack(NumericTrack):
     def _draw_gradient(self, ax, data, region):
         """Draw collapsed average as a color gradient.
 
-        Matches Gviz: uses colorRampPalette(brewer.pal(9, 'Blues')).
+        Matches Gviz: uses colorRampPalette(brewer.pal(9, 'Blues')).  Each
+        averaged bin is drawn at its true genomic ``[start, end]`` interval so
+        the color bands line up with the coordinate axis.
         """
         colors = self.gradient_colors
         cmap = LinearSegmentedColormap.from_list("gradient", colors, N=self.ncolor)
@@ -488,23 +519,35 @@ class DataTrack(NumericTrack):
         if not value_arrays:
             return
 
+        order = np.argsort(data["start"].values, kind="stable")
+        starts = data["start"].values[order]
+        ends = data["end"].values[order]
+
         # Average across samples
-        matrix = np.array([vals for _, vals in value_arrays])
+        matrix = np.array([vals[order] for _, vals in value_arrays])
         avg = np.nanmean(matrix, axis=0)
 
         vmin = np.nanmin(avg)
         vmax = np.nanmax(avg)
         if vmin == vmax:
             vmax = vmin + 1
+        norm = Normalize(vmin=vmin, vmax=vmax)
 
-        # Draw as a single-row image
-        starts = data["start"].values
-        ends = data["end"].values
-        extent = [starts[0], ends[-1], 0, 1]
+        # Draw each averaged bin as a single-row rectangle at its real interval.
+        rects = []
+        for j in range(len(avg)):
+            val = avg[j]
+            if np.isnan(val):
+                continue
+            rects.append(mpatches.Rectangle(
+                (starts[j], 0), ends[j] - starts[j], 1.0,
+                facecolor=cmap(norm(val)), edgecolor="none"))
+        if rects:
+            ax.add_collection(
+                PatchCollection(rects, match_original=True, zorder=3))
 
-        ax.imshow(avg.reshape(1, -1), aspect="auto", cmap=cmap,
-                  vmin=vmin, vmax=vmax, extent=extent,
-                  origin="lower", interpolation="nearest", zorder=3)
+        self._row_ylim = (0, 1)
+        ax.set_ylim(0, 1)
         ax.set_yticks([])
 
     def _draw_points(self, ax, data, region, _precomputed=None):
