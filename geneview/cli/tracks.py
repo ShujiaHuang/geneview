@@ -175,7 +175,10 @@ def register(subparsers):
     p.add_argument(
         "--reference",
         default=None, metavar="FILE",
-        help="Reference FASTA file (indexed) for mismatch display in pileup mode.")
+        help="Reference FASTA file (indexed with 'samtools faidx'). Required to "
+             "decode CRAM input (used as pysam reference_filename instead of the "
+             "path embedded in the CRAM header), and also enables mismatch "
+             "display in pileup mode.")
     p.add_argument(
         "--min-indel-size",
         type=int, default=0,
@@ -394,6 +397,7 @@ def run(args):
             cov_name = args.coverage_name or os.path.basename(cov_file).split(".")[0]
             cov_track = BAMCoverageTrack(
                 filepath=cov_file,
+                reference=args.reference,
                 type=args.coverage_type,
                 col=args.coverage_color,
                 name=cov_name + " Coverage",
@@ -455,7 +459,7 @@ def run(args):
             is_paired = args.paired
             if not is_paired:
                 try:
-                    is_paired = is_paired_end(bam_file)
+                    is_paired = is_paired_end(bam_file, reference=args.reference)
                 except Exception:
                     pass
 

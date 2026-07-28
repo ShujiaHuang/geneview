@@ -341,6 +341,52 @@ def read_bigbed(
         bb.close()
 
 
+def open_alignment_file(
+    filepath: str,
+    reference: Optional[str] = None,
+    mode: Optional[str] = None,
+):
+    """Open a BAM/CRAM file with pysam, honoring an explicit reference FASTA.
+
+    The open *mode* is auto-detected from the file extension (``.cram`` ->
+    ``"rc"``, otherwise ``"rb"``) unless given explicitly.  When *reference*
+    is provided it is passed to pysam as ``reference_filename`` so that CRAM
+    files are decoded against the user-supplied reference FASTA instead of the
+    reference path embedded in the CRAM header, which is frequently a stale
+    absolute path pointing at another machine.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the BAM or CRAM file.
+    reference : str, optional
+        Path to an indexed reference FASTA (``samtools faidx``).  Applied for
+        CRAM decoding; ignored by pysam for plain BAM input.
+    mode : str, optional
+        Explicit pysam open mode.  Auto-detected from the extension when None.
+
+    Returns
+    -------
+    pysam.AlignmentFile
+    """
+    try:
+        import pysam
+    except ImportError:
+        raise ImportError(
+            "The 'pysam' package is required to read BAM/CRAM files. "
+            "Install it with: pip install pysam"
+        )
+
+    if mode is None:
+        mode = "rc" if str(filepath).lower().endswith(".cram") else "rb"
+
+    open_kwargs = {}
+    if reference is not None:
+        open_kwargs["reference_filename"] = reference
+
+    return pysam.AlignmentFile(filepath, mode, **open_kwargs)
+
+
 def read_bam_coverage(
     filepath: str,
     region: Optional[GenomicInterval] = None,
@@ -436,20 +482,7 @@ def _read_alignment_coverage(
     pd.DataFrame
         DataFrame with columns: chrom, start, end, value (coverage depth).
     """
-    try:
-        import pysam
-    except ImportError:
-        fmt = "CRAM" if mode == "rc" else "BAM"
-        raise ImportError(
-            f"The 'pysam' package is required to read {fmt} files. "
-            "Install it with: pip install pysam"
-        )
-
-    open_kwargs = {}
-    if reference is not None:
-        open_kwargs["reference_filename"] = reference
-
-    alignment = pysam.AlignmentFile(filepath, mode, **open_kwargs)
+    alignment = open_alignment_file(filepath, reference=reference, mode=mode)
     try:
         if region is not None:
             chrom = region.chrom

@@ -98,10 +98,10 @@ def visualize_files(
             is_paired = False
             min_indel_size = 0
             try:
-                is_paired = is_paired_end(path)
+                is_paired = is_paired_end(path, reference=reference)
                 if not is_paired:
                     try:
-                        if is_long_frag_dataset(path):
+                        if is_long_frag_dataset(path, reference=reference):
                             min_indel_size = 5
                     except Exception:
                         pass

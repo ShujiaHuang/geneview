@@ -619,6 +619,7 @@ class AnnotationTrack(StackedTrack):
         cls,
         filepath: str,
         region: Optional[GenomicInterval] = None,
+        reference: Optional[str] = None,
         name: str = "BAM Annotation",
         **kwargs,
     ) -> "AnnotationTrack":
@@ -632,6 +633,9 @@ class AnnotationTrack(StackedTrack):
             Path to a BAM or CRAM file.
         region : GenomicInterval, optional
             Genomic region to extract reads from.
+        reference : str, optional
+            Path to an indexed reference FASTA.  Required to decode CRAM input
+            when the reference is not accessible via the CRAM header.
         name : str
             Track name.
         **kwargs
@@ -641,15 +645,9 @@ class AnnotationTrack(StackedTrack):
         -------
         AnnotationTrack
         """
-        try:
-            import pysam
-        except ImportError:
-            raise ImportError(
-                "The 'pysam' package is required for from_bam(). "
-                "Install it with: pip install pysam"
-            )
+        from ._io import open_alignment_file
 
-        aln = pysam.AlignmentFile(filepath, "rb")
+        aln = open_alignment_file(filepath, reference=reference)
         try:
             if region is not None:
                 reads = aln.fetch(region.chrom, region.start, region.end)

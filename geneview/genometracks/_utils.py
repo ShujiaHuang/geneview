@@ -54,7 +54,7 @@ def match_chrom_format(chrom: str, keys: Iterable[str]) -> str:
     return chrom
 
 
-def is_paired_end(bam_path: str, n: int = 100) -> bool:
+def is_paired_end(bam_path: str, n: int = 100, reference: Optional[str] = None) -> bool:
     """Detect whether a BAM/CRAM file contains paired-end reads.
 
     Scans up to *n* reads and returns ``True`` as soon as a paired read is
@@ -76,9 +76,9 @@ def is_paired_end(bam_path: str, n: int = 100) -> bool:
     ImportError
         If ``pysam`` is not installed.
     """
-    import pysam
+    from ._io import open_alignment_file
 
-    aln = pysam.AlignmentFile(bam_path, "rb")
+    aln = open_alignment_file(bam_path, reference=reference)
     try:
         for i, read in enumerate(aln.fetch()):
             if read.is_paired:
@@ -90,7 +90,7 @@ def is_paired_end(bam_path: str, n: int = 100) -> bool:
         aln.close()
 
 
-def is_long_frag_dataset(bam_path: str, n: int = 1000) -> bool:
+def is_long_frag_dataset(bam_path: str, n: int = 1000, reference: Optional[str] = None) -> bool:
     """Detect whether a BAM file comes from a long-fragment sequencing protocol.
 
     Returns ``True`` when the first *n* reads appear to be single-end with a
@@ -112,9 +112,9 @@ def is_long_frag_dataset(bam_path: str, n: int = 1000) -> bool:
     ImportError
         If ``pysam`` is not installed.
     """
-    import pysam
+    from ._io import open_alignment_file
 
-    aln = pysam.AlignmentFile(bam_path, "rb")
+    aln = open_alignment_file(bam_path, reference=reference)
     try:
         for i, read in enumerate(aln.fetch()):
             if read.is_paired:

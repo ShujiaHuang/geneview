@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from ._base import Track, GenomicInterval
 from ._alignments_track import AlignmentsTrack
 from ._utils import match_chrom_format
+from ._io import open_alignment_file
 
 
 def get_group_by_tag_fn(tag: str) -> Callable:
@@ -124,9 +125,7 @@ class GroupedAlignmentsTrack(Track):
 
     def _build_sub_tracks(self, region: GenomicInterval) -> None:
         """Discover groups and create per-group AlignmentsTrack instances."""
-        import pysam
-
-        aln = pysam.AlignmentFile(self.filepath, "rb")
+        aln = open_alignment_file(self.filepath, reference=self.reference)
         try:
             chrom = match_chrom_format(region.chrom, aln.references)
 
@@ -212,8 +211,7 @@ class GroupedAlignmentsTrack(Track):
     def get_region(self) -> Optional[GenomicInterval]:
         """Return the region covered by the BAM file (from index)."""
         try:
-            import pysam
-            aln = pysam.AlignmentFile(self.filepath, "rb")
+            aln = open_alignment_file(self.filepath, reference=self.reference)
             try:
                 refs = aln.references
                 lengths = aln.lengths

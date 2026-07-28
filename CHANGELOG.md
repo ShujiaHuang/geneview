@@ -5,6 +5,21 @@ All notable changes to **geneview** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-07-27
+
+### Fixed
+- **CRAM reference handling (`geneview tracks` and the track API):** BAM/CRAM
+  files are now opened through a single `open_alignment_file()` helper that
+  auto-detects the pysam mode (`.cram` -> `"rc"`, otherwise `"rb"`) and, when
+  a `--reference` FASTA is supplied, passes it to pysam as `reference_filename`.
+  CRAM input is decoded against the user-supplied reference instead of the
+  (often stale, machine-specific) path embedded in the CRAM header. The
+  reference is now threaded through `AlignmentsTrack`, `BAMCoverageTrack`,
+  `GroupedAlignmentsTrack`, `AnnotationTrack.from_bam`, and the
+  `is_paired_end` / `is_long_frag_dataset` helpers.
+
+[0.8.1]: https://github.com/ShujiaHuang/geneview/compare/v0.8.0...v0.8.1
+
 ## [0.8.0] - 2026-07-27
 
 Highlights: a full mutation-visualization suite (Lollipop/Dandelion tracks),

@@ -19,6 +19,7 @@ from matplotlib.collections import PolyCollection
 
 from ._base import Track, StackedTrack, GenomicInterval
 from ._utils import match_chrom_format
+from ._io import open_alignment_file
 from ._sequence_track import _DEFAULT_NUC_COLORS as _NUC_COLORS
 
 
@@ -286,8 +287,8 @@ class AlignmentsTrack(StackedTrack):
         When ``self.read_filter`` is set, only reads passing the filter
         callback are included.
         """
-        pysam = self._import_pysam()
-        aln = pysam.AlignmentFile(self.filepath, "rb")
+        self._import_pysam()
+        aln = open_alignment_file(self.filepath, reference=self.reference)
         try:
             chrom = match_chrom_format(region.chrom, aln.references)
             raw_reads = aln.fetch(chrom, region.start, region.end)
@@ -313,9 +314,9 @@ class AlignmentsTrack(StackedTrack):
         """
         if not self.quick_consensus:
             return None
-        pysam = self._import_pysam()
+        self._import_pysam()
         from ._mismatch_counts import MismatchCounts
-        aln = pysam.AlignmentFile(self.filepath, "rb")
+        aln = open_alignment_file(self.filepath, reference=self.reference)
         try:
             mc = MismatchCounts(region.chrom, region.start, region.end)
             mc.tally_reads(aln)
@@ -325,8 +326,8 @@ class AlignmentsTrack(StackedTrack):
 
     def _compute_coverage(self, region: GenomicInterval) -> np.ndarray:
         """Compute per-base coverage across the region."""
-        pysam = self._import_pysam()
-        aln = pysam.AlignmentFile(self.filepath, "rb")
+        self._import_pysam()
+        aln = open_alignment_file(self.filepath, reference=self.reference)
         try:
             chrom = match_chrom_format(region.chrom, aln.references)
             cov = aln.count_coverage(
@@ -874,8 +875,8 @@ class AlignmentsTrack(StackedTrack):
     def get_region(self) -> Optional[GenomicInterval]:
         """Return the region covered by the BAM file (from index)."""
         try:
-            pysam = self._import_pysam()
-            aln = pysam.AlignmentFile(self.filepath, "rb")
+            self._import_pysam()
+            aln = open_alignment_file(self.filepath, reference=self.reference)
             try:
                 refs = aln.references
                 lengths = aln.lengths
@@ -902,6 +903,9 @@ class BAMCoverageTrack(Track):
     ----------
     filepath : str
         Path to a BAM or CRAM file.
+    reference : str, optional
+        Path to an indexed reference FASTA.  Required to decode CRAM input when
+        the reference is not accessible via the CRAM header.
     type : str
         Display style: ``"line"`` (default) or ``"fill"``.
     col : str
@@ -924,6 +928,7 @@ class BAMCoverageTrack(Track):
     def __init__(
         self,
         filepath: str,
+        reference: Optional[str] = None,
         type: str = "line",
         col: str = "#5B8DB8",
         alpha: float = 0.7,
@@ -943,6 +948,7 @@ class BAMCoverageTrack(Track):
         super().__init__(name=name, height=height, display_params=dp, **kwargs)
 
         self.filepath = filepath
+        self.reference = reference
         self.plot_type = type
         self.col = col
         self.alpha = alpha
@@ -961,8 +967,8 @@ class BAMCoverageTrack(Track):
 
     def draw(self, ax, region: GenomicInterval) -> None:
         """Draw coverage line or filled area."""
-        pysam = self._import_pysam()
-        aln = pysam.AlignmentFile(self.filepath, "rb")
+        self._import_pysam()
+        aln = open_alignment_file(self.filepath, reference=self.reference)
         try:
             chrom = match_chrom_format(region.chrom, aln.references)
 
@@ -1020,8 +1026,8 @@ class BAMCoverageTrack(Track):
     def get_region(self) -> Optional[GenomicInterval]:
         """Return the region covered by the BAM file (from index)."""
         try:
-            pysam = self._import_pysam()
-            aln = pysam.AlignmentFile(self.filepath, "rb")
+            self._import_pysam()
+            aln = open_alignment_file(self.filepath, reference=self.reference)
             try:
                 refs = aln.references
                 lengths = aln.lengths
