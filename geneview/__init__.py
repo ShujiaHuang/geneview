@@ -1,4 +1,4 @@
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 
 from .palette import *
 from .utils import load_dataset, get_dataset_names

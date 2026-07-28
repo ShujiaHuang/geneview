@@ -123,3 +123,29 @@ class TestReferencePlumbing:
                             _spy(rec, fake=_FakeAln(paired=False)))
         _utils.is_long_frag_dataset("s.cram", reference="ref.fa")
         assert rec and rec[0]["reference"] == "ref.fa"
+
+
+class _PileupSpyAln:
+    """Records the kwargs passed to ``pileup`` and yields nothing."""
+
+    def __init__(self):
+        self.references = ["chr1"]
+        self.pileup_kwargs = None
+
+    def pileup(self, *args, **kwargs):
+        self.pileup_kwargs = kwargs
+        return iter(())
+
+    def close(self):
+        pass
+
+
+class TestMismatchCountsCramSafe:
+    """``tally_reads`` must not request CRAM-unsupported multiple iterators."""
+
+    def test_tally_reads_disables_multiple_iterators(self):
+        from geneview.genometracks._mismatch_counts import MismatchCounts
+        aln = _PileupSpyAln()
+        MismatchCounts("chr1", 100, 200).tally_reads(aln)
+        assert aln.pileup_kwargs is not None
+        assert aln.pileup_kwargs.get("multiple_iterators") is False

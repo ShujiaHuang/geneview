@@ -69,7 +69,15 @@ class MismatchCounts:
             automatically via :func:`match_chrom_format`.
         """
         chrom = match_chrom_format(self.chrom, bam.references)
-        for pileup_col in bam.pileup(chrom, self.start, self.end, truncate=True):
+        # ``multiple_iterators`` defaults to True inside pysam's pileup
+        # iterator, which is unsupported for CRAM (pysam emits a
+        # ``UserWarning`` and silently falls back to a single iterator).
+        # We open a dedicated handle for this tally and iterate the pileup
+        # exactly once, so a single iterator is both correct and warning-free
+        # for BAM and CRAM alike.
+        pileup = bam.pileup(chrom, self.start, self.end, truncate=True,
+                            multiple_iterators=False)
+        for pileup_col in pileup:
             for pileup_read in pileup_col.pileups:
                 if pileup_read.is_refskip:
                     continue

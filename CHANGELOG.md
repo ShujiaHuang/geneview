@@ -5,6 +5,18 @@ All notable changes to **geneview** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-07-27
+
+### Fixed
+- **CRAM pileup warning (`_mismatch_counts.tally_reads`):** pysam's pileup
+  iterator defaults `multiple_iterators=True`, which is unsupported for CRAM
+  and triggered `UserWarning: multiple_iterators not implemented for CRAM`.
+  The tally now opens a dedicated handle and requests
+  `multiple_iterators=False`, which is correct and warning-free for both BAM
+  and CRAM.
+
+[0.8.2]: https://github.com/ShujiaHuang/geneview/compare/v0.8.1...v0.8.2
+
 ## [0.8.1] - 2026-07-27
 
 ### Fixed
