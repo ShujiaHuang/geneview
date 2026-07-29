@@ -102,7 +102,7 @@ def run(args):
 
     if args.pv not in df.columns:
         raise ValueError("Column '%s' not found in input file. "
-                         "Available columns: %s" % (args.pv, list(df.columns)))
+                         f"Available columns: {list(df.columns)}")
 
     data = df[args.pv].dropna()
 

@@ -131,7 +131,7 @@ def run(args):
 
     for f in args.input_files:
         if not os.path.isfile(f):
-            raise FileNotFoundError("Input file not found: %s" % f)
+            raise FileNotFoundError(f"Input file not found: {f}")
 
     # --- Read data ---
     datasets = {}
