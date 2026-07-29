@@ -4,15 +4,11 @@ Author: Shujia Huang
 Date: 2021-05-01
 """
 import warnings
-from itertools import cycle
 import numpy as np
 import pandas as pd
 
-from matplotlib.pyplot import subplots
-
 from ..algorithm import hierarchical_cluster
-from ..palette import generate_colors_palette
-from ..plotstyle import use_style
+from .._core import styled_plot, resolve_colors, color_cycle, get_or_create_axes
 
 
 def _draw_admixtureplot(
@@ -43,9 +39,10 @@ def _draw_admixtureplot(
     group_order : vector of strings, optional
         Specify the order of processing and plotting for the estimating sub populations.
     """
-    if ax is None:
-        _, ax = subplots(1, 1, figsize=(14, 2), facecolor="w", constrained_layout=True)
-
+    # When called via the ``@styled_plot``-decorated ``admixtureplot`` the axes
+    # already exists; when called directly, create the historical default.
+    ax = get_or_create_axes(ax, figsize=(14, 2), apply_spines=False,
+                            facecolor="w", constrained_layout=True)
     if hierarchical_kws is None:
         hierarchical_kws = {"method": "average", "metric": "euclidean"}
     if "axis" not in hierarchical_kws:
@@ -66,8 +63,8 @@ def _draw_admixtureplot(
     base_y = np.zeros(len(x))
 
     k_names = data[group_order[0]].columns
-    colors = generate_colors_palette(cmap=palette, n_colors=len(k_names))
-    palette = cycle(colors)
+    colors = resolve_colors(palette, n_colors=len(k_names))
+    palette = color_cycle(colors)
     if len(colors) < len(k_names):
         msg = ("The categories of colors setting by `palette` is less than "
                "the number of estimating sub populations (K) in admixture, "
@@ -166,6 +163,8 @@ def _load_admixture_from_file(in_admixture_fname, in_sample_info_fname, shuffle_
     return data
 
 
+@styled_plot(figsize=(14, 2), apply_spines=False,
+             subplot_kws={"facecolor": "w", "constrained_layout": True})
 def admixtureplot(
         data,
         population_info=None,
@@ -356,16 +355,16 @@ def admixtureplot(
         g = list(data.keys())[0]
         ylabel = "K=%d" % len(data[g].columns)
 
-    with use_style(style):
-        return _draw_admixtureplot(data=data,
-                                   group_order=group_order,
-                                   linewidth=linewidth,
-                                   edgewidth=edgewidth,
-                                   palette=palette,
-                                   xticklabels=xticklabels,
-                                   xticklabel_kws=xticklabel_kws,
-                                   ylabel=ylabel,
-                                   ylabel_kws=ylabel_kws,
-                                   hierarchical_kws=hierarchical_kws,
-                                   set_xticklabel_top=set_xticklabel_top,
-                                   ax=ax)
+    # ``ax`` and the active style are handled by the ``@styled_plot`` decorator.
+    return _draw_admixtureplot(data=data,
+                               group_order=group_order,
+                               linewidth=linewidth,
+                               edgewidth=edgewidth,
+                               palette=palette,
+                               xticklabels=xticklabels,
+                               xticklabel_kws=xticklabel_kws,
+                               ylabel=ylabel,
+                               ylabel_kws=ylabel_kws,
+                               hierarchical_kws=hierarchical_kws,
+                               set_xticklabel_top=set_xticklabel_top,
+                               ax=ax)

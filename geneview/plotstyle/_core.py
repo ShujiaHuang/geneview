@@ -4,8 +4,8 @@ Defines the PlotStyle dataclass, a global style registry, and helpers for
 applying styles globally or as context managers.
 
 """
-from contextlib import contextmanager, nullcontext
-from dataclasses import dataclass, field, asdict
+from contextlib import contextmanager
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 import matplotlib
@@ -75,8 +75,6 @@ class PlotStyle:
         Default line width for ``plot()`` calls.
     lines_markersize : float
         Default marker size.
-    scatter_alpha : float
-        Default alpha for scatter plots.
     color_palette : list
         Ordered list of hex colours forming the journal's accessible palette.
         An empty list means "use matplotlib's current colour cycle".
@@ -143,7 +141,6 @@ class PlotStyle:
     # -- Lines / markers / scatter ------------------------------------------
     lines_linewidth: float = 0.5
     lines_markersize: float = 3.0
-    scatter_alpha: float = 0.8
 
     # -- Colour palette ------------------------------------------------------
     color_palette: List[str] = field(default_factory=list)

@@ -89,7 +89,6 @@ DEFAULT_STYLE = PlotStyle(
     # -- Lines / markers / scatter ------------------------------------------
     lines_linewidth=1.0,
     lines_markersize=4.0,
-    scatter_alpha=0.8,
 
     # -- Colour palette ------------------------------------------------------
     color_palette=_DEFAULT_PALETTE,

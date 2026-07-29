@@ -900,6 +900,7 @@ Comprehensive documentation is available:
 - [User Guide](./docs/user_guide.md) — Overview of all features with examples
 - [Plot Styles](./docs/user_guide.md#plot-styles) — Journal-compliant figure styles (Nature, Science, Cell)
 - [Genome Tracks Guide](./docs/genome_tracks_guide.md) — Detailed guide for the genome tracks module
+- [Mutation Tracks Guide](./docs/mutation_tracks_guide.md) — Detailed guide for the lolliplot/dandelion module
 - [Tutorial Notebooks](./docs/tutorial/) — Jupyter notebooks for GWAS, Venn, Admixture, Palettes, Plot Styles, Genome Tracks, and Mutation Tracks
 - [API Reference](./docs/user_guide.md#api-reference) — Function and class reference
 

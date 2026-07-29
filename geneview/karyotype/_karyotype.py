@@ -5,11 +5,11 @@ Copyright (c) Shujia Huang
 Date: 2016-02-19
 """
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 from ..palette import get_cytoband_color
 from ..utils import read_cytoband
+from .._core import styled_plot
 
 
 def _chrom_sort_key(chrom):
@@ -24,7 +24,8 @@ def _chrom_sort_key(chrom):
         return (1, 0, stripped)
 
 
-def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B", **kwargs):
+@styled_plot(apply_spines=False, use_gca=True)
+def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B", style=None, **kwargs):
     """ Create karyotype plot.
 
     Parameters
@@ -48,6 +49,11 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
     color4none : matplotlib color, optional, default: "#34728B"(deep gray blue)
         The color for undefine band color of karyotype in the plot.
 
+    style : str, PlotStyle, or None, optional
+        Plot style to apply. Can be a registered style name (e.g. "nature",
+        "science", "cell"), a PlotStyle object, or None (the default) to use
+        the currently active style.
+
     kwargs : key, value pairings
         Other keyword arguments are passed to ``Rectangle`` in matplotlib.patches
 
@@ -67,10 +73,8 @@ def karyoplot(data, ax=None, width=0.5, CHR=None, alpha=0.8, color4none="#34728B
         >>> _ = karyoplot(k_fn, ax=ax)
 
     """
-    # Draw the plot and return the Axes 
-    if ax is None:
-        ax = plt.gca()
-
+    # ``ax`` is provided by the ``@styled_plot`` decorator, which falls back to
+    # ``plt.gca()`` when the caller omits it (preserving historical behaviour).
     # Normalize any supported input (file/URL, DataFrame, or array of rows)
     # into the canonical chrom/chromStart/chromEnd/name/gieStain schema.
     data = read_cytoband(data)

@@ -93,7 +93,6 @@ NATURE_STYLE = PlotStyle(
     # -- Lines / markers / scatter ------------------------------------------
     lines_linewidth=0.4,
     lines_markersize=2.5,
-    scatter_alpha=0.85,
 
     # -- Colour palette ------------------------------------------------------
     color_palette=_WONG_PALETTE,

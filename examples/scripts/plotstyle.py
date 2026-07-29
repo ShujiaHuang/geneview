@@ -84,9 +84,9 @@ venn_data = {
 
 for style_name in ["geneview", "nature", "science", "cell"]:
     fig, ax = plt.subplots(figsize=(6, 6))
+    # palette omitted (None) -> petal colours follow the active journal style.
     ax = gv.venn(
         data=venn_data,
-        palette="Set2",
         fontsize=11,
         legend_use_petal_color=True,
         style=style_name,

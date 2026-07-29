@@ -89,7 +89,6 @@ SCIENCE_STYLE = PlotStyle(
     # -- Lines / markers / scatter ------------------------------------------
     lines_linewidth=0.5,
     lines_markersize=2.5,
-    scatter_alpha=0.85,
 
     # -- Colour palette ------------------------------------------------------
     color_palette=_OKABE_ITO_PALETTE,

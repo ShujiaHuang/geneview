@@ -9,18 +9,17 @@ https://github.com/brentp/bio-playground/blob/master/plots/manhattan-plot.py
 Thanks for Brentp's contributions
 
 """
-from itertools import cycle
 import string
 from pandas import DataFrame
 import numpy as np
 
-from matplotlib.pyplot import subplots
 from ..utils import adjust_text
 from ..utils._adjust_text import get_renderer
-from ..plotstyle import use_style
+from .._core import styled_plot, color_cycle
 
 
 # learn something from "https://github.com/reneshbedre/bioinfokit/blob/38fb4966827337f00421119a69259b92bb67a7d0/bioinfokit/visuz.py"
+@styled_plot(figsize=(9, 3), subplot_kws={"facecolor": "w", "edgecolor": "k"})
 def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, ax=None,
                   marker=".", color="#3B5488,#53BBD5", alpha=0.8,
                   title=None, xlabel="Chromosome", ylabel=r"$-log_{10}{(P)}$",
@@ -255,15 +254,16 @@ def manhattanplot(data, chrom="#CHROM", pos="POS", pv="P", snp="ID", logp=True, 
         raise ValueError("[ERROR] ``CHR`` and ``xtick_label_set`` can't be set simultaneously.")
     _validate_annotate_fmt(annotate_fmt)  # fail fast on bad label format strings
 
-    with use_style(style):
-        return _manhattanplot_impl(
-            data, chrom, pos, pv, snp, logp, ax, marker, color, alpha,
-            title, xlabel, ylabel, xtick_label_set, CHR, xticklabel_kws,
-            suggestiveline, genomewideline, sign_line_cols, hline_kws,
-            sign_marker_p, sign_marker_color, is_annotate_topsnp, text_kws,
-            ld_block_size, annotate_fmt, annotate_layout, adjust_text_kws,
-            **kwargs
-        )
+    # ``ax`` is guaranteed non-None and the style context is already active:
+    # both are handled by the ``@styled_plot`` decorator on this function.
+    return _manhattanplot_impl(
+        data, chrom, pos, pv, snp, logp, ax, marker, color, alpha,
+        title, xlabel, ylabel, xtick_label_set, CHR, xticklabel_kws,
+        suggestiveline, genomewideline, sign_line_cols, hline_kws,
+        sign_marker_p, sign_marker_color, is_annotate_topsnp, text_kws,
+        ld_block_size, annotate_fmt, annotate_layout, adjust_text_kws,
+        **kwargs
+    )
 
 
 def _manhattanplot_impl(
@@ -277,11 +277,6 @@ def _manhattanplot_impl(
     """Internal implementation of manhattanplot, called within a style context."""
     data[[chrom]] = data[[chrom]].astype(str)  # make sure all the chromosome id are character.
 
-    # Draw the plot and return the Axes
-    if ax is None:
-        # ax = plt.gca()
-        _, ax = subplots(figsize=(9, 3), facecolor="w", edgecolor="k")  # default
-
     if xticklabel_kws is None:
         xticklabel_kws = {}
     if hline_kws is None:
@@ -289,9 +284,7 @@ def _manhattanplot_impl(
     if text_kws is None:
         text_kws = {}
 
-    if "," in color:
-        color = color.split(",")
-    colors = cycle(color)
+    colors = color_cycle(color)
 
     last_xpos = 0
     xs_by_id = []  # use for collecting chromosome's position on x-axis
@@ -392,8 +385,8 @@ def _manhattanplot_impl(
     if ylabel:
         ax.set_ylabel(ylabel)
 
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+    # Top/right spine visibility is enforced by the active style via the
+    # ``@styled_plot`` decorator (the geneview default hides them).
     return ax
 
 

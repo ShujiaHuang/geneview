@@ -6,10 +6,9 @@ Date: 2021-02-21
 """
 import numpy as np
 from scipy.stats import norm, chi2
-from matplotlib.pyplot import subplots
 
 from ..utils import is_numeric
-from ..plotstyle import use_style
+from .._core import styled_plot
 
 
 def ppoints(n, a=0.5):
@@ -60,6 +59,7 @@ def ppoints(n, a=0.5):
     return (np.arange(n, dtype=float) + 1 - a) / (n + 1 - 2 * a)
 
 
+@styled_plot(figsize=(5, 5), subplot_kws={"facecolor": "w", "edgecolor": "k"})
 def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0.8, title=None,
            xlabel=None, ylabel=None, ablinecolor="r", style=None, **kwargs):
     """Creat Q-Q plot.
@@ -190,35 +190,36 @@ def qqplot(data, other=None, logp=True, ax=None, marker="o", color=None, alpha=0
 
     data = np.array(data, dtype=float)
 
-    with use_style(style):
-        # create observed and expected
-        e = ppoints(len(data)) if other is None else sorted(other)
+    # ``ax`` and the active style are provided by the ``@styled_plot`` decorator.
+    # create observed and expected
+    e = ppoints(len(data)) if other is None else sorted(other)
 
-        if logp:
-            o = -np.log10(sorted(data))
-            e = -np.log10(e)
-        else:
-            o = np.array(sorted(data))
-            e = np.array(e)
+    if logp:
+        o = -np.log10(sorted(data))
+        e = -np.log10(e)
+    else:
+        o = np.array(sorted(data))
+        e = np.array(e)
 
-        if "marker" not in kwargs:
-            kwargs["marker"] = marker
-        ax = _do_plot(e, o, ax=ax, color=color, ablinecolor=ablinecolor, alpha=alpha, **kwargs)
+    if "marker" not in kwargs:
+        kwargs["marker"] = marker
+    ax = _do_plot(e, o, ax=ax, color=color, ablinecolor=ablinecolor, alpha=alpha, **kwargs)
 
-        expected_median = chi2.ppf(0.5, 1)  # This value is equal to 0.4549364
-        lambda_value = round(np.median(norm.ppf(1-data/2) ** 2) / expected_median, 3)
-        if title:
-            title += r"$(\lambda = %s)$" % lambda_value
-        else:
-            title = r"$\lambda = %s$" % lambda_value
+    expected_median = chi2.ppf(0.5, 1)  # This value is equal to 0.4549364
+    lambda_value = round(np.median(norm.ppf(1-data/2) ** 2) / expected_median, 3)
+    if title:
+        title += r"$(\lambda = %s)$" % lambda_value
+    else:
+        title = r"$\lambda = %s$" % lambda_value
 
-        ax.set_title(title)
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     return ax
 
 
+@styled_plot(figsize=(5, 5), subplot_kws={"facecolor": "w", "edgecolor": "k"})
 def qqnorm(data, ax=None, xlabel="Expected normal distribution", ylabel="Observed distribution", 
            color=None, ablinecolor="r", alpha=0.8, style=None, **kwargs):
     """Creat Q-Q plot against the normal distribution values.
@@ -309,15 +310,15 @@ def qqnorm(data, ax=None, xlabel="Expected normal distribution", ylabel="Observe
     obs = (obs - obs.mean()) / obs.std()
     obs.sort()
 
-    with use_style(style):
-        # create expected
-        e = norm.ppf(ppoints(len(obs)))
+    # ``ax`` and the active style are provided by the ``@styled_plot`` decorator.
+    # create expected
+    e = norm.ppf(ppoints(len(obs)))
 
-        ax = _do_plot(e, obs, ax=ax, color=color, ablinecolor=ablinecolor,
-                      alpha=alpha, **kwargs)
+    ax = _do_plot(e, obs, ax=ax, color=color, ablinecolor=ablinecolor,
+                  alpha=alpha, **kwargs)
 
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     return ax
 
@@ -353,11 +354,8 @@ def _do_plot(x, y, ax=None, color=None, ablinecolor="r", alpha=0.8, **kwargs):
     ax : matplotlib Axes
         Axes object with the plot.
     """
-    # Draw the plot and return the Axes
-    if ax is None:
-        # ax = plt.gca()
-        _, ax = subplots(figsize=(5, 5), facecolor="w", edgecolor="k")
-
+    # Draw the plot and return the Axes. ``ax`` is always provided by the
+    # ``@styled_plot``-decorated public entry points (qqplot / qqnorm).
     # Get the color from the current color cycle
     if color is None:
         line, = ax.plot(0, x.mean())
