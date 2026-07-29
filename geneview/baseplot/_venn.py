@@ -5,12 +5,14 @@ Date: 2021-04-26 12:03:00
 
 Thanks to the code from tctianchi and LankyCyril: https://github.com/tctianchi/pyvenn
 """
-from matplotlib.pyplot import subplots
+import warnings
+
 from matplotlib.colors import to_rgba
 from matplotlib.patches import Ellipse, Polygon
 
 from ..palette import generate_colors_palette
-from ..plotstyle import use_style
+from ..plotstyle import get_active_style
+from .._core import styled_plot, get_or_create_axes
 
 __all__ = ["venn", "generate_petal_labels"]
 
@@ -122,6 +124,18 @@ DATASET_LEGEND_COORDS = {
 }
 
 
+# Curated fallback petal colours (r, g, b, a), used when the caller supplies no
+# ``palette`` and no active PlotStyle provides a colour palette.
+_DEFAULT_VENN_COLORS = [
+    [0.361, 0.753, 0.384, 0.5],
+    [0.353, 0.608, 0.831, 0.5],
+    [0.965, 0.925, 0.337, 0.6],
+    [0.945, 0.353, 0.376, 0.4],
+    [1.000, 0.459, 0.000, 0.3],
+    [0.322, 0.322, 0.745, 0.2],
+]
+
+
 def generate_colors(cmap="viridis", n_colors=6, alpha=.4):
     """Generate colors from matplotlib colormap; pass list to use exact colors"""
     if not isinstance(n_colors, int) or (n_colors < 2) or (n_colors > 6):
@@ -129,6 +143,47 @@ def generate_colors(cmap="viridis", n_colors=6, alpha=.4):
 
     colors = generate_colors_palette(cmap=cmap, n_colors=n_colors, alpha=alpha)
     return colors[:n_colors]
+
+
+def _resolve_palette(palette, n_sets, alpha):
+    """Resolve the fill colours for *n_sets* petals.
+
+    Priority: an explicit ``palette`` argument > the active :class:`PlotStyle`'s
+    ``color_palette`` (so Venn diagrams follow ``nature``/``science``/``cell``
+    themes like the other plots) > the built-in :data:`_DEFAULT_VENN_COLORS`.
+    Returns fresh lists so callers may mutate the alpha channel safely.
+    """
+    if palette is not None:
+        return generate_colors(n_colors=n_sets, cmap=palette, alpha=alpha)
+
+    active = get_active_style()
+    if active is not None and len(active.color_palette) >= n_sets:
+        return generate_colors(n_colors=n_sets,
+                               cmap=list(active.color_palette[:n_sets]),
+                               alpha=alpha)
+
+    return [list(_DEFAULT_VENN_COLORS[i]) for i in range(n_sets)]
+
+
+def _generate_petal_sizes(datasets):
+    """Numeric counterpart of :func:`generate_petal_labels`.
+
+    Returns a ``{logic: int}`` mapping of the element count in each petal,
+    used by the area-proportional backend to size and place the circles.
+    """
+    datasets = list(datasets)
+    n_sets = len(datasets)
+    dataset_union = set.union(*datasets)
+    sizes = {}
+    for logic in _generate_logics(n_sets):
+        included_sets = [datasets[i] for i in range(n_sets) if logic[i] == "1"]
+        excluded_sets = [datasets[i] for i in range(n_sets) if logic[i] == "0"]
+        petal_set = (
+                (dataset_union & set.intersection(*included_sets)) -
+                set.union(set(), *excluded_sets)
+        )
+        sizes[logic] = len(petal_set)
+    return sizes
 
 
 def less_transparent_color(color, alpha_factor=2):
@@ -211,9 +266,7 @@ def generate_petal_labels(datasets, fmt="{size}"):
 
 def _init_axes(ax):
     """Create axes if do not exist, set axes parameters"""
-    if ax is None:
-        _, ax = subplots(nrows=1, ncols=1, figsize=(7, 7))
-
+    ax = get_or_create_axes(ax, figsize=(7, 7))
     ax.set_axis_off()
     return ax
 
@@ -236,16 +289,6 @@ def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14,
                legend_use_petal_color=False, legend_loc=None, ax=None):
     """Draw Venn diagram, annotate petals and dataset labels.
     """
-    DEFAULT_COLORS = [
-        # r, g, b, a
-        [0.361, 0.753, 0.384, 0.5],
-        [0.353, 0.608, 0.831, 0.5],
-        [0.965, 0.925, 0.337, 0.6],
-        [0.945, 0.353, 0.376, 0.4],
-        [1.000, 0.459, 0.000, 0.3],
-        [0.322, 0.322, 0.745, 0.2]
-    ]
-
     if not isinstance(names, list):
         raise ValueError("Names of sets should be a list and must not be empty.")
 
@@ -258,10 +301,7 @@ def _draw_venn(data, names=None, palette=None, alpha=0.4, fontsize=14,
         raise ValueError("Number of sets must be between 2 and 6")
 
     ax = _init_axes(ax)
-    if palette is None:
-        palette = [DEFAULT_COLORS[i] for i in range(n_sets)]
-    else:
-        palette = generate_colors(n_colors=n_sets, cmap=palette, alpha=alpha)
+    palette = _resolve_palette(palette, n_sets, alpha)
 
     shape_params = zip(
         SHAPE_COORDS[n_sets],
@@ -347,6 +387,7 @@ def is_already_venn_dataset(petal_labels, dataset_labels):
     return True
 
 
+@styled_plot(figsize=(7, 7), apply_spines=False)
 def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
           legend_use_petal_color=False, legend_loc=None, style=None, ax=None):
     """Generate venn diagram by input petal labels data.
@@ -430,19 +471,44 @@ def vennx(data, names=None, palette=None, alpha=0.4, fontsize=14,
     if not is_already_venn_dataset(data, names):
         raise TypeError("``data`` is not a dict or the value is not a string. ")
 
-    with use_style(style):
-        return _draw_venn(data=data,
-                          names=names,
-                          palette=palette,
-                          alpha=alpha,
-                          fontsize=fontsize,
-                          legend_use_petal_color=legend_use_petal_color,
-                          legend_loc=legend_loc,
-                          ax=ax)
+    # ``ax`` and the active style are handled by the ``@styled_plot`` decorator.
+    return _draw_venn(data=data,
+                      names=names,
+                      palette=palette,
+                      alpha=alpha,
+                      fontsize=fontsize,
+                      legend_use_petal_color=legend_use_petal_color,
+                      legend_loc=legend_loc,
+                      ax=ax)
 
 
-def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=14,
-         legend_use_petal_color=False, legend_loc=None, style=None, ax=None):
+@styled_plot(figsize=(7, 7), apply_spines=False)
+def _venn_proportional_plot(sizes, labels, names, palette=None, alpha=0.4,
+                            fontsize=14, legend_use_petal_color=False,
+                            legend_loc=None, style=None, ax=None):
+    """Draw an area-proportional 2- or 3-set Venn diagram (circles).
+
+    Circle areas are proportional to the set sizes and pairwise overlap areas
+    are solved numerically to match the real intersection sizes.  Used by
+    :func:`venn` when ``proportional=True``; not meant to be called directly.
+    """
+    from ._venn_proportional import draw_proportional_venn
+
+    n_sets = len(names)
+    colors = _resolve_palette(palette, n_sets, alpha)
+    ax.set_axis_off()
+    draw_proportional_venn(
+        ax, sizes, labels, names, colors,
+        fontsize=fontsize,
+        legend_use_petal_color=legend_use_petal_color,
+        legend_loc=legend_loc,
+    )
+    return ax
+
+
+def venn(data, names=None, fmt="{size}", palette=None, alpha=0.4, fontsize=14,
+         legend_use_petal_color=False, legend_loc=None, proportional=False,
+         style=None, ax=None):
     """Check input, generate petal labels, draw venn diagram.
 
     Parameters
@@ -457,9 +523,10 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
         A Python 3 style format string that understands {size}, {percentage}, and {logic}.
         Here set the data format for petal datasets' lebals.
 
-    palette : string, list, or :class:`matplotlib.colors.Colormap`, optional, default: "viridis".
+    palette : string, list, or :class:`matplotlib.colors.Colormap`, optional, default: ``None``.
         String values are passed to :func:`generate_colors`. List values imply categorical
-        mapping, while a colormap object implies numeric mapping.
+        mapping, while a colormap object implies numeric mapping. When ``None``, the active
+        :class:`PlotStyle`'s palette is used (falling back to a built-in curated palette).
 
     alpha : float scalar, default is 0.4, optional
         The alpha blending value, between 0(transparent) and 1(opaque)
@@ -472,6 +539,12 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
 
     legend_loc : string. optional
         Place a legend on the axes. String value is passed to matplotlib :rc:`legend.loc`.
+
+    proportional : bool, optional, default: False
+        When ``True`` and the data contains 2 or 3 raw sets, draw an
+        area-proportional Venn diagram (circles whose areas and overlaps match
+        the real set/intersection sizes). For other cases a warning is issued
+        and the schematic layout is used instead.
 
     style : str, PlotStyle, or None, optional
         Plot style to apply. Can be a registered style name (e.g. "nature",
@@ -569,6 +642,26 @@ def venn(data, names=None, fmt="{size}", palette="viridis", alpha=0.4, fontsize=
     >>> petal_labels = generate_petal_labels(dataset_dict.values(), fmt="{logic}\\n({percentage:.1f}%)")
     >>> ax = venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_petal_color=True)
     """
+    if proportional and is_valid_dataset_dict(data) and not is_already_venn_dataset(data, names):
+        datasets = list(data.values())
+        n_sets = len(datasets)
+        if n_sets in (2, 3):
+            resolved_names = list(data.keys()) if names is None else names
+            return _venn_proportional_plot(
+                sizes=_generate_petal_sizes(datasets),
+                labels=generate_petal_labels(datasets, fmt=fmt),
+                names=resolved_names,
+                palette=palette, alpha=alpha, fontsize=fontsize,
+                legend_use_petal_color=legend_use_petal_color,
+                legend_loc=legend_loc, style=style, ax=ax)
+        warnings.warn(
+            "`proportional=True` supports only 2 or 3 sets; "
+            "falling back to the schematic layout.", stacklevel=2)
+    elif proportional:
+        warnings.warn(
+            "`proportional=True` requires a dict of raw sets; "
+            "falling back to the schematic layout.", stacklevel=2)
+
     if is_already_venn_dataset(data, names):
         if names is None:
             # Infer default names from the binary keys of pre-computed petal labels

@@ -15,8 +15,17 @@ from geneview.baseplot._venn import (
     is_valid_dataset_dict,
     is_already_venn_dataset,
     _generate_logics,
+    _generate_petal_sizes,
+    _resolve_palette,
     _draw_venn,
 )
+from geneview.baseplot._venn_proportional import (
+    _lens_area,
+    _solve_distance,
+    _layout_venn2,
+    _layout_venn3,
+)
+from geneview.plotstyle import use_style
 
 
 class TestGenerateLogics:
@@ -258,3 +267,102 @@ class TestVennx:
         data = {"01": 3, "10": 5}  # values not strings
         with pytest.raises(TypeError, match="not a dict"):
             vennx(data, names=["A", "B"])
+
+
+class TestGeneratePetalSizes:
+    """Tests for the numeric _generate_petal_sizes helper."""
+
+    def test_matches_labels(self):
+        datasets = [{1, 2, 3}, {2, 3, 4}]
+        sizes = _generate_petal_sizes(datasets)
+        assert sizes == {"10": 1, "01": 1, "11": 2}
+
+    def test_three_sets_counts(self):
+        datasets = [set(range(0, 50)), set(range(30, 80)), set(range(20, 60))]
+        sizes = _generate_petal_sizes(datasets)
+        # Total per set must equal the original set size.
+        t0 = sizes["100"] + sizes["110"] + sizes["101"] + sizes["111"]
+        assert t0 == 50
+
+
+class TestResolvePalette:
+    """Tests for palette resolution and PlotStyle fallback."""
+
+    def test_explicit_palette_wins(self):
+        colors = _resolve_palette("plasma", 3, 0.4)
+        assert len(colors) == 3
+
+    def test_default_fallback_no_style(self):
+        colors = _resolve_palette(None, 2, 0.4)
+        assert len(colors) == 2
+        # Fresh lists (mutating one must not corrupt the module constant).
+        colors[0][-1] = 1.0
+        again = _resolve_palette(None, 2, 0.4)
+        assert again[0][-1] != 1.0
+
+    def test_active_style_palette_used(self):
+        with use_style("nature"):
+            colors = _resolve_palette(None, 3, 0.4)
+        # Nature's Wong palette begins with black.
+        assert tuple(round(v, 3) for v in colors[0][:3]) == (0.0, 0.0, 0.0)
+
+
+class TestProportionalGeometry:
+    """Tests for the area-proportional geometry solver."""
+
+    def test_lens_area_disjoint(self):
+        assert _lens_area(1.0, 1.0, 5.0) == 0.0
+
+    def test_lens_area_contained(self):
+        # Small circle fully inside the large one -> area = small circle area.
+        import math
+        assert _lens_area(2.0, 0.5, 1.0) == pytest.approx(math.pi * 0.25)
+
+    def test_solve_distance_reproduces_overlap(self):
+        r1, r2, target = 3.0, 2.5, 4.0
+        d = _solve_distance(r1, r2, target)
+        assert _lens_area(r1, r2, d) == pytest.approx(target, rel=1e-3)
+
+    def test_layout_venn2_shapes(self):
+        centers, radii = _layout_venn2({"10": 40, "01": 40, "11": 20})
+        assert len(centers) == 2 and len(radii) == 2
+        assert radii[0] == pytest.approx(radii[1])  # equal totals -> equal radii
+
+    def test_layout_venn3_shapes(self):
+        sizes = _generate_petal_sizes(
+            [set(range(0, 50)), set(range(30, 80)), set(range(20, 60))])
+        centers, radii = _layout_venn3(sizes)
+        assert len(centers) == 3 and len(radii) == 3
+
+
+class TestVennProportional:
+    """Tests for venn(..., proportional=True)."""
+
+    def test_proportional_2_sets(self):
+        data = {"A": set(range(0, 60)), "B": set(range(40, 100))}
+        ax = venn(data, proportional=True)
+        assert ax is not None
+        assert len(ax.patches) == 2
+
+    def test_proportional_3_sets(self):
+        data = {"A": set(range(0, 50)), "B": set(range(30, 80)), "C": set(range(20, 60))}
+        ax = venn(data, proportional=True, legend_use_petal_color=True)
+        assert ax is not None
+        assert len(ax.patches) == 3
+
+    def test_proportional_too_many_sets_warns_and_falls_back(self):
+        data = {chr(65 + i): {i, i + 1} for i in range(4)}
+        with pytest.warns(UserWarning, match="2 or 3 sets"):
+            ax = venn(data, proportional=True)
+        assert ax is not None
+
+    def test_proportional_precomputed_warns_and_falls_back(self):
+        data = {"01": "3", "10": "5", "11": "2"}
+        with pytest.warns(UserWarning, match="raw sets"):
+            ax = venn(data, names=["A", "B"], proportional=True)
+        assert ax is not None
+
+    def test_proportional_legend_loc(self):
+        data = {"A": {1, 2, 3}, "B": {2, 3, 4}}
+        ax = venn(data, proportional=True, legend_loc="upper left")
+        assert ax is not None

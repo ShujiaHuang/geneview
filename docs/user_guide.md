@@ -180,11 +180,33 @@ plt.show()
 |-----------|-------------|
 | `data` | Dict mapping set names to sets of items |
 | `fmt` | Label format: `"{size}"`, `"{percentage:.1f}%"`, or `"{logic}"` |
-| `palette` | Color palette name or list of colors |
+| `palette` | Color palette name or list of colors. When omitted (`None`), the active plot style's palette is used |
 | `fontsize` | Label font size |
 | `legend_use_petal_color` | Use petal colors in legend |
+| `proportional` | For 2 or 3 sets, draw an area-proportional diagram (circle areas/overlaps scale with the real set sizes). Ignored with a warning otherwise |
+| `style` | Apply a journal style (`"nature"`, `"science"`, `"cell"`, `"geneview"`) or `None` to use the active style |
 
 Supports 2, 3, 4, 5, and 6-set Venn diagrams.
+
+### Area-proportional Venn (2–3 sets)
+
+Pass raw sets and set `proportional=True` to make each circle's area and every
+overlap scale with the real set/intersection sizes. When `palette` is omitted,
+the colors follow the active plot style, so it composes with journal styles:
+
+```python
+import geneview as gv
+
+sets = {
+    "Large study": set(range(0, 200)),
+    "Small study": set(range(180, 235)),
+}
+# Colors follow the "nature" style because palette is left as None.
+ax = gv.venn(sets, proportional=True, style="nature", legend_use_petal_color=True)
+```
+
+With more than 3 sets, `proportional=True` is ignored (with a warning) and the
+schematic layout is used instead.
 
 ---
 
@@ -623,6 +645,9 @@ geneview qq -i gwas.assoc -o qq.png
 
 # Venn diagram from 2-6 gene/variant lists
 geneview venn -i A.txt B.txt C.txt -o venn.png
+
+# Area-proportional Venn (2 or 3 sets) with a journal style
+geneview venn -i A.txt B.txt --proportional --style nature -o venn_proportional.png
 
 # Admixture plot from an ADMIXTURE .Q file
 geneview admixture -i output.3.Q -p population.txt -o admixture.png

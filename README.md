@@ -188,6 +188,15 @@ geneview venn -i DEG_list1.txt DEG_list2.txt DEG_list3.txt \
     -o venn3_cell.png
 ```
 
+Draw an area-proportional diagram for 2 or 3 sets (circle areas and overlaps match the real set sizes):
+
+```bash
+geneview venn -i genes_A.txt genes_B.txt \
+    --proportional \
+    --style nature \
+    -o venn_proportional.png
+```
+
 #### Admixture plot
 
 Create an Admixture plot from the standard ADMIXTURE `.Q` output and a population info file:
@@ -613,6 +622,28 @@ ax = gv.venn(data=petal_labels, names=list(dataset_dict.keys()), legend_use_peta
 ```
 
 ![venn4.png](./examples/figures/venn4.png)
+
+#### Area-proportional Venn diagram (2–3 sets)
+
+For 2 or 3 sets, pass `proportional=True` to draw an **area-proportional** Venn
+diagram where each circle's area and every overlap scale with the real set and
+intersection sizes. Pass raw sets (a dict of `name -> set`); the circle radii
+and centre distances are solved so the drawn areas match the counts exactly.
+
+```python
+import geneview as gv
+
+sets = {
+    "Large study": set(range(0, 200)),
+    "Small study": set(range(180, 235)),
+}
+ax = gv.venn(sets, proportional=True, legend_use_petal_color=True)
+```
+
+![venn_proportional.png](./examples/figures/venn_proportional.png)
+
+With more than 3 sets, `proportional=True` is ignored (with a warning) and the
+schematic layout is used instead.
 
 - [More tutorials about venn](./docs/tutorial/venn.ipynb)
 

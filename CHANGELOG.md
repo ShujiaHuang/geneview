@@ -5,6 +5,24 @@ All notable changes to **geneview** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Area-proportional Venn diagrams:** `venn(..., proportional=True)` draws
+  2- or 3-set diagrams whose circle areas and overlaps scale with the real
+  set / intersection sizes (radii and centre distances are solved so the drawn
+  areas match the counts). For other set counts the flag is ignored with a
+  warning and the schematic layout is used. Exposed on the CLI via
+  `geneview venn --proportional`.
+
+### Changed
+- **Venn colour palette follows the active plot style:** `venn()`'s `palette`
+  now defaults to `None`, in which case colours are taken from the active
+  `PlotStyle` (e.g. `nature`/`science`/`cell`), falling back to a built-in
+  curated palette. An explicit `palette` still takes precedence. The
+  `geneview venn --palette` default changed from `viridis` to the active
+  `--style` palette accordingly.
+
 ## [0.8.2] - 2026-07-27
 
 ### Fixed

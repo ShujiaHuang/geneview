@@ -156,6 +156,10 @@ geneview venn -i A.txt B.txt C.txt \
     --names "Study A" "Study B" "Study C" \
     --palette plasma --fmt "{size}\n({percentage:.0f}%)" \
     --legend-use-petal-color --style cell -o venn3.png
+
+# Area-proportional diagram for 2 or 3 sets
+geneview venn -i genes_A.txt genes_B.txt \
+    --proportional --style nature -o venn_proportional.png
 ```
 
 ![Three-way Venn diagram](../examples/figures/venn3.png)
@@ -165,7 +169,8 @@ geneview venn -i A.txt B.txt C.txt \
 | `-i, --input` *(required)* | 2–6 input files | — |
 | `--names` | Dataset labels | file names |
 | `--fmt` | Petal label format: `{size}`, `{percentage}`, `{logic}` | `{size}` |
-| `--palette` | Palette name or comma-separated hex colors | `viridis` |
+| `--palette` | Palette name or comma-separated hex colors | active `--style` palette |
+| `--proportional` | Area-proportional layout for 2 or 3 sets (ignored otherwise) | off |
 | `--alpha / --fontsize` | Petal opacity / label font size | `0.4` / `14` |
 | `--legend-use-petal-color` | Color legend text to match petals | off |
 | `--legend-loc` | Legend location (e.g. `upper left`) | around diagram |

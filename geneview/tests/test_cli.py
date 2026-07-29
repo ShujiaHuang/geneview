@@ -671,6 +671,35 @@ class TestVennCLI:
         ])
         assert rc == 0
 
+    def test_proportional_2_sets(self, tmp_output_dir):
+        """Should create an area-proportional 2-set Venn diagram."""
+        out = os.path.join(tmp_output_dir, "venn_prop2.png")
+        rc = main([
+            "venn", "-i", _VENN_FILES[0], _VENN_FILES[1],
+            "-o", out,
+            "--proportional",
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_proportional_3_sets(self, tmp_output_dir):
+        """Should create an area-proportional 3-set Venn diagram."""
+        out = os.path.join(tmp_output_dir, "venn_prop3.png")
+        rc = main(["venn", "-i"] + _VENN_FILES + ["-o", out, "--proportional"])
+        assert rc == 0
+        assert os.path.isfile(out)
+
+    def test_proportional_with_style(self, tmp_output_dir):
+        """Should combine --proportional with a journal --style."""
+        out = os.path.join(tmp_output_dir, "venn_prop_style.png")
+        rc = main([
+            "venn", "-i", _VENN_FILES[0], _VENN_FILES[1],
+            "-o", out,
+            "--proportional", "--style", "nature",
+        ])
+        assert rc == 0
+        assert os.path.isfile(out)
+
 
 # ===========================================================================
 # Tests for the admixture subcommand

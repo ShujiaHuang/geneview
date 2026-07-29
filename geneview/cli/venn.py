@@ -22,6 +22,15 @@ Compare three datasets with custom names and colors::
         --fmt "{size}\\n({percentage:.0f}%)" \\
         -o venn3.png
 
+Draw an area-proportional diagram for 2 or 3 sets (circle areas and
+overlaps scale with the real set sizes). When ``--palette`` is omitted, the
+colors follow the active ``--style`` palette::
+
+    $ geneview venn -i genes_A.txt genes_B.txt \\
+        --proportional \\
+        --style nature \\
+        -o venn_proportional.png
+
 Author: Shujia Huang
 """
 import os
@@ -78,13 +87,18 @@ def register(subparsers):
     p.add_argument("--fmt", default="{size}",
                    help="Format string for petal labels. Supports {size}, "
                         "{percentage}, and {logic}. (default: {size})")
-    p.add_argument("--palette", default="viridis",
+    p.add_argument("--palette", default=None,
                    help="Color palette name (e.g., viridis, plasma, Set1) or "
-                        "comma-separated hex colors. (default: viridis)")
+                        "comma-separated hex colors. When omitted, the active "
+                        "--style palette is used. (default: None)")
     p.add_argument("--alpha", type=float, default=0.4,
                    help="Alpha blending for petal colors, 0-1. (default: 0.4)")
     p.add_argument("--fontsize", type=int, default=14,
                    help="Font size for petal labels. (default: 14)")
+    p.add_argument("--proportional", action="store_true", default=False,
+                   help="For 2 or 3 sets, draw an area-proportional Venn diagram "
+                        "(circle areas/overlaps match the real set sizes). "
+                        "Ignored with a warning for other set counts.")
     p.add_argument("--legend-use-petal-color", action="store_true", default=False,
                    help="Color legend text with the same color as petals.")
     p.add_argument("--legend-loc", default=None,
@@ -136,7 +150,7 @@ def run(args):
 
     # --- Parse palette ---
     palette = args.palette
-    if "," in palette:
+    if palette and "," in palette:
         palette = palette.split(",")
 
     # --- Create figure ---
@@ -150,6 +164,7 @@ def run(args):
         fontsize=args.fontsize,
         legend_use_petal_color=args.legend_use_petal_color,
         legend_loc=args.legend_loc,
+        proportional=args.proportional,
         style=args.style,
         ax=ax,
     )
