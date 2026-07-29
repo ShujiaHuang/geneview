@@ -64,8 +64,10 @@ def get_ticks(start: int, end: int, target_n_labels: int = 10):
     Examples
     --------
     >>> ticks = get_ticks(2_000_000, 3_000_000, target_n_labels=5)
-    >>> for pos, label in ticks:
-    ...     print(pos, label)
+    >>> ticks[0]
+    (2000000, '2000.0kb')
+    >>> len(ticks)
+    8
     """
     import math
 

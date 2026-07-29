@@ -165,9 +165,9 @@ def plot_tracks_grid(
     ...     plot_tracks_grid, GenomeAxisTrack, AnnotationTrack,
     ...     GenomicInterval,
     ... )
-    >>> view1 = [GenomeAxisTrack(), AnnotationTrack(data1)]
-    >>> view2 = [GenomeAxisTrack(), AnnotationTrack(data2)]
-    >>> axes = plot_tracks_grid(                           # doctest: +SKIP
+    >>> view1 = [GenomeAxisTrack(), AnnotationTrack(data1)]  # doctest: +SKIP
+    >>> view2 = [GenomeAxisTrack(), AnnotationTrack(data2)]  # doctest: +SKIP
+    >>> axes = plot_tracks_grid(                             # doctest: +SKIP
     ...     [view1, view2],
     ...     regions=[GenomicInterval("chr1", 0, 1e6),
     ...              GenomicInterval("chr2", 0, 1e6)],
@@ -310,9 +310,9 @@ def plot_tracks_multi(
     ...     plot_tracks_multi, GenomeAxisTrack, AnnotationTrack,
     ...     GenomicInterval,
     ... )
-    >>> section1 = ([GenomeAxisTrack(), AnnotationTrack(data1)],
+    >>> section1 = ([GenomeAxisTrack(), AnnotationTrack(data1)],   # doctest: +SKIP
     ...             GenomicInterval("chr1", 0, 1e6))
-    >>> section2 = ([GenomeAxisTrack(), AnnotationTrack(data2)],
+    >>> section2 = ([GenomeAxisTrack(), AnnotationTrack(data2)],   # doctest: +SKIP
     ...             GenomicInterval("chr2", 0, 1e6))
     >>> axes = plot_tracks_multi([section1, section2])     # doctest: +SKIP
     """

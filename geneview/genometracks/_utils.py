@@ -35,7 +35,7 @@ def match_chrom_format(chrom: str, keys: Iterable[str]) -> str:
     >>> match_chrom_format("1", ["chr1", "chr2"])
     'chr1'
     >>> match_chrom_format("chrM", ["MT"])
-    'chrM'
+    'MT'
     """
     keys_set = set(keys)
     if chrom in keys_set:

@@ -50,6 +50,9 @@ if __name__ == "__main__":
           ],
           extras_require={
               "genometracks": ["pyranges", "pyBigWig", "pysam"],
+              # ``all`` bundles every optional dependency so that
+              # ``pip install .[all]`` (used in CI) pulls in all extras.
+              "all": ["pyranges", "pyBigWig", "pysam"],
           },
           packages=find_packages(),
           entry_points={

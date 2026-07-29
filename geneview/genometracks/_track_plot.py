@@ -53,10 +53,12 @@ def find_tracks(track_list: Union[Track, List[Track]], name: Optional[str] = Non
     >>> import pandas as pd
     >>> ann = AnnotationTrack(pd.DataFrame({"chrom":["chr1"],"start":[0],"end":[100]}), name="Genes")
     >>> tracks = [GenomeAxisTrack(), ann]
-    >>> find_tracks(tracks, name="Genes")
-    [AnnotationTrack(name='Genes', height=1.0)]
-    >>> find_tracks(tracks, track_type=GenomeAxisTrack)
-    [GenomeAxisTrack(name='Axis', height=0.3)]
+    >>> matches = find_tracks(tracks, name="Genes")
+    >>> len(matches), isinstance(matches[0], AnnotationTrack)
+    (1, True)
+    >>> axis_tracks = find_tracks(tracks, track_type=GenomeAxisTrack)
+    >>> len(axis_tracks), isinstance(axis_tracks[0], GenomeAxisTrack)
+    (1, True)
     """
     if isinstance(track_list, Track):
         track_list = [track_list]

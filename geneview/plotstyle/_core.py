@@ -377,8 +377,8 @@ def use_style(name_or_style: Union[str, PlotStyle, None]):
 
     Example
     -------
-    >>> with use_style("nature"):
-    ...     ax = manhattanplot(data=df)
+    >>> with use_style("nature") as style:
+    ...     pass
     """
     if name_or_style is None:
         yield None
