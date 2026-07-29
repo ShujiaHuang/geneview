@@ -12,6 +12,12 @@ from .genometracks import (
     LolliplotTrack, DandelionTrack, lolliplot, dandelion_plot,
     plot_tracks_grid, plot_tracks_multi, add_panel_labels, save_figure,
 )
+from .mtdna import (
+    mito_genome_map, heteroplasmy_scatter, heteroplasmy_heatmap,
+    mito_coverage_plot, mito_copynumber_plot,
+    read_mito_vcf, read_mito_copynumber, read_mito_coverage,
+    get_mt_genes, gene_at, MT_LENGTH,
+)
 from .plotstyle import (
     apply_style, use_style, list_styles, PlotStyle, set_style, get_active_style,
 )

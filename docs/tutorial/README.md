@@ -20,6 +20,7 @@ This directory contains Jupyter notebook tutorials for **geneview** — a Python
 |----------|-------------|
 | [User Guide](../user_guide.md) | Comprehensive guide covering all geneview modules (GWAS, Venn, Admixture, Karyotype, Genome Tracks, CLI, and more) |
 | [Genome Tracks Guide](../genome_tracks_guide.md) | Detailed Gviz-style guide for the `geneview.genometracks` module — track types, display parameters, file I/O, and complete examples |
+| [mtDNA Guide](../mtdna_guide.md) | Detailed guide for the `geneview.mtdna` module — MitoQuest-style readers, circular genome map, heteroplasmy landscape/heatmap, coverage, and copy number |
 
 ### Example Scripts
 
@@ -32,6 +33,7 @@ Runnable Python scripts demonstrating genome tracks features are available in [`
 | `genome_tracks_data.py` | DataTrack plot types: line, histogram, polygon, heatmap, points, mountain, gradient |
 | `genome_tracks_highlight.py` | Cross-track highlight regions |
 | `genome_tracks_comprehensive.py` | Full showcase with all track types combined |
+| `mtdna.py` | Mitochondrial DNA figures: circular genome map, heteroplasmy scatter/heatmap, coverage, copy number |
 
 Run any script with: `python examples/scripts/<script_name>.py`
 

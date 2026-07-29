@@ -29,6 +29,7 @@ Some of the features that geneview offers are:
 - **Karyotype plot** — Cytogenetic band visualization with G-banding color schemes.
 - **Genome Tracks** — Gviz-style track browser with IdeogramTrack (chromosome ideogram), AnnotationTrack, GeneRegionTrack (four drawing styles — UCSC with backbone/stepped polygons, flybase, tssarrow, exonarrows — plus strand coloring, intron chevron arrows, and left-positioned labels), DataTrack (line/histogram/heatmap + average/confint/smooth/horizon/grid/regression), SequenceTrack (nucleotide display), AlignmentsTrack (BAM/CRAM pileup/sashimi with read direction arrows, strand coloring, clipping, overlap highlighting, read labels, custom color_fn), BAMCoverageTrack (standalone coverage line/fill), VCFTrack (variant display with custom coloring), GroupedAlignmentsTrack (grouped BAM reads), DetailsAnnotationTrack (detail panels), HighlightTrack, and OverlayTrack. BigBed file support included. CLI supports BAM/CRAM, VCF, and all track types directly.
 - **Mutation Tracks** — Lollipop- and dandelion-style visualization of mutations, variants, and methylation sites along protein/genomic features: `LolliplotTrack` (circle/pie/pin/flag/pie.stack markers, per-SNP customization, tanghulu stacking) and `DandelionTrack`.
+- **Mitochondrial DNA (mtDNA)** — Purpose-built human mtDNA toolkit driven by [MitoQuest](https://github.com/ShujiaHuang/mitoquest)-style inputs (single/multi-sample VCF with per-sample heteroplasmy fractions, `copynum` TSV, BAM/CRAM): a circular rCRS genome map with variant lollipops, a heteroplasmy (VAF) landscape scatter, a samples×sites VAF heatmap, coverage-depth curves, and per-sample copy-number bars with 95% CI.
 - **Plot Styles** — Built-in journal-compliant styles (**Nature**, **Science**, **Cell**) that configure fonts, sizes, colours, and export settings in a single call.
 - **Color palettes** — Curated color schemes (XKCD RGB, Circos, matplotlib colormaps) optimized for genomics figures.
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations.
@@ -79,6 +80,11 @@ subcommands:
   venn         Create a Venn diagram from 2-6 input files.
   admixture    Create an Admixture plot from ADMIXTURE .Q output.
   tracks       Create a genome track plot from BED, GFF, BAM, VCF, or bedGraph files.
+  mito-map          Circular rCRS map of the mtDNA genome with variant lollipops.
+  mito-heteroplasmy Linear position-vs-VAF heteroplasmy landscape from a VCF.
+  mito-heatmap      Samples x variant-sites heteroplasmy (VAF) heatmap from a VCF.
+  mito-coverage     mtDNA sequencing depth from BAM/CRAM.
+  mito-copynumber   Per-sample mtDNA copy number with 95% CI from copynum TSVs.
 ```
 
 Use `geneview <subcommand> --help` for detailed options of each command.
@@ -271,6 +277,30 @@ geneview tracks --region chr7:26490000-26720000 \
     --style nature \
     -o genome_tracks_nature.png
 ```
+
+#### Mitochondrial DNA (mtDNA)
+
+Visualize the outputs of an mtDNA pipeline such as [MitoQuest](https://github.com/ShujiaHuang/mitoquest) directly from the command line:
+
+```bash
+# Circular rCRS map: genes coloured by type + variant lollipops (length = heteroplasmy)
+geneview mito-map -i cohort.mt.vcf.gz -o mito_map.png --color-by feature --title "Cohort mtDNA"
+
+# Position-vs-VAF heteroplasmy landscape (dashed line = calling threshold)
+geneview mito-heteroplasmy -i cohort.mt.vcf.gz -o het.png --hue status --het-threshold 0.03
+
+# Cohort samples x variant-sites heteroplasmy heatmap
+geneview mito-heatmap -i cohort.mt.vcf.gz -o heatmap.png --site-label variant
+
+# Sequencing depth across the mitochondrial genome (multi-sample BAM/CRAM)
+geneview mito-coverage -i s1.bam s2.cram -o cov.png --reference rCRS.fa --bins 1000
+
+# Per-sample mtDNA copy number with 95% CI
+geneview mito-copynumber -i *.cn.tsv -o cn.png --orient h --baseline 250
+```
+
+> [!NOTE]
+> Full options and the Python API are documented in the [mtDNA Guide](./docs/mtdna_guide.md).
 
 ---
 
@@ -924,6 +954,38 @@ _ = gv.karyoplot(k_fn, ax=ax)
 plt.show()
 ```
 
+### Mitochondrial DNA (mtDNA)
+
+Read a MitoQuest-style multi-sample VCF into a tidy heteroplasmy table and draw
+the circular rCRS genome map with variant lollipops:
+
+```python
+import matplotlib.pyplot as plt
+import geneview as gv
+
+# sample x site x allele table with VAF (heteroplasmy), depth, genotype, HET/HOM status
+var = gv.read_mito_vcf("cohort.mt.vcf.gz", min_vaf=0.01)
+
+# Circular rCRS map: genes coloured by type + variant lollipops (length = heteroplasmy)
+fig, ax = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "polar"})
+gv.mito_genome_map(var, ax=ax, color_by="feature")
+plt.show()
+```
+
+![mtdna_genome_map.png](./examples/figures/mtdna_genome_map.png)
+
+The same table feeds the heteroplasmy landscape, the cohort VAF heatmap, and the
+other mtDNA plots:
+
+```python
+gv.heteroplasmy_scatter(var, hue="status", het_threshold=0.03)   # position vs VAF
+gv.heteroplasmy_heatmap(var, site_label="variant")               # samples x sites
+gv.mito_coverage_plot(gv.read_mito_coverage(["s1.bam", "s2.cram"], reference="rCRS.fa"))
+gv.mito_copynumber_plot(gv.read_mito_copynumber(["s1.cn.tsv", "s2.cn.tsv"]))
+```
+
+- [mtDNA Guide](./docs/mtdna_guide.md) — full readers, plots, CLI, and journal-style reference
+
 ## Documentation
 
 Comprehensive documentation is available:
@@ -932,6 +994,7 @@ Comprehensive documentation is available:
 - [Plot Styles](./docs/user_guide.md#plot-styles) — Journal-compliant figure styles (Nature, Science, Cell)
 - [Genome Tracks Guide](./docs/genome_tracks_guide.md) — Detailed guide for the genome tracks module
 - [Mutation Tracks Guide](./docs/mutation_tracks_guide.md) — Detailed guide for the lolliplot/dandelion module
+- [mtDNA Guide](./docs/mtdna_guide.md) — Detailed guide for the mitochondrial DNA module
 - [Tutorial Notebooks](./docs/tutorial/) — Jupyter notebooks for GWAS, Venn, Admixture, Palettes, Plot Styles, Genome Tracks, and Mutation Tracks
 - [API Reference](./docs/user_guide.md#api-reference) — Function and class reference
 

@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Mitochondrial (mtDNA) visualization module (`geneview.mtdna`):** a
+  purpose-built toolkit for human mtDNA analysis, driven by
+  [MitoQuest](https://github.com/ShujiaHuang/mitoquest)-style inputs
+  (single/multi-sample VCF with per-sample heteroplasmy fractions,
+  `copynum` TSV, and BAM/CRAM). Provides:
+  - **Readers** `read_mito_vcf`, `read_mito_copynumber`, `read_mito_coverage`
+    that normalise those inputs into tidy `DataFrame`s (the VCF reader auto-
+    detects the heteroplasmy field across MitoQuest versions, `AF`/`HF`).
+  - **Plots** `mito_genome_map` (circular rCRS map with variant lollipops),
+    `heteroplasmy_scatter` (position-vs-VAF landscape), `heteroplasmy_heatmap`
+    (samples x sites VAF matrix), `mito_coverage_plot` (sequencing depth) and
+    `mito_copynumber_plot` (per-sample copy number with 95% CI).
+  - **Reference backbone** `get_mt_genes`, `gene_at`, `genes_in_range`,
+    `is_mt_contig`, `MT_LENGTH` — the rCRS (NC_012920.1) 16,569 bp, 37-gene
+    map plus the D-loop control region.
+  - **CLI** `geneview mito-map`, `mito-heteroplasmy`, `mito-heatmap`,
+    `mito-coverage`, `mito-copynumber`. See `docs/mtdna_guide.md`.
+
 - **Area-proportional Venn diagrams:** `venn(..., proportional=True)` draws
   2- or 3-set diagrams whose circle areas and overlaps scale with the real
   set / intersection sizes (radii and centre distances are solved so the drawn

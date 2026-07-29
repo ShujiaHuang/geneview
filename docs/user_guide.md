@@ -27,6 +27,10 @@
   - [Mutation Tracks (Lolliplot \& Dandelion)](#mutation-tracks-lolliplot--dandelion)
     - [Quick Example](#quick-example-1)
     - [Key Features](#key-features)
+  - [Mitochondrial DNA (mtDNA)](#mitochondrial-dna-mtdna)
+    - [Quick Example](#quick-example-2)
+    - [Inputs \& Readers](#inputs--readers)
+    - [Plots](#plots)
   - [Plot Styles](#plot-styles)
     - [Available Styles](#available-styles)
     - [Applying a Style Globally](#applying-a-style-globally)
@@ -479,6 +483,81 @@ ax = lolliplot(snp_data, features=features, figsize=(12, 4))
 | **Multi-layer features** | `feature_layer_id` column for stacked baselines |
 
 For a comprehensive guide with all features, parameter tables, and API reference, see the [Mutation Tracks Guide](./mutation_tracks_guide.md).
+
+---
+
+## Mitochondrial DNA (mtDNA)
+
+The `geneview.mtdna` module is a purpose-built toolkit for the figures that
+matter most in human mitochondrial genome analysis. It is driven by the
+outputs of pipelines such as [MitoQuest](https://github.com/ShujiaHuang/mitoquest):
+single/multi-sample VCFs carrying per-sample **heteroplasmy fractions (VAF)**,
+`copynum` TSV files, and BAM/CRAM alignments. All coordinates follow the rCRS
+(`NC_012920.1`, 16,569 bp) reference.
+
+```python
+import geneview as gv
+
+# Read MitoQuest outputs into tidy DataFrames
+variants = gv.read_mito_vcf("cohort.mt.vcf.gz")        # from `mitoquest caller`
+copynum  = gv.read_mito_copynumber(["s1.cn.tsv", ...])  # from `mitoquest copynum`
+coverage = gv.read_mito_coverage(["s1.bam", "s2.cram"], reference="rCRS.fa")
+```
+
+### Quick Example
+
+```python
+import matplotlib.pyplot as plt
+import geneview as gv
+
+variants = gv.read_mito_vcf("cohort.mt.vcf.gz")
+
+# Circular rCRS map: genes coloured by type, variants as lollipops (length = VAF)
+fig, ax = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "polar"})
+gv.mito_genome_map(variants, ax=ax)
+
+# Linear position-vs-VAF heteroplasmy landscape
+gv.heteroplasmy_scatter(variants, hue="status", het_threshold=0.03)
+
+# Cohort samples x sites VAF heatmap
+gv.heteroplasmy_heatmap(variants, site_label="variant")
+```
+
+> Note: `mito_genome_map` draws on a **polar** axes. When passing your own
+> `ax`, create it with `subplot_kw={"projection": "polar"}`; when `ax` is
+> omitted the function creates the polar axes for you.
+
+### Inputs & Readers
+
+| Reader | Input | Output columns |
+|--------|-------|----------------|
+| `read_mito_vcf` | single/multi-sample VCF/BCF | `sample, chrom, pos, ref, alt, vaf, depth, gt, status, var_type, variant_id` (one row per *sample x site x ALT allele*) |
+| `read_mito_copynumber` | one or more `mitoquest copynum` TSVs | `sample, chrom, copy_number, ci_low, ci_high` |
+| `read_mito_coverage` | BAM/CRAM file(s) | `sample, chrom, start, end, pos, depth` (binned) |
+
+The VCF reader auto-detects the heteroplasmy field across MitoQuest versions
+(`AF` in current builds, `HF` in older ones) and classifies each call as
+`HET` (heteroplasmic — more than one distinct allele) or `HOM` (homoplasmic).
+
+### Plots
+
+| Function | Purpose |
+|----------|---------|
+| `mito_genome_map` | Circular rCRS map: 37 genes + D-loop coloured by feature type, variants as inward lollipops whose length encodes VAF (`color_by="feature"/"status"/"var_type"`). |
+| `heteroplasmy_scatter` | Linear position-vs-VAF landscape with a gene strip and a heteroplasmy-threshold line (`hue="feature"/"status"/"var_type"/"sample"`). |
+| `heteroplasmy_heatmap` | Samples x variant-sites VAF matrix for cohorts (`site_label="pos"/"variant"`). |
+| `mito_coverage_plot` | Sequencing depth across the genome for one or many samples (`log=True` for a log axis). |
+| `mito_copynumber_plot` | Per-sample mtDNA copy number with 95% CI (`orient="v"/"h"`, `baseline=...`). |
+
+Reference helpers are also exported: `get_mt_genes()`, `gene_at(pos)`,
+`genes_in_range(start, end)`, `is_mt_contig(name)` and `MT_LENGTH`.
+
+Every plot accepts a `style=` argument and honours the active plot style, so
+the `nature`/`science`/`cell` themes apply consistently. See the runnable
+`examples/scripts/mtdna.py` and the dedicated
+[mtDNA Guide](./mtdna_guide.md) for the full parameter reference and the CLI
+(`geneview mito-map`, `mito-heteroplasmy`, `mito-heatmap`, `mito-coverage`,
+`mito-copynumber`).
 
 ---
 

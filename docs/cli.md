@@ -15,7 +15,15 @@ subcommands:
   venn         Create a Venn diagram from 2-6 input files.
   admixture    Create an Admixture plot from ADMIXTURE .Q output.
   tracks       Create a genome track plot from BED, GFF, BAM, VCF, or bedGraph files.
+  mito-map          Circular rCRS map of the mtDNA genome with variant lollipops.
+  mito-heteroplasmy Linear position-vs-VAF heteroplasmy landscape from a VCF.
+  mito-heatmap      Samples x variant-sites heteroplasmy (VAF) heatmap from a VCF.
+  mito-coverage     mtDNA sequencing depth from BAM/CRAM.
+  mito-copynumber   Per-sample mtDNA copy number with 95% CI from copynum TSVs.
 ```
+
+> The `mito-*` subcommands are documented in full in the
+> [mtDNA Guide](./mtdna_guide.md#command-line-interface).
 
 ---
 

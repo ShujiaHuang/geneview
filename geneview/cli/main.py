@@ -72,12 +72,14 @@ def main(argv=None):
     from . import venn
     from . import admixture
     from . import tracks
+    from . import mtdna
 
     manhattan.register(subparsers)
     qq.register(subparsers)
     venn.register(subparsers)
     admixture.register(subparsers)
     tracks.register(subparsers)
+    mtdna.register(subparsers)
 
     args = parser.parse_args(argv)
 
