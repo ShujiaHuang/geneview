@@ -14,7 +14,7 @@ meta = Namespace(
     __URL__          = "https://github.com/ShujiaHuang/geneview",
     __LICENSE__      = "BSD (3-clause)",
     __DOWNLOAD_URL__ = "https://github.com/ShujiaHuang/geneview",
-    __VERSION__      = "0.8.2",
+    __VERSION__      = "0.9.0",
 )
 
 try:
@@ -25,7 +25,6 @@ except ImportError:
 
 
 if __name__ == "__main__":
-
     THIS_PATH = os.path.abspath(os.path.dirname(__file__))
     long_description = os.path.join(THIS_PATH, "README.md")
 
@@ -47,10 +46,10 @@ if __name__ == "__main__":
               "pandas",
               "matplotlib",
               "seaborn",
+              "pysam"
           ],
           extras_require={
               "genometracks": ["pyranges", "pyBigWig", "pysam"],
-              # ``all`` bundles every optional dependency so that
               # ``pip install .[all]`` (used in CI) pulls in all extras.
               "all": ["pyranges", "pyBigWig", "pysam"],
           },

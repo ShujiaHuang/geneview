@@ -5,9 +5,15 @@ All notable changes to **geneview** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.0] - 2026-10-15
 
 ### Added
+- **Shared base plotting engine (`geneview._core`):** a common canvas/colour
+  layer plus the `@styled_plot` decorator. The GWAS (Manhattan/QQ), karyotype,
+  admixture plots and the `PlotStyle` system were migrated onto it, so journal
+  styles are applied consistently across single-axis plots. See
+  `docs/base_plotting_engine_guide.md` and
+  `docs/plotting_architecture_design.md`.
 - **Mitochondrial (mtDNA) visualization module (`geneview.mtdna`):** a
   purpose-built toolkit for human mtDNA analysis, driven by
   [MitoQuest](https://github.com/ShujiaHuang/mitoquest)-style inputs
@@ -40,6 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   curated palette. An explicit `palette` still takes precedence. The
   `geneview venn --palette` default changed from `viridis` to the active
   `--style` palette accordingly.
+- **`pysam` is now a core install dependency** (moved into `install_requires`),
+  so alignment-based features are available without pulling the `genometracks`
+  extra.
+
+[0.9.0]: https://github.com/ShujiaHuang/geneview/compare/v0.8.2...v0.9.0
 
 ## [0.8.2] - 2026-07-27
 
